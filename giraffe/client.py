@@ -1,5 +1,6 @@
 '''
-__author__ = 'fbahr'
+__author__  = 'fbahr'
+__version__ = 0.1 
 '''
 
 import sys

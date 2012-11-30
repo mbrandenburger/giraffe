@@ -1,25 +1,25 @@
+from giraffe.common.RabbitMQConnector import Connector, BasicConsumer
+
 __author__ = 'mbrandenburger'
 
-import pika
 import MySQLdb as db
 import daemon
 
-class QueueListener(object):
-    def __init__(self, queueName, exchangeName):
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters('cloud'))
-        self.channel = self.connection.channel()
-        self.exchange = exchangeName
-        self.queue = queueName
-        
-        self.dbconnection = db.connect('sql', 'admin',
-                                       'pass', 'tabelle')
+class CoreService(object):
+
+    def __init__(self):
+        self.connector = Connector('cloud2.ibr.cs.tu-bs.de')
+        self.queue = "giraffe_test"
+        self.exchange = "giraffe_topic"
+        self.routing_key = ''
+        self.dbconnection = db.connect('cloud2.ibr.cs.tu-bs.de', 'giraffedbadmin',
+                                       'aff3nZo0', 'giraffe')
     
-    def listen(self):
-        self.channel.basic_consume(self.callback, no_ack=True,
-                                   queue=self.queue)
-        self.channel.start_consuming()
+    def start(self):
+        self.consumer = BasicConsumer(self.connector, self.queue, self.exchange, self._consumer_call)
+        self.consumer.consume()
     
-    def callback(self, ch, method, properties, body):
+    def _consumer_call(self, ch, method, properties, body):
         print " -> %r:%r" % (method,body,)
         with self.dbconnection:
             cur = self.dbconnection.cursor()
@@ -27,5 +27,5 @@ class QueueListener(object):
 
 print "Starting Giraffe Service"
 with daemon.DaemonContext():
-    service = QueueListener('Giraffe.compute', 'nova')
-    service.listen()
+    coreService = CoreService()
+    coreService.start()

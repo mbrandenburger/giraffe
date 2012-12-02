@@ -2,10 +2,6 @@ __author__  = 'fbahr'
 __version__ = '0.1'
 __date__    = '2012-12-02'
 
-from cement.core impo__author__  = 'fbahr'
-__version__ = '0.1'
-__date__    = '2012-12-02'
-
 from cement.core import backend, foundation, hook # < cement 2.0.2
 import requests                                   # < requests 0.14.2
 

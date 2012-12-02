@@ -63,7 +63,7 @@ from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
 # http://docs.sqlalchemy.org/en/rel_0_7/orm/session.html#session-faq
 Session = sessionmaker()
 
-_engine = create_engine('mysql://giraffedbadmin:aff3nZo0@127.0.0.1/giraffe')
+_engine = create_engine('mysql://user:password@host/schema')
 
 Session.configure(bind=_engine)
 
@@ -118,9 +118,9 @@ class MeterRecord(_Base):
                       nullable=False, default=0,
                       doc='duration of measurement in seconds')
     timestamp = Column('meter_timestamp', TIMESTAMP(), nullable=False,
-                             default='CURRENT_TIMESTAMP')
+                        default='CURRENT_TIMESTAMP')
     signature = Column('message_signature', VARCHAR(40),
-                               nullable=True, default=None)
+                        nullable=True, default=None)
 
     def __repr__(self):
         return "<MeterRecord(%s, %d,'%s','%s', %s)" % (self.id,

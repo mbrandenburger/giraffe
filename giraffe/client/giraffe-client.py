@@ -44,9 +44,9 @@ class BaseController(controller.CementBaseController):
         
         @controller.expose(help='')
         def GET(self):
-            # self.log.info("Inside base.command1 function.")
-                r = requests.get("",
-                     auth=(app.pargs.user, app.pargs.passname))
+            # self.log.info('Inside base.GET function.')
+                r = requests.get('',
+                     auth=(app.pargs.username, app.pargs.password))
 
 
 class GiraffeClient(foundation.CementApp):

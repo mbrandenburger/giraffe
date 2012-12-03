@@ -1,3 +1,7 @@
+__author__ = ''
+__version__ = ''
+__date__ = '2012-12-02'
+
 '''
 Sets up database interaction with SQLAlchemy.
 

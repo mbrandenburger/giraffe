@@ -1,9 +1,9 @@
 from giraffe.common.RabbitMQConnector import Connector, BasicConsumer
+from test import daemon
 
 __author__ = 'mbrandenburger'
 
 import MySQLdb as db
-import daemon
 
 class CoreService(object):
 

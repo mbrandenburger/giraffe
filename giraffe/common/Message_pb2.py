@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='Message.proto',
   package='GiraffeMetering',
-  serialized_pb='\n\rMessage.proto\x12\x0fGiraffeMetering\"\x9a\x01\n\x0cMeterMessage\x12\x11\n\tsignature\x18\x01 \x02(\t\x12\x36\n\x0bhostMessage\x18\x02 \x02(\x0b\x32!.GiraffeMetering.MeterHostMessage\x12?\n\x10instanceMessages\x18\x03 \x03(\x0b\x32%.GiraffeMetering.MeterInstanceMessage\"W\n\x10MeterHostMessage\x12\x0e\n\x06hostID\x18\x01 \x02(\t\x12\x33\n\x06meters\x18\x02 \x03(\x0b\x32#.GiraffeMetering.MeterRecordMessage\"\x82\x01\n\x14MeterInstanceMessage\x12\x12\n\ninstanceID\x18\x01 \x02(\t\x12\x11\n\tprojectID\x18\x02 \x01(\t\x12\x0e\n\x06userID\x18\x03 \x01(\t\x12\x33\n\x06meters\x18\x04 \x03(\x0b\x32#.GiraffeMetering.MeterRecordMessage\"C\n\x12MeterRecordMessage\x12\x0c\n\x04type\x18\x01 \x02(\t\x12\r\n\x05value\x18\x02 \x02(\t\x12\x10\n\x08\x64uration\x18\x03 \x02(\x05')
+  serialized_pb='\n\rMessage.proto\x12\x0fGiraffeMetering\"\x9a\x01\n\x0cMeterMessage\x12\x11\n\tsignature\x18\x01 \x02(\t\x12\x36\n\x0bhostMessage\x18\x02 \x03(\x0b\x32!.GiraffeMetering.MeterHostMessage\x12?\n\x10instanceMessages\x18\x03 \x03(\x0b\x32%.GiraffeMetering.MeterInstanceMessage\"W\n\x10MeterHostMessage\x12\x0e\n\x06hostID\x18\x01 \x02(\t\x12\x33\n\x06meters\x18\x02 \x03(\x0b\x32#.GiraffeMetering.MeterRecordMessage\"\x82\x01\n\x14MeterInstanceMessage\x12\x12\n\ninstanceID\x18\x01 \x02(\t\x12\x11\n\tprojectID\x18\x02 \x01(\t\x12\x0e\n\x06userID\x18\x03 \x01(\t\x12\x33\n\x06meters\x18\x04 \x03(\x0b\x32#.GiraffeMetering.MeterRecordMessage\"V\n\x12MeterRecordMessage\x12\x11\n\ttimestamp\x18\x01 \x02(\t\x12\x0c\n\x04type\x18\x02 \x02(\t\x12\r\n\x05value\x18\x03 \x02(\t\x12\x10\n\x08\x64uration\x18\x04 \x02(\x05')
 
 
 
@@ -32,8 +32,8 @@ _METERMESSAGE = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='hostMessage', full_name='GiraffeMetering.MeterMessage.hostMessage', index=1,
-      number=2, type=11, cpp_type=10, label=2,
-      has_default_value=False, default_value=None,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -150,22 +150,29 @@ _METERRECORDMESSAGE = descriptor.Descriptor(
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
-      name='type', full_name='GiraffeMetering.MeterRecordMessage.type', index=0,
+      name='timestamp', full_name='GiraffeMetering.MeterRecordMessage.timestamp', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='value', full_name='GiraffeMetering.MeterRecordMessage.value', index=1,
+      name='type', full_name='GiraffeMetering.MeterRecordMessage.type', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='duration', full_name='GiraffeMetering.MeterRecordMessage.duration', index=2,
-      number=3, type=5, cpp_type=1, label=2,
+      name='value', full_name='GiraffeMetering.MeterRecordMessage.value', index=2,
+      number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='duration', full_name='GiraffeMetering.MeterRecordMessage.duration', index=3,
+      number=4, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -180,7 +187,7 @@ _METERRECORDMESSAGE = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=413,
-  serialized_end=480,
+  serialized_end=499,
 )
 
 _METERMESSAGE.fields_by_name['hostMessage'].message_type = _METERHOSTMESSAGE

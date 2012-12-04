@@ -1,13 +1,17 @@
-from giraffe.common.RabbitMQConnector import Connector, BasicConsumer
+from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
 from test import daemon
 
 __author__ = 'mbrandenburger'
 
 import MySQLdb as db
 
-class CoreService(object):
+class Service(object):
 
     def __init__(self):
+#        db.init()
+#        session = db.Sesssion()
+#        session.add(.....)
+#        session.commit()
         self.connector = Connector('cloud2.ibr.cs.tu-bs.de')
         self.queue = "giraffe_test"
         self.exchange = "giraffe_topic"
@@ -27,5 +31,5 @@ class CoreService(object):
 
 print "Starting Giraffe Service"
 with daemon.DaemonContext():
-    coreService = CoreService()
+    coreService = Service()
     coreService.start()

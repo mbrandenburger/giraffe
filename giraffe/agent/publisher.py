@@ -1,6 +1,6 @@
 __author__ = 'marcus'
 
-from giraffe.common.RabbitMQConnector import *
+from giraffe.common.rabbit_mq_connector import *
 
 class AgentPublisher(object):
 

@@ -3,7 +3,7 @@ __author__ = 'marcus'
 
 import threading
 
-class Service(object):
+class Task(object):
 
     def __init__(self, timerInterval):
         self.timerInterval = timerInterval

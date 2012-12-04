@@ -2,8 +2,11 @@ from giraffe.common import Message_pb2
 
 __author__ = 'marcus'
 
-class Wrapper(object):
+# (Marcus)TODO: Adapter bauen
 
+class MessageAdapter(object):
+
+#    TODO: Factory
     @staticmethod
     def host_cpu_avg(params):
 

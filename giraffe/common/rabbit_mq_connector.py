@@ -20,10 +20,20 @@ class BasicConsumer(object):
         self.exchange = exchange
         self.queue = queue
         self.callback = callback
+        self.isConsuming = False
 
     def consume(self):
-        self.channel.basic_consume(self.callback, no_ack=True, queue=self.queue)
-        self.channel.start_consuming()
+        if self.isConsuming == False:
+            self.channel.basic_consume(self._consumer_call, no_ack=True, queue=self.queue)
+            self.isConsuming = True
+            self.channel.start_consuming()
+
+    def stop_consuming(self):
+        self.channel.stop_consuming()
+        self.isConsuming = False
+
+    def _consumer_call(self, ch, method, properties, body):
+        self.callback(body)
 
 class BasicProducer(object):
 

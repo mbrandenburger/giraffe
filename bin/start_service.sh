@@ -10,7 +10,7 @@ possible_topdir = os.path.normpath(os.path.join(os.path.abspath(
 if os.path.exists(os.path.join(possible_topdir, "giraffe", "__init__.py")):
     sys.path.append(possible_topdir)
 
-from giraffe.agent import agent
+from giraffe.service import service
 
 if __name__ == '__main__':
 
@@ -31,8 +31,9 @@ if __name__ == '__main__':
     logger.info("Start Giraffe Service")
 
     try:
-    # (Marcus)TODO: Start client here ...
+            service = service.Service()
+            service.launch()
     except (Exception, SystemExit):
-            logger.exception(_('Failed to load %s') % 'Agent')
+            logger.exception(('Failed to load %s') % 'Service')
 
 

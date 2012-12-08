@@ -1,35 +1,37 @@
-from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
-from test import daemon
+import logging
+import threading
+import time
+from giraffe.service.collector import Collector
+from giraffe.service.rest_api import Rest_API
 
-__author__ = 'mbrandenburger'
+__author__ = 'marcus'
 
-import MySQLdb as db
+logger = logging.getLogger("service")
 
 class Service(object):
 
     def __init__(self):
-#        db.init()
-#        session = db.Sesssion()
-#        session.add(.....)
-#        session.commit()
-        self.connector = Connector('cloud2.ibr.cs.tu-bs.de')
-        self.queue = "giraffe_test"
-        self.exchange = "giraffe_topic"
-        self.routing_key = ''
-        self.dbconnection = db.connect('cloud2.ibr.cs.tu-bs.de', 'giraffedbadmin',
-                                       'aff3nZo0', 'giraffe')
-    
-    def start(self):
-        self.consumer = BasicConsumer(self.connector, self.queue, self.exchange, self._consumer_call)
-        self.consumer.consume()
-    
-    def _consumer_call(self, ch, method, properties, body):
-        print " -> %r:%r" % (method,body,)
-        with self.dbconnection:
-            cur = self.dbconnection.cursor()
-            cur.execute("INSERT INTO compute_log(logging_message) VALUES(%s)",(body))
+        self.collector = Collector()
+        self.rest_api = Rest_API()
+        self.threads = []
 
-print "Starting Giraffe Service"
-with daemon.DaemonContext():
-    coreService = Service()
-    coreService.start()
+        self.threads.append(self.collector)
+        self.threads.append(self.rest_api)
+
+    def launch(self):
+        try:
+            for t in self.threads:
+                t.start()
+
+            while threading.active_count() > 0:
+                time.sleep(0.1)
+
+        except KeyboardInterrupt:
+            logger.info("Ctrl-c received! Sending stop service")
+            for t in self.threads:
+                t.stop()
+        except:
+            logger.exception("Error: unable to start thread")
+        finally:
+            logger.info("Exiting Service")
+

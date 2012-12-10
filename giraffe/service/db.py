@@ -1,15 +1,14 @@
-__author__ = ''
-__version__ = ''
-__date__ = '2012-12-02'
-
 '''
 Sets up database interaction with SQLAlchemy.
 
+Tests located in test_db.py
+
 -- Usage example --
-from giraffe.common.db import Session, Meter, MeterRecord
+from giraffe.common.db import Connection, Meter, MeterRecord
 
 # CREATE SESSION
-session = Session()
+db = Connection('mysql://user:pwd@host/schema')
+db.sessionOpen()
 
 # INSERT
 # Id is set explicitly only for the sake of the example.
@@ -17,64 +16,169 @@ meter = Meter(id=99, name='test_meter', unit_name='kb', data_type='int')
 record = MeterRecord(meter_id=99, host_id='fakehost', message_id='ABCDE',
                      value=10, timestamp='2012-12-01 12:00:00')
 
-session.add(meter)
-session.add(record)
-# We could also turn off autoflush, call session.flush() instead of
-# commit() and use just one transaction for the whole example.
-# Continued use of session after commit() will create a new transaction.
-session.commit()
+db.save(meter)
+db.save(record)
+db.commit()
 
 # Exceptions could be thrown any time which could leave the database
 # in an inconsistent state.
 err_record = MeterRecord(meter_id=0)
 try:
-    session.add(err_record)
-    session.commit()
+    db.save(err_record)
+    db.commit()
 except Exception:
-    session.rollback()
+    db.rollback()
 
 # UPDATE
 print meter, record
 meter.name = 'test_meter_updated'
 record.value = 20
-session.commit()
+db.commit()
 
 # QUERY
-meters = session.query(Meter).filter_by(name='test_meter_updated').all()
+meters = db.load(Meter, {'name': 'test_meter_updated'})
 for m in meters:
     print m
     print m.records
 
-record = session.query(MeterRecord).first()
+record = db.load(MeterRecord, limit=1)[0]
 print record
 print record.meter
 
 # DELETE
-session.delete(meters[0])
-session.delete(record)
-session.commit()
+db.delete(meters[0])
+db.delete(record)
+db.commit()
 
 # CLOSE SESSION
-session.close()
+db.sessionClose()
 '''
 
-from sqlalchemy import create_engine, Column, ForeignKey
+from sqlalchemy import create_engine, Column, ForeignKey, desc
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
 
-# Session is supposed to be global to the application, see:
-# http://docs.sqlalchemy.org/en/rel_0_7/orm/session.html#session-faq
-Session = sessionmaker()
 
-_engine = create_engine('mysql://user:password@host/schema')
+class Connection(object):
+    def __init__(self, connectString):
+        '''
+        Connects to the database using the given connection string.
+        The connection string should be of the format:
+        protocol://user:pwd@host/schema
+        '''
+        self._engine = create_engine(connectString)
+        self._Session = sessionmaker(bind=self._engine, autoflush=True,
+                                     autocommit=False)
+        self._session = None
+        self._Session.configure(bind=self._engine)
 
-Session.configure(bind=_engine)
+    def sessionOpen(self):
+        '''
+        Opens a database session.
+        '''
+        if self._session is None:
+            self._session = self._Session()
 
-_Base = declarative_base()
+    def sessionClose(self):
+        '''
+        Closes a database session.
+        '''
+        self._session.close()
+
+    def commit(self):
+        '''
+        Commits the current transaction.
+        '''
+        self._session.commit()
+
+    def rollback(self):
+        '''
+        Rolls back the current transaction.
+        '''
+        self._session.rollback()
+
+    def save(self, obj):
+        '''
+        Inserts or updates a single persistent object without committing.
+        The object is only updated if it previously was retrieved from the
+        database.
+        '''
+        self._session.add(obj)
+
+    def load(self, cls, args={}, limit=None):
+        """
+        Loads all persistent objects of the given class that meet the given
+        arguments.
+        Meter objects are ordered by id descending.
+        MeterRecord objects are ordered by timestamp descending.
+        """
+        query = None
+        if cls == Meter:
+            query = self._query_meter(args)
+        elif cls == MeterRecord:
+            query = self._query_meter_record(args)
+
+        if query is not None:
+            if limit is not None:
+                query = query.limit(limit)
+            return query.all()
+        else:
+            return []
+
+    def delete(self, obj):
+        """
+        Deletes a single persistent object without committing.
+        """
+        self._session.delete(obj)
+
+    def _query_meter_record(self, args):
+        filter_args = {}
+        start_time = None
+        end_time = None
+        for key in args:
+            if key.lower() == 'timestamp':
+                if not isinstance(key, basestring):
+                    start_time = args[0]
+                    end_time = args[1]
+                    continue
+            if args[key] is not None:
+                filter_args[key] = args[key]
+
+        query = None
+        # no start and end time
+        if start_time is None and end_time is None:
+            query = self._session.query(MeterRecord).filter_by(**filter_args)
+        # either a start or an end end time or both
+        elif start_time is not None and end_time is not None:
+            query = self._session.query(MeterRecord).filter_by(**args).\
+                        filter(MeterRecord.timestamp >= start_time,
+                               MeterRecord.timestamp <= end_time)
+        elif start_time is not None:
+            query = self._session.query(MeterRecord).filter_by(**args).\
+                        filter(MeterRecord.timestamp >= start_time)
+        elif end_time is not None:
+            query = self._session.query(MeterRecord).filter_by(**args).\
+                            filter(MeterRecord.timestamp <= end_time)
+
+        if query is not None:
+            query.order_by(desc(MeterRecord.timestamp))
+        return query
+
+    def _query_meter(self, args):
+        return self._session.query(Meter).filter_by(**args).\
+                        order_by(desc(Meter.id))
 
 
-class Meter(_Base):
+class GiraffeBase(object):
+    pass
+
+
+Base = declarative_base(cls=GiraffeBase)
+#Base.metadata.create_all(_engine)
+
+
+class Meter(Base):
     __tablename__ = 'meter'
     __table_args__ = {'mysql_engine': 'InnoDB',
                       'mysql_charset': 'utf8'}
@@ -98,7 +202,7 @@ class Meter(_Base):
                                                     self.data_type)
 
 
-class MeterRecord(_Base):
+class MeterRecord(Base):
     __tablename__ = 'meter_record'
     __table_args__ = {'mysql_engine': 'InnoDB',
                       'mysql_charset': 'utf8'}
@@ -132,5 +236,3 @@ class MeterRecord(_Base):
                                                        self.value,
                                                        self.duration,
                                                        self.timestamp)
-
-_Base.metadata.create_all(_engine)

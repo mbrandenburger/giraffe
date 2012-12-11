@@ -1,11 +1,11 @@
-from functools import wraps
-
 __author__ = 'marcus'
 
+import json
 import logging
 import threading
-from giraffe.common.config import Config
+from functools import wraps
 from flask import Flask, Response, request
+from giraffe.common.config import Config
 
 logger = logging.getLogger("service.collector")
 config = Config("giraffe.cfg")
@@ -49,19 +49,24 @@ def requires_auth(f):
 
 @app.route('/')
 def show_welcome():
-    return "Welcome to Giraffe REST API"
+    return json.dumps({ 'Message' : 'Welcome to Giraffe REST API' })
 
 @app.route('/hosts/')
 @requires_auth
 def show_all_hosts():
-    return 'Liste aller hosts'
+    return json.dumps({ 'Message' : 'Liste aller hosts' })
 
 @app.route('/hosts/<host_id>/')
 @requires_auth
 def show_host(host_id):
-    return 'User %s' % host_id
+    return json.dumps({ 'User' : host_id })
 
 @app.route('/hosts/<host_id>/meters/<meter_id>/start_time/<start_time>')
 @requires_auth
-def show_host(host_id, meter_id, start_time):
-    return 'host: %s, meters: %s, starttime: %s' % (host_id, meter_id, start_time)
+def show_host_meter(host_id, meter_id=None, start_time=None):
+    message = {}
+    message['host']       = host_id
+    message['meter']      = meter_id
+    message['start_time'] = start_time
+
+    return json.dumps(message)

@@ -63,7 +63,7 @@ def show_host(host_id):
 
 @app.route('/hosts/<host_id>/meters/<meter_id>/start_time/<start_time>')
 @requires_auth
-def show_host_meter(host_id, meter_id=None, start_time=None):
+def show_host_meter(host_id, meter_id, start_time):
     message = {}
     message['host']       = host_id
     message['meter']      = meter_id

@@ -1,4 +1,3 @@
-
 __author__ = 'marcus'
 
 import logging
@@ -7,6 +6,7 @@ from giraffe.common.config import Config
 from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
 
 logger = logging.getLogger("service.collector")
+
 config = Config("giraffe.cfg")
 
 _RABBIT_HOST = config.get("rabbit","host")
@@ -40,6 +40,6 @@ class Collector(threading.Thread):
         logger.debug("Stop collecting from rabbit")
         self.consumer.stop_consuming()
 
-    def _collector_callback(self,params):
-        logger.debug("Collect message: %s",params)
-#        (Marcus) TODO: unwrap message and save in database
+    def _collector_callback(self, params):
+        logger.debug("Collect message: %s", params)
+#       (Marcus) TODO: unwrap message and save in database

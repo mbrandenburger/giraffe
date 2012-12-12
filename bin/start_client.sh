@@ -10,6 +10,7 @@ possible_topdir = os.path.normpath(os.path.join(os.path.abspath(
 if os.path.exists(os.path.join(possible_topdir, "giraffe", "__init__.py")):
     sys.path.append(possible_topdir)
 
+
 from giraffe.client import client
 
 if __name__ == '__main__':
@@ -37,8 +38,8 @@ if __name__ == '__main__':
         # setup the application
         app.setup()
         app.run()
-    except (Exception, SystemExit):
-        logger.exception(_('Failed to load %s') % 'Client')
+    except Exception:
+        logger.exception(('Failed to load %s') % 'Client')
     finally:
         # close the application
         app.close()

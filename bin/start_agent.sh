@@ -10,6 +10,7 @@ possible_topdir = os.path.normpath(os.path.join(os.path.abspath(
 if os.path.exists(os.path.join(possible_topdir, "giraffe", "__init__.py")):
     sys.path.append(possible_topdir)
 
+
 from giraffe.agent import agent
 from giraffe.common import config
 
@@ -29,12 +30,10 @@ if __name__ == '__main__':
     logger.addHandler(ch)
     logger.addHandler(fh)
 
-    logger.info("Start Giraffe Agent")
+    logger.info("Starting Giraffe Agent")
 
     try:
         agent = agent.Agent()
         agent.launch()
     except (Exception, SystemExit):
-            logger.exception(('Failed to load %s') % 'Agent')
-
-
+        logger.exception(('Failed to load %s') % 'Agent')

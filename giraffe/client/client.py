@@ -1,10 +1,10 @@
-'''
+"""
 usage: ./start_client -r=<query>
                             ^ e.g., <query>="/hosts/"
-'''
+"""
 
 __author__  = 'fbahr'
-__version__ = '0.1'
+__version__ = '0.1.1'
 __date__    = '2012-12-13'
 
 

@@ -31,7 +31,7 @@ class BaseController(controller.CementBaseController):
         label       = 'base'
         description = 'Command-line interface to the Giraffe API.'
 
-        _config     = Config("giraffe.cfg")
+        _config     = Config('giraffe.cfg')
 
 
         # default config options
@@ -41,16 +41,16 @@ class BaseController(controller.CementBaseController):
         # command line arguments
         arguments = [
             (['-a', '--auth_url'], dict(action='store', help='$OS_AUTH_URL',    default=None)),
-            (['-u', '--username'], dict(action='store', help='$OS_USERNAME',    default=_config.get("flask", "user"))),
-            (['-p', '--password'], dict(action='store', help='$OS_PASSWORD',    default=_config.get("flask", "pass"))),
+            (['-u', '--username'], dict(action='store', help='$OS_USERNAME',    default=_config.get('client', 'user'))),
+            (['-p', '--password'], dict(action='store', help='$OS_PASSWORD',    default=_config.get('client', 'pass'))),
             (['--tenant_id'],      dict(action='store', help='$OS_TENANT_ID',   default=None)),
             (['--tenant_name'],    dict(action='store', help='$OS_TENANT_NAME', default=None)),
 
-            (['-s', '--endpoint'], dict(action='store', help='Service endpoint (domain:port)', default=':'.join([_config.get("flask", "host"), _config.get("flask", "port")]))),
+            (['-s', '--endpoint'], dict(action='store', help='Service endpoint (domain:port)', default=':'.join([_config.get('client', 'host'), _config.get('client', 'port')]))),
             (['-r', '--request'],  dict(action='store', help='encoded as URL path',            default=None))
             ]
         #   ...
-        #   (['-F',      '--FLAG'],       dict(action='store_true', help='...'))
+        #   (['-F', '--FLAG'],     dict(action='store_true', help='...'))
         #   ...
 
 
@@ -60,7 +60,6 @@ class BaseController(controller.CementBaseController):
             url = ''.join(['http://', self.pargs.endpoint, self.pargs.request])
             r = requests.get(url, auth=(self.pargs.username, self.pargs.password))
             print json.dumps(r.json, indent=4)
-            
         except:
             # @fbahr: dirty hack...
             help_text = [] 

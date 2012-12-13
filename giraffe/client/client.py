@@ -46,7 +46,7 @@ class BaseController(controller.CementBaseController):
             (['--tenant_id'],      dict(action='store', help='$OS_TENANT_ID',   default=None)),
             (['--tenant_name'],    dict(action='store', help='$OS_TENANT_NAME', default=None)),
 
-            (['-s', '--endpoint'], dict(action='store', help='Service endpoint (domain:port)', default=':'.join([_config.get('client', 'host'), _config.get('client', 'port')]))),
+            (['-e', '--endpoint'], dict(action='store', help='Service endpoint (domain:port)', default=':'.join([_config.get('client', 'host'), _config.get('client', 'port')]))),
             (['-r', '--request'],  dict(action='store', help='encoded as URL path',            default=None))
             ]
         #   ...

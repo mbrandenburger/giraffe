@@ -5,7 +5,7 @@ usage: ./start_client -r=<query>
 
 __author__  = 'fbahr'
 __version__ = '0.1'
-__date__    = '2012-12-12'
+__date__    = '2012-12-13'
 
 
 from cement.core import foundation, controller  # < cement 2.0.2

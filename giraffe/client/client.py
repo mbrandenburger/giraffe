@@ -1,73 +1,99 @@
+'''
+usage: ./start_client -r=<query>
+                            ^ e.g., <query>="/hosts/"
+'''
+
 __author__  = 'fbahr'
 __version__ = '0.1'
-__date__    = '2012-12-02'
-
-from cement.core import backend, foundation, controller, handler # < cement 2.0.2
-import requests                                                  # < requests 0.14.2
-
-# default config options
-# defaults = backend.defaults('giraffe-client')
-# defaults['giraffe-client']['debug']       = False
-# defaults['giraffe-client']['auth_url']    = None # OS_AUTH_URL
-# defaults['giraffe-client']['username']    = None # OS_USERNAME
-# defaults['giraffe-client']['password']    = None # OS_PASSWORD
-# defaults['giraffe-client']['tenant_id']   = None
-# defaults['giraffe-client']['tenant_name'] = None
+__date__    = '2012-12-12'
 
 
-# an application base controller
+from cement.core import foundation, controller  # < cement 2.0.2
+import requests                                 # < requests 0.14.2
+import json
+from giraffe.common.config import Config
+
+
 class BaseController(controller.CementBaseController):
+    """
+    GiraffeClient's (base) controller
+    """
+
+#   def __init__(self, *args, **kwargs):
+#       super(BaseController, self).__init__(*args, **kwargs)
+
+
     class Meta:
-        label = 'base-controller'
-        # description = ''
+        """
+        Model that acts as a container for the controller's meta-data.
+        """
+
+        label       = 'base'
+        description = 'Command-line interface to the Giraffe API.'
+
+        _config     = Config("giraffe.cfg")
+
 
         # default config options
-        config_defaults = dict(
-            auth        = None, # OS_AUTH_URL
-            username    = None, # OS_USERNAME
-            password    = None, # OS_PASSWORD
-            tenant_id   = None,
-            tenant_name = None
-            )
+        # config_defaults = {}
+
 
         # command line arguments
         arguments = [
-            (['-a',     '--auth_url'],    dict(action='store', help='OS_AUTH_URL')),
-            (['-u',     '--username'],    dict(action='store', help='OS_USERNAME')),
-            (['-p',     '--password'],    dict(action='store', help='OS_PASSWORD')),
-            (['-tid',   '--tenant_id'],   dict(action='store', help='OS_TENANT_ID')),
-            (['-tname', '--tenant_name'], dict(action='store', help='OS_TENANT_NAME'))
+            (['-a', '--auth_url'], dict(action='store', help='$OS_AUTH_URL',    default=None)),
+            (['-u', '--username'], dict(action='store', help='$OS_USERNAME',    default=_config.get("flask", "user"))),
+            (['-p', '--password'], dict(action='store', help='$OS_PASSWORD',    default=_config.get("flask", "pass"))),
+            (['--tenant_id'],      dict(action='store', help='$OS_TENANT_ID',   default=None)),
+            (['--tenant_name'],    dict(action='store', help='$OS_TENANT_NAME', default=None)),
+
+            (['-s', '--endpoint'], dict(action='store', help='Service endpoint (domain:port)', default=':'.join([_config.get("flask", "host"), _config.get("flask", "port")]))),
+            (['-r', '--request'],  dict(action='store', help='encoded as URL path',            default=None))
             ]
         #   ...
         #   (['-F',      '--FLAG'],       dict(action='store_true', help='...'))
         #   ...
-        
-        @controller.expose(help='')
-        def GET(self):
-            # self.log.info('Inside base.GET function.')
-                r = requests.get('',
-                     auth=(app.pargs.username, app.pargs.password))
+
+
+    @controller.expose(hide=True)
+    def default(self):
+        try:
+            url = ''.join(['http://', self.pargs.endpoint, self.pargs.request])
+            r = requests.get(url, auth=(self.pargs.username, self.pargs.password))
+            print json.dumps(r.json, indent=4)
+            
+        except:
+            # @fbahr: dirty hack...
+            help_text = [] 
+            help_text.append('usage: ' + self._usage_text)
+            help_text.append('\nSee "client.py --help" for help on a specific command.')
+            print '\n'.join(help_text)
+
 
 
 class GiraffeClient(foundation.CementApp):
     class Meta:
         label = 'giraffe-client'
-        # description = ''        
         base_controller = BaseController()
 
+#   def __init__(self, **kwargs):
+#       foundation.CementApp.__init__(self, kwargs)
 
-    def __init__(self, **kwargs):
-        foundation.CementApp.__init(kwargs)
 
 
-# create an application
-app = GiraffeClient('giraffe-client', config_defaults=defaults)
+def main():
+    #create an application
+    app = GiraffeClient()
 
-try:
-    # setup the application
-    app.setup()
-    app.run()
+    try:
+        # setup the application
+        app.setup()
+        app.run()
+    except Exception as e:
+        print e
+    finally:
+        # close the application
+        app.close()
 
-finally:
-    # close the application
-    app.close()
+
+if __name__ == '__main__':
+    main()

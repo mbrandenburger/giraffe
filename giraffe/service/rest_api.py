@@ -49,17 +49,17 @@ def requires_auth(f):
 
 @app.route('/')
 def show_welcome():
-    return json.dumps({ 'Message' : 'Welcome to Giraffe REST API' })
+    return json.dumps({ 'message' : 'Welcome to Giraffe REST API' })
 
 @app.route('/hosts/')
 @requires_auth
 def show_all_hosts():
-    return json.dumps({ 'Message' : 'Liste aller hosts' })
+    return json.dumps({ 'message' : 'Liste aller hosts' })
 
 @app.route('/hosts/<host_id>/')
 @requires_auth
 def show_host(host_id):
-    return json.dumps({ 'User' : host_id })
+    return json.dumps({ 'host' : host_id })
 
 @app.route('/hosts/<host_id>/meters/<meter_id>/start_time/<start_time>')
 @requires_auth

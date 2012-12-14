@@ -1,6 +1,6 @@
 """
 usage: ./start_client -r=<query>
-                            ^ e.g., <query>="/hosts/"
+                            ^ e.g., <query>="/hosts/<host-id>"
 """
 
 __author__  = 'fbahr'

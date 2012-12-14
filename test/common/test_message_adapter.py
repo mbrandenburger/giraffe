@@ -25,17 +25,17 @@ class MessageAdapterTestCase(unittest.TestCase):
 
     def test_init_empty(self):
         adapter = MessageAdapter()
-        self.assertIsNotNone(adapter.adaptee)
+        self.assertIsNotNone(adapter._adaptee)
 
     def test_init_message(self):
         msg = BulkMessage_pb2.BulkMessage()
         adapter = MessageAdapter(msg)
-        self.assertEqual(adapter.adaptee, msg)
+        self.assertEqual(adapter._adaptee, msg)
 
     def test_setattr(self):
         adapter = MessageAdapter()
         adapter.signature = 'fake_signature'
-        self.assertEqual(adapter.adaptee.signature, 'fake_signature')
+        self.assertEqual(adapter._adaptee.signature, 'fake_signature')
 
     def test_getattr(self):
         adapter = MessageAdapter()
@@ -49,7 +49,7 @@ class MessageAdapterTestCase(unittest.TestCase):
                                 meter_type='fake_meter_type',
                                 value='10',
                                 duration=0)
-        self.assertGreater(len(adapter.host_records), 0)
+        self.assertEqual(len(adapter.host_records), 1)
 
     def test_add_instance_record(self):
         adapter = MessageAdapter()
@@ -61,4 +61,4 @@ class MessageAdapterTestCase(unittest.TestCase):
                                     meter_type='fake_meter_type',
                                     value='20',
                                     duration=0)
-        self.assertGreater(len(adapter.instance_records), 0)
+        self.assertEqual(len(adapter.instance_records), 1)

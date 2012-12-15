@@ -29,11 +29,11 @@ class Collector(threading.Thread):
                                       self.exchange, self._collector_callback)
 
         # connect to database
-        self.db = db.connect('mysql://%s:%s@%s/%s' % (
-                                              config.get('mysql', 'user'),
-                                              config.get('mysql', 'pass'),
-                                              config.get('mysql', 'host'),
-                                              config.get('mysql', 'schema')))
+        self.db = db.connect('%s://%s:%s@%s/%s' % (config.get('db', 'vendor'),
+                                                   config.get('db', 'user'),
+                                                   config.get('db', 'pass'),
+                                                   config.get('db', 'host'),
+                                                   config.get('db', 'schema')))
 
     def run(self):
         self.start_collecting()
@@ -53,6 +53,8 @@ class Collector(threading.Thread):
     def _collector_callback(self, params):
         logger.debug("Collect message: %s", params)
         message = MessageAdapter(params)
+
+        self.db.session_open()
 
         # load all meters now to avoid queries later
         meters = self.db.load(Meter)
@@ -101,3 +103,5 @@ class Collector(threading.Thread):
             except Exception:
                 logger.debug('WARNING: failed to insert instance record %s' %
                              record)
+
+        self.db.session_close()

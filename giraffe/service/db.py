@@ -7,7 +7,7 @@ from giraffe.service.db import Meter, MeterRecord
 
 # CREATE SESSION
 db = db.connect('mysql://user:pwd@host/schema')
-db.sessionOpen()
+db.session_open()
 
 # INSERT
 # Id is set explicitly only for the sake of the example.
@@ -50,7 +50,7 @@ db.delete(record)
 db.commit()
 
 # CLOSE SESSION
-db.sessionClose()
+db.session_close()
 '''
 
 from sqlalchemy import create_engine, Column, ForeignKey, desc
@@ -80,14 +80,14 @@ class Db(object):
         self._session = None
         self._Session.configure(bind=self._engine)
 
-    def sessionOpen(self):
+    def session_open(self):
         '''
         Opens a database session.
         '''
         if self._session is None:
             self._session = self._Session()
 
-    def sessionClose(self):
+    def session_close(self):
         '''
         Closes a database session.
         '''
@@ -182,7 +182,6 @@ class GiraffeBase(object):
 
 
 Base = declarative_base(cls=GiraffeBase)
-#Base.metadata.create_all(_engine)
 
 
 class Meter(Base):

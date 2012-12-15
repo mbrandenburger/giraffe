@@ -9,7 +9,7 @@ class DbTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.db = db.connect('mysql://user:pwd@host/schema')
-        cls.db.sessionOpen()
+        cls.db.session_open()
         cls.meter = Meter(name='unit_test_meter',
                       description='created in setUpClass',
                       unit_name='kb', data_type='int')
@@ -33,7 +33,7 @@ class DbTestCase(unittest.TestCase):
         cls.db.delete(cls.meter)
         cls.db.delete(cls.record)
         cls.db.commit()
-        cls.db.sessionClose()
+        cls.db.session_close()
 
     @classmethod
     def timestamp(self):

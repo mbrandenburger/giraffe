@@ -1,10 +1,11 @@
+__author__ = 'marcus'
+
 import logging
 import threading
 import time
 from giraffe.service.collector import Collector
 from giraffe.service.rest_api import Rest_API
 
-__author__ = 'marcus'
 
 logger = logging.getLogger("service")
 
@@ -18,6 +19,7 @@ class Service(object):
         self.threads.append(self.collector)
         self.threads.append(self.rest_api)
 
+
     def launch(self):
         try:
             for t in self.threads:
@@ -30,8 +32,9 @@ class Service(object):
             logger.info("Ctrl-c received! Sending stop service")
             for t in self.threads:
                 t.stop()
+
         except:
             logger.exception("Error: unable to start thread")
+
         finally:
             logger.info("Exiting Service")
-

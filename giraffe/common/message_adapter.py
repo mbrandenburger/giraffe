@@ -17,6 +17,11 @@ class MessageAdapter(object):
     def __init__(self, adaptee=None):
         # need to use self.__dict__ to avoid infinite recursion in __getattr__
         if adaptee is not None:
+            # turn given string into a BulkMessage object if needed
+            if isinstance(adaptee, str):
+                msg = adaptee
+                adaptee = BulkMessage_pb2.BulkMessage()
+                adaptee.ParseFromString(msg)
             self.__dict__['_adaptee'] = adaptee
         else:
             self.__dict__['_adaptee'] = BulkMessage_pb2.BulkMessage()

@@ -50,6 +50,7 @@ class MessageAdapterTestCase(unittest.TestCase):
                                 value='10',
                                 duration=0)
         self.assertEqual(len(adapter.host_records), 1)
+        self.assertEqual(adapter.host_records[0].value, '10')
 
     def test_add_instance_record(self):
         adapter = MessageAdapter()
@@ -62,3 +63,4 @@ class MessageAdapterTestCase(unittest.TestCase):
                                     value='20',
                                     duration=0)
         self.assertEqual(len(adapter.instance_records), 1)
+        self.assertEqual(adapter.instance_records[0].value, '20')

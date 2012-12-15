@@ -1,13 +1,14 @@
 from datetime import datetime
 import unittest
 
-from giraffe.service.db import Connection, Meter, MeterRecord
+import giraffe.service.db as db
+from giraffe.service.db import Meter, MeterRecord
 
 
 class DbTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.db = Connection('mysql://user:pwd@host/schema')
+        cls.db = db.connect('mysql://user:pwd@host/schema')
         cls.db.sessionOpen()
         cls.meter = Meter(name='unit_test_meter',
                       description='created in setUpClass',

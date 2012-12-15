@@ -1,13 +1,12 @@
 '''
 Sets up database interaction with SQLAlchemy.
 
-Tests located in test_db.py
-
 -- Usage example --
-from giraffe.common.db import Connection, Meter, MeterRecord
+import giraffe.service.db as db
+from giraffe.service.db import Meter, MeterRecord
 
 # CREATE SESSION
-db = Connection('mysql://user:pwd@host/schema')
+db = db.connect('mysql://user:pwd@host/schema')
 db.sessionOpen()
 
 # INSERT
@@ -60,14 +59,22 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
 
 
-class Connection(object):
-    def __init__(self, connectString):
-        '''
-        Connects to the database using the given connection string.
-        The connection string should be of the format:
-        protocol://user:pwd@host/schema
-        '''
-        self._engine = create_engine(connectString)
+def connect(connectStr):
+    """
+    Returns a Db object connected to the database.
+    Expects the connection string in the format:
+    "protocol://user:pwd@host/schema".
+    """
+    return Db(connectStr)
+
+
+class Db(object):
+    def __init__(self, connectStr):
+        """
+        Connects to the database using the given connection string of the
+        format: protocol://user:pwd@host/schema
+        """
+        self._engine = create_engine(connectStr)
         self._Session = sessionmaker(bind=self._engine, autoflush=True,
                                      autocommit=False)
         self._session = None

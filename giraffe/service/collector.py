@@ -64,11 +64,11 @@ class Collector(threading.Thread):
 
         # insert all host records
         for r in message.host_records:
-            if r.meter_type not in meter_dict:
-                logger.debug('WARNING: unknown meter_type "%s"' % r.meter_type)
+            if r.type not in meter_dict:
+                logger.debug('WARNING: unknown meter_type "%s"' % r.type)
                 continue
             try:
-                record = MeterRecord(meter_id=meter_dict[r.meter_type].id,
+                record = MeterRecord(meter_id=meter_dict[r.type].id,
                                      host_id=message.host_id,
                                      user_id=None,
                                      resource_id=None,
@@ -85,11 +85,11 @@ class Collector(threading.Thread):
 
         # insert all instance records
         for r in message.instance_records:
-            if r.meter_type not in meter_dict:
-                logger.debug('WARNING: unknown meter_type "%s"' % r.meter_type)
+            if r.type not in meter_dict:
+                logger.debug('WARNING: unknown meter_type "%s"' % r.type)
                 continue
             try:
-                record = MeterRecord(meter_id=meter_dict[r.meter_type].id,
+                record = MeterRecord(meter_id=meter_dict[r.type].id,
                                      host_id=message.host_id,
                                      user_id=r.user_id,
                                      resource_id=r.resource_id,
@@ -104,4 +104,5 @@ class Collector(threading.Thread):
                 logger.debug('WARNING: failed to insert instance record %s' %
                              record)
 
+        self.db.commit()
         self.db.session_close()

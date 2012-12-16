@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""
+Starts a Giraffe service with "giraffe.cfg" configuration file.
+
+Dependencies: sqlalchemy, flask, MySQL-python
+"""
+
 import os
 import sys
 import logging

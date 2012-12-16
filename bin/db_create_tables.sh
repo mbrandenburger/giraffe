@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+"""
+Creates all Giraffe table in the database. 
+"""
+
 import os
 import sys
 

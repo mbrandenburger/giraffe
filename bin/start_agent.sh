@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""
+Starts a Giraffe agent with "giraffe.cfg" configuration file.
+
+Dependencies: psutil, pika
+"""
+
 import os
 import sys
 import logging

@@ -2,6 +2,8 @@ __author__ = 'marcus'
 
 import threading
 import time
+from datetime import datetime
+
 from giraffe.agent.host_meter import Host_CPU_AVG
 from giraffe.agent import publisher
 from giraffe.common.message_adapter import MessageAdapter
@@ -12,7 +14,8 @@ import logging
 logger = logging.getLogger("agent")
 config = Config("giraffe.cfg")
 
-_DURATION = config.getint("agent","duration")
+_DURATION = config.getint("agent", "duration")
+
 
 class Agent(object):
 
@@ -23,11 +26,22 @@ class Agent(object):
         # meter CPU AVG
         self.meterTasks.append(Host_CPU_AVG(self._callback_cpu_avg, _DURATION))
 
+    def _timestamp_now(self):
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     def _callback_cpu_avg(self, params):
-        message = MessageAdapter.host_cpu_avg(params)
-        self.publisher.publish(message)
+        #message = MessageAdapter.host_cpu_avg(params)
+        message = MessageAdapter()
+        message.host_id = config.get("agent", "hostname")
+        message.signature = 'TODO'
+        timestamp = self._timestamp_now()
+        message.add_host_record(timestamp, 'loadavg_1m', params[0], 60)
+        message.add_host_record(timestamp, 'loadavg_5m', params[1], 300)
+        message.add_host_record(timestamp, 'loadavg_15m', params[2], 1500)
+        self.publisher.publish(message.SerializeToString())
 
     def launch(self):
+        global logger
         try:
             for t in self.meterTasks:
                 t.start()

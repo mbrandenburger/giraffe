@@ -52,7 +52,7 @@ class MessageAdapter(object):
         host_record = self._adaptee.host_records.add()
         host_record.timestamp = timestamp
         host_record.type = meter_type
-        host_record.value = value
+        host_record.value = str(value)
         host_record.duration = duration
 
     def add_instance_record(self, project_id, user_id, instance_id, timestamp,
@@ -68,7 +68,7 @@ class MessageAdapter(object):
         instance_record.instance_id = instance_id
         instance_record.timestamp = timestamp
         instance_record.type = meter_type
-        instance_record.value = value
+        instance_record.value = str(value)
         instance_record.duration = duration
 
     # @deprecated: use add_host_record() and add_instance_record() instead

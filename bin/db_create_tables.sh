@@ -27,4 +27,4 @@ print 'Creating tables...............',
 Base.metadata.create_all(db._engine)
 print '\tdone'
 
-print '\nAll done - tables successully created!'
+print '\nAll done - tables successfully created!'

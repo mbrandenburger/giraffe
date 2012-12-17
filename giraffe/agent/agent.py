@@ -38,7 +38,7 @@ class Agent(object):
         message.add_host_record(timestamp, 'loadavg_1m', params[0], 60)
         message.add_host_record(timestamp, 'loadavg_5m', params[1], 300)
         message.add_host_record(timestamp, 'loadavg_15m', params[2], 1500)
-        self.publisher.publish(message.SerializeToString())
+        self.publisher.publish(message.serialize_to_str())
 
     def launch(self):
         global logger

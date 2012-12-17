@@ -3,6 +3,7 @@
 from giraffe.common import Message_pb2
 from giraffe.common import BulkMessage_pb2
 from giraffe.common.config import Config
+from giraffe.common.BulkMessage_pb2 import BulkMessage
 
 from datetime import datetime
 
@@ -16,13 +17,11 @@ class MessageAdapter(object):
 
     def __init__(self, adaptee=None):
         # need to use self.__dict__ to avoid infinite recursion in __getattr__
-        if adaptee is not None:
-            # turn given string into a BulkMessage object if needed
-            if isinstance(adaptee, str):
-                msg = adaptee
-                adaptee = BulkMessage_pb2.BulkMessage()
-                adaptee.ParseFromString(msg)
+        if isinstance(adaptee, BulkMessage):
             self.__dict__['_adaptee'] = adaptee
+        elif isinstance(adaptee, str):
+            self.__dict__['_adaptee'] = BulkMessage_pb2.BulkMessage()
+            self.deserialize_from_str(adaptee)
         else:
             self.__dict__['_adaptee'] = BulkMessage_pb2.BulkMessage()
 
@@ -70,6 +69,18 @@ class MessageAdapter(object):
         instance_record.type = meter_type
         instance_record.value = str(value)
         instance_record.duration = duration
+
+    def serialize_to_str(self):
+        """
+        Returns a string representation of this object.
+        """
+        return self._adaptee.SerializeToString()
+
+    def deserialize_from_str(self, dataStr):
+        """
+        Deserializes data from a string into attributes of the adaptee object.
+        """
+        self._adaptee.ParseFromString(dataStr)
 
     # @deprecated: use add_host_record() and add_instance_record() instead
     @staticmethod

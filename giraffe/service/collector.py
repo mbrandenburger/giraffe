@@ -52,7 +52,8 @@ class Collector(threading.Thread):
 
     def _collector_callback(self, params):
         logger.debug("Collect message: %s", params)
-        message = MessageAdapter(params)
+        message = MessageAdapter()
+        message.deserialize_from_str(params)
 
         self.db.session_open()
 

@@ -23,6 +23,23 @@ class MessageAdapterTestCase(unittest.TestCase):
     def timestamp(self):
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    def serialized_data_str(self):
+        adapter = MessageAdapter()
+        adapter.signature = 'fake_signature'
+        adapter.host_id = 'fake_host_id'
+        adapter.add_host_record(timestamp=self.timestamp(),
+                                meter_type='fake_meter_type',
+                                value='10',
+                                duration=0)
+        adapter.add_instance_record(project_id='fake_project_id',
+                                    user_id='fake_user_id',
+                                    instance_id='fake_instance_id',
+                                    timestamp=self.timestamp(),
+                                    meter_type='fake_meter_type',
+                                    value='20',
+                                    duration=0)
+        return adapter.serialize_to_str()
+
     def test_init_empty(self):
         adapter = MessageAdapter()
         self.assertIsNotNone(adapter._adaptee)
@@ -63,4 +80,36 @@ class MessageAdapterTestCase(unittest.TestCase):
                                     value='20',
                                     duration=0)
         self.assertEqual(len(adapter.instance_records), 1)
+        self.assertEqual(adapter.instance_records[0].value, '20')
+
+    def test_serialize_to_str(self):
+        adapter = MessageAdapter()
+        adapter.signature = 'fake_signature'
+        adapter.host_id = 'fake_host_id'
+        adapter.add_host_record(timestamp=self.timestamp(),
+                                meter_type='fake_meter_type',
+                                value='10',
+                                duration=0)
+        adapter.add_instance_record(project_id='fake_project_id',
+                                    user_id='fake_user_id',
+                                    instance_id='fake_instance_id',
+                                    timestamp=self.timestamp(),
+                                    meter_type='fake_meter_type',
+                                    value='20',
+                                    duration=0)
+        self.assertEqual(isinstance(adapter.serialize_to_str(), str), True)
+
+    def test_deserialize_to_str(self):
+        adapter = MessageAdapter()
+        adapter.deserialize_from_str(self.serialized_data_str())
+        self.assertEqual(adapter.signature, 'fake_signature')
+        self.assertEqual(adapter.host_id, 'fake_host_id')
+        self.assertEqual(adapter.host_records[0].value, '10')
+        self.assertEqual(adapter.instance_records[0].value, '20')
+
+    def test_deserialize_to_str_constructor(self):
+        adapter = MessageAdapter(self.serialized_data_str())
+        self.assertEqual(adapter.signature, 'fake_signature')
+        self.assertEqual(adapter.host_id, 'fake_host_id')
+        self.assertEqual(adapter.host_records[0].value, '10')
         self.assertEqual(adapter.instance_records[0].value, '20')

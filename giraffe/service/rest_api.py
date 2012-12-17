@@ -96,12 +96,10 @@ class Rest_API(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        self.db.session_open()
         self.app.run(host=_config.get('flask', 'host'),
                      port=_config.getint('flask', 'port'))
 
     def stop(self):
-        self.db.session_close()
         self._Thread__stop()
 
     def __query_params(self):
@@ -114,7 +112,6 @@ class Rest_API(threading.Thread):
         params = {}
         for query_part in query_parts:
             parts = query_part.split('=', 2)
-            print parts
             try:
                 params[parts[0]] = parts[1]
                 matches = self.__pattern_timestamp.match(parts[1])
@@ -157,36 +154,45 @@ class Rest_API(threading.Thread):
         """
         Route: hosts
         """
-        return json.dumps([host.to_dict() for host in self.db.load(Host)])
+        self.db.session_open()
+        hosts = self.db.load(Host)
+        self.db.session_close()
+        return json.dumps([host.to_dict() for host in hosts])
 
     def __projects(self):
         """
         Route: projects
         """
+        self.db.session_open()
         values = self.db.distinct_values(MeterRecord, 'project_id')
         # remove null values
         if None in values:
             values.remove(None)
+        self.db.session_close()
         return json.dumps(values)
 
     def __users(self):
         """
         Route: users
         """
+        self.db.session_open()
         values = self.db.distinct_values(MeterRecord, 'user_id')
         # remove null values
         if None in values:
             values.remove(None)
+        self.db.session_close()
         return json.dumps(values)
 
     def __instances(self):
         """
         Route: instances
         """
+        self.db.session_open()
         values = self.db.distinct_values(MeterRecord, 'resource_id')
         # remove null values
         if None in values:
             values.remove(None)
+        self.db.session_close()
         return json.dumps(values)
 
     def ___hosts_hid(self):
@@ -199,6 +205,7 @@ class Rest_API(threading.Thread):
         """
         Route: hosts/<host_id>/meters/<meter_id>
         """
+        self.db.session_open()
         hosts = self.db.load(Host, {'name': host_id}, limit=1)
         if not hosts:
             return Response(response='host_name not found', status=404)
@@ -224,15 +231,15 @@ class Rest_API(threading.Thread):
         if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        print 'test here'
-        print 'order = %s' % order
         records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
+        self.db.session_close()
         return json.dumps([r.to_dict() for r in records])
 
     def __projects_pid_meters_mid(self, project_id, meter_id):
         """
         Route: projects/<project_id>/meters/<meter_id>
         """
+        self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
         if not meters:
             return Response(response='meter_name not found', status=404)
@@ -254,12 +261,14 @@ class Rest_API(threading.Thread):
             limit = 1
             order = 'desc'
         records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
+        self.db.session_close()
         return json.dumps([r.to_dict() for r in records])
 
     def __users_uid_meters_mid(self, user_id, meter_id):
         """
         Route: users/<user_id>/meters/<meter_id>
         """
+        self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
         if not meters:
             return Response(response='meter_name not found', status=404)
@@ -281,12 +290,14 @@ class Rest_API(threading.Thread):
             limit = 1
             order = 'desc'
         records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
+        self.db.session_close()
         return json.dumps([r.to_dict() for r in records])
 
     def __instances_iid_meters_mid(self, instance_id, meter_id):
         """
         Route: instances/<instance_id>/meters/<meter_id>
         """
+        self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
         if not meters:
             return Response(response='meter_name not found', status=404)
@@ -308,4 +319,5 @@ class Rest_API(threading.Thread):
             limit = 1
             order = 'desc'
         records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
+        self.db.session_close()
         return json.dumps([r.to_dict() for r in records])

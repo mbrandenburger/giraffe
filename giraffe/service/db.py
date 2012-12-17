@@ -53,7 +53,7 @@ db.commit()
 db.session_close()
 '''
 
-from sqlalchemy import create_engine, Column, ForeignKey, desc
+from sqlalchemy import create_engine, Column, ForeignKey, desc, asc
 from sqlalchemy.orm import sessionmaker, relationship, class_mapper, ColumnProperty
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
@@ -174,16 +174,16 @@ class Db(object):
                             filter(MeterRecord.timestamp <= end_time)
 
         if query is not None:
-            query.order_by(desc(MeterRecord.timestamp))
+            query.order_by(asc(MeterRecord.timestamp))
         return query
 
     def _query_meter(self, args):
         return self._session.query(Meter).filter_by(**args).\
-                        order_by(desc(Meter.id))
+                        order_by(asc(Meter.id))
 
     def _query_host(self, args):
         return self._session.query(Host).filter_by(**args).\
-                        order_by(desc(Host.id))
+                        order_by(asc(Host.id))
 
 
 class GiraffeBase(object):
@@ -210,6 +210,8 @@ class GiraffeBase(object):
         columnDict = {}
         for name in columnNames:
             columnDict[name] = getattr(self, name)
+            if isinstance(columnDict[name], object):
+                columnDict[name] = str(columnDict[name])
         return columnDict
 
 

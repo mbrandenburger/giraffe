@@ -8,7 +8,7 @@ from giraffe.service.db import Host, Meter, MeterRecord
 class DbTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.db = db.connect('mysql://user:pass@127.0.0.1/schema')
+        cls.db = db.connect('mysql://giraffedbadmin:aff3nZo0@127.0.0.1/giraffe')
         cls.db.session_open()
 
     @classmethod
@@ -37,7 +37,7 @@ class DbTestCase(unittest.TestCase):
                                  user_id='unit_test_user_id',
                                  resource_id='unit_test_resource_id',
                                  project_id='uni_test_project_id',
-                                 value=10,
+                                 value='10',
                                  duration=0,
                                  timestamp=self.timestamp(),
                                  signature='unit_test_signature')
@@ -47,6 +47,10 @@ class DbTestCase(unittest.TestCase):
     def tearDown(self):
         super(DbTestCase, self).tearDown()
         self.db.rollback()
+        self.db.delete(self.record)
+        self.db.delete(self.meter)
+        self.db.delete(self.host)
+        self.db.commit()
         self.db.session_close()
 
     def test_save_meter_insert(self):
@@ -75,7 +79,7 @@ class DbTestCase(unittest.TestCase):
                              user_id='unit_test_user_id',
                              resource_id='unit_test_resource_id',
                              project_id='uni_test_project_id',
-                             value=10,
+                             value='10',
                              duration=0,
                              timestamp=self.timestamp(),
                              signature='unit_test_signature')
@@ -86,10 +90,16 @@ class DbTestCase(unittest.TestCase):
         self.assertEquals(record.id, self.record.id)
 
     def test_save_meter_record_update(self):
-        self.record.value = 20
+        self.record.value = '20'
         self.db.save(self.record)
         record = self.db.load(MeterRecord, {'id': self.record.id}, limit=1)[0]
         self.assertEqual(record.value, self.record.value)
 
     def test_delete_meter_record(self):
         self.db.delete(self.record)
+
+    def test_to_dict(self):
+        d = self.record.to_dict()
+        for key in d:
+            print str(d[key])
+        self.assertEqual(d['value'], self.record.value)

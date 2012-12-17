@@ -5,7 +5,7 @@ from giraffe.common.message_adapter import MessageAdapter
 from giraffe.common.config import Config
 from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
 from giraffe.service import db
-from giraffe.service.db import Meter, MeterRecord
+from giraffe.service.db import Host, Meter, MeterRecord
 
 logger = logging.getLogger("service.collector")
 
@@ -63,6 +63,15 @@ class Collector(threading.Thread):
         for meter in meters:
             meter_dict[meter.name] = meter
 
+        # insert host if it does not exist
+        hosts = self.db.load(Host, {'name': message.host_name}, limit=1)
+        if not hosts:
+            host = Host(name=message.host_name)
+            self.db.save(host)
+            self.db.commit()
+        else:
+            host = hosts[0]
+
         # insert all host records
         for r in message.host_records:
             if r.type not in meter_dict:
@@ -70,11 +79,10 @@ class Collector(threading.Thread):
                 continue
             try:
                 record = MeterRecord(meter_id=meter_dict[r.type].id,
-                                     host_id=message.host_id,
+                                     host_id=host.id,
                                      user_id=None,
                                      resource_id=None,
                                      project_id=None,
-                                     message_id='TODO',
                                      value=r.value,
                                      duration=r.duration,
                                      timestamp=r.timestamp,
@@ -91,11 +99,10 @@ class Collector(threading.Thread):
                 continue
             try:
                 record = MeterRecord(meter_id=meter_dict[r.type].id,
-                                     host_id=message.host_id,
+                                     host_id=host.id,
                                      user_id=r.user_id,
                                      resource_id=r.resource_id,
                                      project_id=r.project_id,
-                                     message_id='TODO',
                                      value=r.value,
                                      duration=r.duration,
                                      timestamp=r.timestamp,

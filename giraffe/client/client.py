@@ -50,7 +50,11 @@ class BaseController(controller.CementBaseController):
             (['--tenant_name'],    dict(action='store', help='$OS_TENANT_NAME', default=None)),
 
             (['-e', '--endpoint'], dict(action='store', help='Service endpoint (domain:port)', default=':'.join([_config.get('client', 'host'), _config.get('client', 'port')]))),
-            (['-r', '--request'],  dict(action='store', help='encoded as URL path',            default=None))
+            (['-r', '--request'],  dict(action='store', help='encoded as URL path',            default=None)),
+
+            (['--json'],           dict(action='store_true', help='display output as plain JSON', default=True)),
+            (['--csv'],            dict(action='store_true', help='display output as CSV',        default=False)),
+            (['--tab'],            dict(action='store_true', help='display output as table',      default=False))
             ]
         #   ...
         #   (['-F', '--FLAG'],     dict(action='store_true', help='...'))
@@ -70,7 +74,22 @@ class BaseController(controller.CementBaseController):
 
             r.raise_for_status()
 
-            print json.dumps(r.json, indent=4)
+            if self.pargs.csv:
+                offset = True
+                header = []
+                for msg in r.json:
+                    line = []
+                    for key, val in msg.iteritems():
+                        if offset:
+                            header.append(key)
+                        line.append(val)
+                    if offset:
+                        print '\t'.join(header)
+                        offset = False
+                    print '\t'.join(line)
+            else:    
+                print json.dumps(r.json, indent=4)
+
 
         except requests.exceptions.HTTPError:
             print '\nBad request [HTTP %s]: %s' % (r.status_code, url)

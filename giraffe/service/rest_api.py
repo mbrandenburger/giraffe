@@ -23,6 +23,9 @@ class Rest_API(threading.Thread):
         self.PARAM_END_TIME = 'end_time'
         self.PARAM_AGGREGATION = 'aggregation'
         self.PARAM_CHART = 'chart'
+        self.PARAM_LATEST = 'latest'
+
+        self.LIMIT = 2500
 
         self.__pattern_timestamp = re.compile('^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
 
@@ -206,6 +209,8 @@ class Rest_API(threading.Thread):
         meter = meters[0]
 
         # narrow down the search
+        limit = self.LIMIT
+        order = 'asc'
         search_params = {'host_id': host.id, 'meter_id': meter.id}
         query_params = self.__query_params()
         if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
@@ -215,8 +220,12 @@ class Rest_API(threading.Thread):
                 search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
             if self.PARAM_END_TIME in query_params:
                 search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
-
-        records = self.db.load(MeterRecord, search_params)
+        if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
+            limit = 1
+            order = 'desc'
+        print 'test here'
+        print 'order = %s' % order
+        records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
         return json.dumps([r.to_dict() for r in records])
 
     def __projects_pid_meters_mid(self, project_id, meter_id):
@@ -229,6 +238,8 @@ class Rest_API(threading.Thread):
         meter = meters[0]
 
         # narrow down the search
+        limit = self.LIMIT
+        order = 'asc'
         search_params = {'project_id': project_id, 'meter_id': meter.id}
         query_params = self.__query_params()
         if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
@@ -238,7 +249,10 @@ class Rest_API(threading.Thread):
                 search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
             if self.PARAM_END_TIME in query_params:
                 search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
-        records = self.db.load(MeterRecord, search_params)
+        if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
+            limit = 1
+            order = 'desc'
+        records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
         return json.dumps([r.to_dict() for r in records])
 
     def __users_uid_meters_mid(self, user_id, meter_id):
@@ -251,6 +265,8 @@ class Rest_API(threading.Thread):
         meter = meters[0]
 
         # narrow down the search
+        limit = self.LIMIT
+        order = 'asc'
         search_params = {'user_id': user_id, 'meter_id': meter.id}
         query_params = self.__query_params()
         if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
@@ -260,7 +276,10 @@ class Rest_API(threading.Thread):
                 search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
             if self.PARAM_END_TIME in query_params:
                 search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
-        records = self.db.load(MeterRecord, search_params)
+        if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
+            limit = 1
+            order = 'desc'
+        records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
         return json.dumps([r.to_dict() for r in records])
 
     def __instances_iid_meters_mid(self, instance_id, meter_id):
@@ -273,6 +292,8 @@ class Rest_API(threading.Thread):
         meter = meters[0]
 
         # narrow down the search
+        limit = self.LIMIT
+        order = 'asc'
         search_params = {'resource_id': instance_id, 'meter_id': meter.id}
         query_params = self.__query_params()
         if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
@@ -282,5 +303,8 @@ class Rest_API(threading.Thread):
                 search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
             if self.PARAM_END_TIME in query_params:
                 search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
-        records = self.db.load(MeterRecord, search_params)
+        if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
+            limit = 1
+            order = 'desc'
+        records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
         return json.dumps([r.to_dict() for r in records])

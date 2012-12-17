@@ -32,7 +32,7 @@ class Agent(object):
     def _callback_cpu_avg(self, params):
         #message = MessageAdapter.host_cpu_avg(params)
         message = MessageAdapter()
-        message.host_id = config.get("agent", "hostname")
+        message.host_name = config.get("agent", "hostname")
         message.signature = 'TODO'
         timestamp = self._timestamp_now()
         message.add_host_record(timestamp, 'loadavg_1m', params[0], 60)

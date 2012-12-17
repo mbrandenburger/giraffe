@@ -11,6 +11,7 @@ __date__    = '2012-12-13'
 from cement.core import foundation, controller  # < cement 2.0.2
 import requests                                 # < requests 0.14.2
 import json
+from prettytable import PrettyTable
 from giraffe.common.config import Config
 
 import logging
@@ -75,19 +76,10 @@ class BaseController(controller.CementBaseController):
             r.raise_for_status()
 
             if self.pargs.csv:
-                offset = True
-                header = []
-                for msg in r.json:
-                    line = []
-                    for key, val in msg.iteritems():
-                        if offset:
-                            header.append(key)
-                        line.append(val)
-                    if offset:
-                        print '\t'.join(header)
-                        offset = False
-                    print '\t'.join(line)
-            else:    
+                self.__print_as_csv(r.json)
+            elif self.pargs.tab:
+                self.__print_as_tab(r.json)
+            else:
                 print json.dumps(r.json, indent=4)
 
 
@@ -102,6 +94,24 @@ class BaseController(controller.CementBaseController):
             print '\n'.join(help_text)
 
 
+    def __print_as_csv(self, r_json):
+        row = []
+        for key, val in r_json[0].iteritems():
+            row.append(key)
+        print '\t'.join(row)
+
+        for msg in r_json:
+            row = []
+            for key, val in msg.iteritems():
+                row.append(val)
+            print '\t'.join(row)
+
+
+    def __print_as_tab(self, r_json):
+        pass
+
+
+
 class GiraffeClient(foundation.CementApp):
     class Meta:
         label = 'giraffe-client'
@@ -109,7 +119,6 @@ class GiraffeClient(foundation.CementApp):
 
 #   def __init__(self, **kwargs):
 #       foundation.CementApp.__init__(self, kwargs)
-
 
 
 def main():

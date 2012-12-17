@@ -3,8 +3,10 @@ __author__ = 'marcus, fbahr'
 import json
 import logging
 import threading
+import re
 from functools import wraps
 from flask import Flask, Response, request
+from urlparse import urlparse
 from giraffe.common.config import Config
 import giraffe.service.db as db
 from giraffe.service.db import Host, Meter, MeterRecord
@@ -17,6 +19,13 @@ _config = Config("giraffe.cfg")
 class Rest_API(threading.Thread):
 
     def __init__(self):
+        self.PARAM_START_TIME = 'start_time'
+        self.PARAM_END_TIME = 'end_time'
+        self.PARAM_AGGREGATION = 'aggregation'
+        self.PARAM_CHART = 'chart'
+
+        self.__pattern_timestamp = re.compile('^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
+
         self.db = db.connect('%s://%s:%s@%s/%s' % (
                                     _config.get('db', 'vendor'),
                                     _config.get('db', 'user'),
@@ -92,6 +101,31 @@ class Rest_API(threading.Thread):
         self.db.session_close()
         self._Thread__stop()
 
+    def __query_params(self):
+        """
+        Returns the query parameters for the current request as a dictionary.
+        Values of the format "YYYY-MM-DD_HH-ii-ss" are converted to the format
+        "YYYY-MM-DD HH:ii:ss".
+        """
+        query_parts = request.query_string.split('&')
+        params = {}
+        for query_part in query_parts:
+            parts = query_part.split('=', 2)
+            print parts
+            try:
+                params[parts[0]] = parts[1]
+                matches = self.__pattern_timestamp.match(parts[1])
+                if matches:
+                    params[parts[0]] = '%s-%s-%s %s:%s:%s' % (matches.group(1),
+                                                              matches.group(2),
+                                                              matches.group(3),
+                                                              matches.group(4),
+                                                              matches.group(5),
+                                                              matches.group(6))
+            except Exception:
+                continue
+        return params
+
     def __requires_auth(self, f):
         def __check_auth(username, password):
             """
@@ -125,19 +159,31 @@ class Rest_API(threading.Thread):
         """
         Route: projects
         """
-        return Response(response='not yet implemented', status=404)
+        values = self.db.distinct_values(MeterRecord, 'project_id')
+        # remove null values
+        if None in values:
+            values.remove(None)
+        return json.dumps(values)
 
     def __users(self):
         """
         Route: users
         """
-        return Response(response='not yet implemented', status=404)
+        values = self.db.distinct_values(MeterRecord, 'user_id')
+        # remove null values
+        if None in values:
+            values.remove(None)
+        return json.dumps(values)
 
     def __instances(self):
         """
         Route: instances
         """
-        return Response(response='not yet implemented', status=404)
+        values = self.db.distinct_values(MeterRecord, 'resource_id')
+        # remove null values
+        if None in values:
+            values.remove(None)
+        return json.dumps(values)
 
     def ___hosts_hid(self):
         """
@@ -159,9 +205,18 @@ class Rest_API(threading.Thread):
             return Response(response='meter_name not found', status=404)
         meter = meters[0]
 
-        records = self.db.load(MeterRecord,
-                                  {'host_id': host.id, 'meter_id': meter.id})
+        # narrow down the search
+        search_params = {'host_id': host.id, 'meter_id': meter.id}
+        query_params = self.__query_params()
+        if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
+            search_params['timestamp'] = ['0000-01-01 00:00:00',
+                                          '2999-12-31 23:59:59']
+            if self.PARAM_START_TIME in query_params:
+                search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
+            if self.PARAM_END_TIME in query_params:
+                search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
 
+        records = self.db.load(MeterRecord, search_params)
         return json.dumps([r.to_dict() for r in records])
 
     def __projects_pid_meters_mid(self, project_id, meter_id):
@@ -173,8 +228,17 @@ class Rest_API(threading.Thread):
             return Response(response='meter_name not found', status=404)
         meter = meters[0]
 
-        records = self.db.load(MeterRecord, {'project_id': project_id,
-                                             'meter_id': meter.id})
+        # narrow down the search
+        search_params = {'project_id': project_id, 'meter_id': meter.id}
+        query_params = self.__query_params()
+        if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
+            search_params['timestamp'] = ['0000-01-01 00:00:00',
+                                          '2999-12-31 23:59:59']
+            if self.PARAM_START_TIME in query_params:
+                search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
+            if self.PARAM_END_TIME in query_params:
+                search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
+        records = self.db.load(MeterRecord, search_params)
         return json.dumps([r.to_dict() for r in records])
 
     def __users_uid_meters_mid(self, user_id, meter_id):
@@ -186,8 +250,17 @@ class Rest_API(threading.Thread):
             return Response(response='meter_name not found', status=404)
         meter = meters[0]
 
-        records = self.db.load(MeterRecord, {'user_id': user_id,
-                                             'meter_id': meter.id})
+        # narrow down the search
+        search_params = {'user_id': user_id, 'meter_id': meter.id}
+        query_params = self.__query_params()
+        if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
+            search_params['timestamp'] = ['0000-01-01 00:00:00',
+                                          '2999-12-31 23:59:59']
+            if self.PARAM_START_TIME in query_params:
+                search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
+            if self.PARAM_END_TIME in query_params:
+                search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
+        records = self.db.load(MeterRecord, search_params)
         return json.dumps([r.to_dict() for r in records])
 
     def __instances_iid_meters_mid(self, instance_id, meter_id):
@@ -198,6 +271,16 @@ class Rest_API(threading.Thread):
         if not meters:
             return Response(response='meter_name not found', status=404)
         meter = meters[0]
-        records = self.db.load(MeterRecord, {'resource_id': instance_id,
-                                             'meter_id': meter.id})
+
+        # narrow down the search
+        search_params = {'resource_id': instance_id, 'meter_id': meter.id}
+        query_params = self.__query_params()
+        if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
+            search_params['timestamp'] = ['0000-01-01 00:00:00',
+                                          '2999-12-31 23:59:59']
+            if self.PARAM_START_TIME in query_params:
+                search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
+            if self.PARAM_END_TIME in query_params:
+                search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
+        records = self.db.load(MeterRecord, search_params)
         return json.dumps([r.to_dict() for r in records])

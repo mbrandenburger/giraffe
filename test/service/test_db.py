@@ -2,38 +2,19 @@ from datetime import datetime
 import unittest
 
 import giraffe.service.db as db
-from giraffe.service.db import Meter, MeterRecord
+from giraffe.service.db import Host, Meter, MeterRecord
 
 
 class DbTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.db = db.connect('mysql://user:pwd@host/schema')
+        cls.db = db.connect('mysql://user:pass@127.0.0.1/schema')
         cls.db.session_open()
-        cls.meter = Meter(name='unit_test_meter',
-                      description='created in setUpClass',
-                      unit_name='kb', data_type='int')
-        cls.db.save(cls.meter)
-        cls.db.commit()
-        cls.record = MeterRecord(meter_id=cls.meter.id,
-                                 host_id='unit_test_host_id',
-                                 user_id='unit_test_user_id',
-                                 resource_id='unit_test_resource_id',
-                                 project_id='uni_test_project_id',
-                                 message_id='uni_test_msg_id',
-                                 value=10,
-                                 duration=0,
-                                 timestamp=cls.timestamp(),
-                                 signature='unit_test_signature')
-        cls.db.save(cls.record)
-        cls.db.commit()
 
     @classmethod
     def tearDownClass(cls):
-        cls.db.delete(cls.meter)
-        cls.db.delete(cls.record)
-        cls.db.commit()
         cls.db.session_close()
+        pass
 
     @classmethod
     def timestamp(self):
@@ -41,10 +22,32 @@ class DbTestCase(unittest.TestCase):
 
     def setUp(self):
         super(DbTestCase, self).setUp()
+        self.meter = Meter(name='unit_test_meter',
+                      description='created in setUpClass',
+                      unit_name='kb', data_type='int')
+        self.db.save(self.meter)
+        self.db.commit()
+
+        self.host = Host(name='unti_test_host')
+        self.db.save(self.host)
+        self.db.commit()
+
+        self.record = MeterRecord(meter_id=self.meter.id,
+                                 host_id=self.host.id,
+                                 user_id='unit_test_user_id',
+                                 resource_id='unit_test_resource_id',
+                                 project_id='uni_test_project_id',
+                                 value=10,
+                                 duration=0,
+                                 timestamp=self.timestamp(),
+                                 signature='unit_test_signature')
+        self.db.save(self.record)
+        self.db.commit()
 
     def tearDown(self):
         super(DbTestCase, self).tearDown()
         self.db.rollback()
+        self.db.session_close()
 
     def test_save_meter_insert(self):
         meter = Meter(name='unit_test_meter',
@@ -63,15 +66,15 @@ class DbTestCase(unittest.TestCase):
         self.assertEqual(self.meter.description, meter.description)
 
     def test_delete_meter(self):
+        self.db.delete(self.record)
         self.db.delete(self.meter)
 
     def test_save_meter_record_insert(self):
         record = MeterRecord(meter_id=self.meter.id,
-                             host_id='unit_test_host_id',
+                             host_id=self.host.id,
                              user_id='unit_test_user_id',
                              resource_id='unit_test_resource_id',
                              project_id='uni_test_project_id',
-                             message_id='uni_test_msg_id',
                              value=10,
                              duration=0,
                              timestamp=self.timestamp(),

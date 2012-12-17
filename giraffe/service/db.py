@@ -125,6 +125,11 @@ class Db(object):
             query = self._query_meter(args)
         elif cls == MeterRecord:
             query = self._query_meter_record(args)
+        elif cls == Host:
+            query = self._query_host(args)
+        else:
+            raise Exception('Db.load() cannot handle objects of class "%s"' %
+                            cls)
 
         if query is not None:
             if limit is not None:
@@ -176,6 +181,10 @@ class Db(object):
         return self._session.query(Meter).filter_by(**args).\
                         order_by(desc(Meter.id))
 
+    def _query_host(self, args):
+        return self._session.query(Host).filter_by(**args).\
+                        order_by(desc(Host.id))
+
 
 class GiraffeBase(object):
 
@@ -193,6 +202,10 @@ class GiraffeBase(object):
             return [name.key for name in type(self).__table__.columns]
 
     def to_dict(self):
+        """
+        Returns a dictionary of column names (as defined for the object) and
+        their respective values.
+        """
         columnNames = self.list_column_names(realname=False)
         columnDict = {}
         for name in columnNames:
@@ -220,11 +233,11 @@ class Meter(Base):
     records = relationship('MeterRecord', backref='meter')
 
     def __repr__(self):
-        return "<Meter(%s,'%s','%s','%s', '%s')" % (self.id,
-                                                    self.name,
-                                                    self.description,
-                                                    self.unit_name,
-                                                    self.data_type)
+        return "Meter(%s,'%s','%s','%s', '%s')" % (self.id,
+                                                   self.name,
+                                                   self.description,
+                                                   self.unit_name,
+                                                   self.data_type)
 
 
 class Host(Base):
@@ -238,7 +251,7 @@ class Host(Base):
     records = relationship('MeterRecord', backref='host')
 
     def __repr__(self):
-        return "<Host(%s,'%s')" % (self.id, self.name)
+        return "Host(%s,'%s')" % (self.id, self.name)
 
 
 class MeterRecord(Base):
@@ -251,7 +264,7 @@ class MeterRecord(Base):
                       ForeignKey('meter.id', name='fk_meter_record_meter_id',
                                  onupdate='CASCADE', ondelete='NO ACTION'),
                       nullable=False)
-    host_id = Column(INTEGER(5),
+    host_id = Column(INTEGER(5, unsigned=True),
                      ForeignKey('host.id', name='fk_meter_record_host_id',
                                 onupdate='CASCADE', ondelete='NO ACTION'),
                      nullable=False)
@@ -270,8 +283,8 @@ class MeterRecord(Base):
                         nullable=True, default=None)
 
     def __repr__(self):
-        return "<MeterRecord(%s, %d,'%s','%s', %s)" % (self.id,
-                                                       self.meter_id,
-                                                       self.value,
-                                                       self.duration,
-                                                       self.timestamp)
+        return "MeterRecord(%s, %d,'%s','%s', %s)" % (self.id,
+                                                      self.meter_id,
+                                                      self.value,
+                                                      self.duration,
+                                                      self.timestamp)

@@ -26,7 +26,7 @@ class MessageAdapterTestCase(unittest.TestCase):
     def serialized_data_str(self):
         adapter = MessageAdapter()
         adapter.signature = 'fake_signature'
-        adapter.host_id = 'fake_host_id'
+        adapter.host_name = 'fake_host_name'
         adapter.add_host_record(timestamp=self.timestamp(),
                                 meter_type='fake_meter_type',
                                 value='10',
@@ -56,8 +56,8 @@ class MessageAdapterTestCase(unittest.TestCase):
 
     def test_getattr(self):
         adapter = MessageAdapter()
-        adapter.host_id = 'fake_host_id'
-        self.assertEqual(adapter.host_id, 'fake_host_id')
+        adapter.host_name = 'fake_host_name'
+        self.assertEqual(adapter.host_name, 'fake_host_name')
 
     def test_add_host_record(self):
         adapter = MessageAdapter()
@@ -85,7 +85,7 @@ class MessageAdapterTestCase(unittest.TestCase):
     def test_serialize_to_str(self):
         adapter = MessageAdapter()
         adapter.signature = 'fake_signature'
-        adapter.host_id = 'fake_host_id'
+        adapter.host_name = 'fake_host_name'
         adapter.add_host_record(timestamp=self.timestamp(),
                                 meter_type='fake_meter_type',
                                 value='10',
@@ -103,13 +103,13 @@ class MessageAdapterTestCase(unittest.TestCase):
         adapter = MessageAdapter()
         adapter.deserialize_from_str(self.serialized_data_str())
         self.assertEqual(adapter.signature, 'fake_signature')
-        self.assertEqual(adapter.host_id, 'fake_host_id')
+        self.assertEqual(adapter.host_name, 'fake_host_name')
         self.assertEqual(adapter.host_records[0].value, '10')
         self.assertEqual(adapter.instance_records[0].value, '20')
 
     def test_deserialize_to_str_constructor(self):
         adapter = MessageAdapter(self.serialized_data_str())
         self.assertEqual(adapter.signature, 'fake_signature')
-        self.assertEqual(adapter.host_id, 'fake_host_id')
+        self.assertEqual(adapter.host_name, 'fake_host_name')
         self.assertEqual(adapter.host_records[0].value, '10')
         self.assertEqual(adapter.instance_records[0].value, '20')

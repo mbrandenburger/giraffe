@@ -6,7 +6,6 @@ import threading
 import re
 from functools import wraps
 from flask import Flask, Response, request
-from urlparse import urlparse
 from giraffe.common.config import Config
 import giraffe.service.db as db
 from giraffe.service.db import Host, Meter, MeterRecord
@@ -27,7 +26,8 @@ class Rest_API(threading.Thread):
 
         self.LIMIT = 2500
 
-        self.__pattern_timestamp = re.compile('^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
+        self.__pattern_timestamp = re.compile(
+                '^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
 
         self.db = db.connect('%s://%s:%s@%s/%s' % (
                                     _config.get('db', 'vendor'),
@@ -145,7 +145,8 @@ class Rest_API(threading.Thread):
                 sends a 401 response that enables basic auth
                 """
                 return Response({'message': 'Unauthorized'}, 401,
-                                {'WWW-Authenticate': 'Basic realm="REST API Login"'})
+                                {'WWW-Authenticate':
+                                 'Basic realm="REST API Login"'})
             return f(*args, **kwargs)
         return decorated
 

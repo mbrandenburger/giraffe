@@ -13,6 +13,9 @@ import requests                                 # < requests 0.14.2
 import json
 from giraffe.common.config import Config
 
+import logging
+logger = logging.getLogger("client")
+
 
 class BaseController(controller.CementBaseController):
     """
@@ -56,17 +59,28 @@ class BaseController(controller.CementBaseController):
 
     @controller.expose(hide=True)
     def default(self):
+        url = None
+
         try:
             url = ''.join(['http://', self.pargs.endpoint, self.pargs.request])
+            logger.debug('Query: %s' % url)
+
             r = requests.get(url, auth=(self.pargs.username, self.pargs.password))
+            logger.debug('HTTP response status code: %s' % r.status_code)
+
+            r.raise_for_status()
+
             print json.dumps(r.json, indent=4)
+
+        except requests.exceptions.HTTPError:
+            print '\nBad request [HTTP %s]: %s' % (r.status_code, url)
+
         except:
             # @fbahr: dirty hack...
             help_text = [] 
             help_text.append('usage: ' + self._usage_text)
             help_text.append('\nSee "client.py --help" for help on a specific command.')
             print '\n'.join(help_text)
-
 
 
 class GiraffeClient(foundation.CementApp):

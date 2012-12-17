@@ -8,7 +8,7 @@ from giraffe.service.db import Host, Meter, MeterRecord
 class DbTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.db = db.connect('mysql://giraffedbadmin:aff3nZo0@127.0.0.1/giraffe')
+        cls.db = db.connect('mysql://user:pass@127.0.0.1/schema')
         cls.db.session_open()
 
     @classmethod

@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='BulkMessage.proto',
   package='GiraffeMetering',
-  serialized_pb='\n\x11\x42ulkMessage.proto\x12\x0fGiraffeMetering\"\x9f\x01\n\x0b\x42ulkMessage\x12\x11\n\tsignature\x18\x01 \x02(\t\x12\x0f\n\x07host_id\x18\x02 \x02(\t\x12\x31\n\x0chost_records\x18\x03 \x03(\x0b\x32\x1b.GiraffeMetering.HostRecord\x12\x39\n\x10instance_records\x18\x04 \x03(\x0b\x32\x1f.GiraffeMetering.InstanceRecord\"\x8c\x01\n\x0eInstanceRecord\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x12\n\nproject_id\x18\x02 \x02(\t\x12\x13\n\x0binstance_id\x18\x03 \x02(\t\x12\x11\n\ttimestamp\x18\x04 \x02(\t\x12\x0c\n\x04type\x18\x05 \x02(\t\x12\r\n\x05value\x18\x06 \x02(\t\x12\x10\n\x08\x64uration\x18\x07 \x02(\x05\"N\n\nHostRecord\x12\x11\n\ttimestamp\x18\x01 \x02(\t\x12\x0c\n\x04type\x18\x02 \x02(\t\x12\r\n\x05value\x18\x03 \x02(\t\x12\x10\n\x08\x64uration\x18\x04 \x02(\x05')
+  serialized_pb='\n\x11\x42ulkMessage.proto\x12\x0fGiraffeMetering\"\xa1\x01\n\x0b\x42ulkMessage\x12\x11\n\tsignature\x18\x01 \x02(\t\x12\x11\n\thost_name\x18\x02 \x02(\t\x12\x31\n\x0chost_records\x18\x03 \x03(\x0b\x32\x1b.GiraffeMetering.HostRecord\x12\x39\n\x10instance_records\x18\x04 \x03(\x0b\x32\x1f.GiraffeMetering.InstanceRecord\"\x8c\x01\n\x0eInstanceRecord\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x12\n\nproject_id\x18\x02 \x02(\t\x12\x13\n\x0binstance_id\x18\x03 \x02(\t\x12\x11\n\ttimestamp\x18\x04 \x02(\t\x12\x0c\n\x04type\x18\x05 \x02(\t\x12\r\n\x05value\x18\x06 \x02(\t\x12\x10\n\x08\x64uration\x18\x07 \x02(\x05\"N\n\nHostRecord\x12\x11\n\ttimestamp\x18\x01 \x02(\t\x12\x0c\n\x04type\x18\x02 \x02(\t\x12\r\n\x05value\x18\x03 \x02(\t\x12\x10\n\x08\x64uration\x18\x04 \x02(\x05')
 
 
 
@@ -33,7 +33,7 @@ _BULKMESSAGE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='host_id', full_name='GiraffeMetering.BulkMessage.host_id', index=1,
+      name='host_name', full_name='GiraffeMetering.BulkMessage.host_name', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
@@ -63,7 +63,7 @@ _BULKMESSAGE = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=39,
-  serialized_end=198,
+  serialized_end=200,
 )
 
 
@@ -132,8 +132,8 @@ _INSTANCERECORD = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=201,
-  serialized_end=341,
+  serialized_start=203,
+  serialized_end=343,
 )
 
 
@@ -181,8 +181,8 @@ _HOSTRECORD = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=343,
-  serialized_end=421,
+  serialized_start=345,
+  serialized_end=423,
 )
 
 _BULKMESSAGE.fields_by_name['host_records'].message_type = _HOSTRECORD

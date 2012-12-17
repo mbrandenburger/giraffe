@@ -31,6 +31,7 @@ db.session_open()
 print '\tdone'
 
 meters = []
+'''
 meters.append(Meter(name='loadavg_1m',
               description='as measured by os.getloadavg() for 1 minute',
               unit_name='processes',
@@ -42,6 +43,15 @@ meters.append(Meter(name='loadavg_5m',
 meters.append(Meter(name='loadavg_15m',
               description='as measured by os.getloadavg() for 15 minutes',
               unit_name='processes',
+              data_type='float'))
+'''
+meters.append(Meter(name='phymem_usage',
+              description='phyiscal memory usage as percentage',
+              unit_name='percent',
+              data_type='float'))
+meters.append(Meter(name='virmem_usage',
+              description='virtual memory usage as percentage',
+              unit_name='percent',
               data_type='float'))
 
 successes = 0

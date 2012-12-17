@@ -54,7 +54,7 @@ db.session_close()
 '''
 
 from sqlalchemy import create_engine, Column, ForeignKey, desc
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, class_mapper, ColumnProperty
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
 
@@ -178,7 +178,19 @@ class Db(object):
 
 
 class GiraffeBase(object):
-    pass
+
+    def list_column_names(self, realname=True):
+        """
+        Returns a list of column names.
+        If "realname" is True, the column names will be identical to the
+        database table. If False, the colum names are the ones defined for the
+        object.
+        """
+        if not realname:
+            return [prop.key for prop in class_mapper(type(self)).iterate_properties
+                if isinstance(prop, ColumnProperty)]
+        else:
+            return [name.key for name in type(self).__table__.columns]
 
 
 Base = declarative_base(cls=GiraffeBase)
@@ -208,6 +220,20 @@ class Meter(Base):
                                                     self.data_type)
 
 
+class Host(Base):
+    __tablename__ = 'host'
+    __table_args__ = {'mysql_engine': 'InnoDB',
+                      'mysql_charset': 'utf8'}
+
+    id = Column(INTEGER(5, unsigned=True), primary_key=True)
+    name = Column('host_name', VARCHAR(20), nullable=False,
+                  doc='distinctive name of the physical machine, e.g. uncinus')
+    records = relationship('MeterRecord', backref='host')
+
+    def __repr__(self):
+        return "<Host(%s,'%s')" % (self.id, self.name)
+
+
 class MeterRecord(Base):
     __tablename__ = 'meter_record'
     __table_args__ = {'mysql_engine': 'InnoDB',
@@ -218,15 +244,15 @@ class MeterRecord(Base):
                       ForeignKey('meter.id', name='fk_meter_record_meter_id',
                                  onupdate='CASCADE', ondelete='NO ACTION'),
                       nullable=False)
-    host_id = Column(VARCHAR(40), nullable=False,
-                     doc='distinctive name of the physical machine')
+    host_id = Column(INTEGER(5),
+                     ForeignKey('host.id', name='fk_meter_record_host_id',
+                                onupdate='CASCADE', ondelete='NO ACTION'),
+                     nullable=False)
     user_id = Column(VARCHAR(40), nullable=True, default=None,
                      doc='keystone user ID')
     resource_id = Column(VARCHAR(40), nullable=True, default=None,
                      doc='nova instance ID')
     project_id = Column(VARCHAR(40), nullable=True, default=None)
-    message_id = Column(VARCHAR(40), nullable=False,
-                        doc='RabbitMQ message identifier')
     value = Column('meter_value', VARCHAR(255), nullable=False)
     duration = Column('meter_duration', INTEGER(unsigned=True),
                       nullable=False, default=0,

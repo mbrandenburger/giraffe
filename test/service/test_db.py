@@ -105,3 +105,37 @@ class DbTestCase(unittest.TestCase):
     def test_to_dict(self):
         d = self.record.to_dict()
         self.assertEqual(d['value'], self.record.value)
+
+    def test_load_meter_order(self):
+        meter = Meter(name='unit_test_meter2',
+                      description='created in test_load_order',
+                      unit_name='kb', data_type='int')
+        self.db.save(meter)
+
+        meters = self.db.load(Meter, order='asc', order_attr='id')
+        self.assertEqual(len(meters), 2)
+        self.assertEqual(True if meters[0].id < meters[1].id else False, True)
+
+        meters = self.db.load(Meter, order='desc', order_attr='id')
+        self.assertEqual(len(meters), 2)
+        self.assertEqual(True if meters[0].id > meters[1].id else False, True)
+
+    def test_load_meter_record_order(self):
+        record = MeterRecord(meter_id=self.meter.id,
+                             host_id=self.host.id,
+                             user_id='unit_test_user_id',
+                             resource_id='unit_test_resource_id',
+                             project_id='uni_test_project_id',
+                             value='20',
+                             duration=0,
+                             timestamp=self.timestamp(),
+                             signature='unit_test_signature')
+        self.db.save(record)
+
+        records = self.db.load(MeterRecord, order='asc', order_attr='value')
+        self.assertEqual(len(records), 2)
+        self.assertEqual(True if records[0].value < records[1].value else False, True)
+
+        records = self.db.load(MeterRecord, order='desc', order_attr='value')
+        self.assertEqual(len(records), 2)
+        self.assertEqual(True if records[0].value > records[1].value else False, True)

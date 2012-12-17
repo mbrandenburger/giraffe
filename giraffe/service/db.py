@@ -113,7 +113,7 @@ class Db(object):
         '''
         self._session.add(obj)
 
-    def load(self, cls, args={}, limit=None):
+    def load(self, cls, args={}, limit=None, order=None, order_attr=None):
         """
         Loads all persistent objects of the given class that meet the given
         arguments.
@@ -122,11 +122,11 @@ class Db(object):
         """
         query = None
         if cls == Meter:
-            query = self._query_meter(args)
+            query = self._query_meter(args, order=order, order_attr=order_attr)
         elif cls == MeterRecord:
-            query = self._query_meter_record(args)
+            query = self._query_meter_record(args, order=order, order_attr=order_attr)
         elif cls == Host:
-            query = self._query_host(args)
+            query = self._query_host(args, order=order, order_attr=order_attr)
         else:
             raise Exception('Db.load() cannot handle objects of class "%s"' %
                             cls)
@@ -134,6 +134,7 @@ class Db(object):
         if query is not None:
             if limit is not None:
                 query = query.limit(limit)
+            #print query
             return query.all()
         else:
             return []
@@ -152,7 +153,7 @@ class Db(object):
         """
         self._session.delete(obj)
 
-    def _query_meter_record(self, args):
+    def _query_meter_record(self, args, order='asc', order_attr=None):
         filter_args = {}
         start_time = None
         end_time = None
@@ -174,17 +175,37 @@ class Db(object):
                         filter(and_(MeterRecord.timestamp >= start_time,
                                MeterRecord.timestamp <= end_time))
 
-        if query is not None:
-            query.order_by(asc(MeterRecord.timestamp))
+        if query is not None and order is not None:
+            if order_attr is None:
+                order_attr = 'timestamp'
+            print 'order_attr = %s' % order_attr
+            print getattr(MeterRecord, order_attr)
+            query = query.order_by(asc(getattr(MeterRecord, order_attr))
+                           if order == 'asc'
+                           else desc(getattr(MeterRecord, order_attr)))
         return query
 
-    def _query_meter(self, args):
-        return self._session.query(Meter).filter_by(**args).\
-                        order_by(asc(Meter.id))
+    def _query_meter(self, args, order='asc', order_attr='id'):
+        if order is not None:
+            if order_attr is None:
+                order_attr = 'id'
+            return self._session.query(Meter).filter_by(**args).\
+                        order_by(asc(getattr(Meter, order_attr))
+                                 if order == 'asc'
+                                 else desc(getattr(Meter, order_attr)))
+        else:
+            return self._session.query(Meter).filter_by(**args)
 
-    def _query_host(self, args):
-        return self._session.query(Host).filter_by(**args).\
-                        order_by(asc(Host.id))
+    def _query_host(self, args, order='asc', order_attr='id'):
+        if order is not None:
+            if order_attr is None:
+                order_attr = 'id'
+            return self._session.query(Host).filter_by(**args).\
+                        order_by(asc(getattr(Host, order_attr))
+                                 if order == 'asc'
+                                 else desc(getattr(Host, order_attr)))
+        else:
+            return self._session.query(Host).filter_by(**args)
 
 
 class GiraffeBase(object):

@@ -89,6 +89,10 @@ class DbTestCase(unittest.TestCase):
         record = self.db.load(MeterRecord, {'id': self.record.id}, limit=1)[0]
         self.assertEquals(record.id, self.record.id)
 
+    def test_load_meter_record_distinct(self):
+        values = self.db.distinct_values(MeterRecord, 'meter_id')
+        self.assertEqual(values[0], self.record.meter_id)
+
     def test_save_meter_record_update(self):
         self.record.value = '20'
         self.db.save(self.record)
@@ -100,6 +104,4 @@ class DbTestCase(unittest.TestCase):
 
     def test_to_dict(self):
         d = self.record.to_dict()
-        for key in d:
-            print str(d[key])
         self.assertEqual(d['value'], self.record.value)

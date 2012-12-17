@@ -53,7 +53,7 @@ db.commit()
 db.session_close()
 '''
 
-from sqlalchemy import create_engine, Column, ForeignKey, desc, asc
+from sqlalchemy import create_engine, Column, ForeignKey, desc, asc, distinct, and_
 from sqlalchemy.orm import sessionmaker, relationship, class_mapper, ColumnProperty
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
@@ -138,6 +138,14 @@ class Db(object):
         else:
             return []
 
+    def distinct_values(self, cls, column):
+        """
+        Returns a list of distinct values for the given object class and
+        column.
+        """
+        values = self._session.query(getattr(cls, column)).distinct().all()
+        return [tupl[0] for tupl in values]
+
     def delete(self, obj):
         """
         Deletes a single persistent object without committing.
@@ -150,28 +158,21 @@ class Db(object):
         end_time = None
         for key in args:
             if key.lower() == 'timestamp':
-                if not isinstance(key, basestring):
-                    start_time = args[0]
-                    end_time = args[1]
+                if type(args[key]) in (list, tuple):
+                    start_time = args[key][0]
+                    end_time = args[key][1]
                     continue
             if args[key] is not None:
                 filter_args[key] = args[key]
 
-        query = None
         # no start and end time
         if start_time is None and end_time is None:
             query = self._session.query(MeterRecord).filter_by(**filter_args)
-        # either a start or an end end time or both
+        # start and end time
         elif start_time is not None and end_time is not None:
-            query = self._session.query(MeterRecord).filter_by(**args).\
-                        filter(MeterRecord.timestamp >= start_time,
-                               MeterRecord.timestamp <= end_time)
-        elif start_time is not None:
-            query = self._session.query(MeterRecord).filter_by(**args).\
-                        filter(MeterRecord.timestamp >= start_time)
-        elif end_time is not None:
-            query = self._session.query(MeterRecord).filter_by(**args).\
-                            filter(MeterRecord.timestamp <= end_time)
+            query = self._session.query(MeterRecord).filter_by(**filter_args).\
+                        filter(and_(MeterRecord.timestamp >= start_time,
+                               MeterRecord.timestamp <= end_time))
 
         if query is not None:
             query.order_by(asc(MeterRecord.timestamp))

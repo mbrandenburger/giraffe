@@ -192,6 +192,13 @@ class GiraffeBase(object):
         else:
             return [name.key for name in type(self).__table__.columns]
 
+    def to_dict(self):
+        columnNames = self.list_column_names(realname=False)
+        columnDict = {}
+        for name in columnNames:
+            columnDict[name] = getattr(self, name)
+        return columnDict
+
 
 Base = declarative_base(cls=GiraffeBase)
 

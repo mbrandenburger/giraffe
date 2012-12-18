@@ -53,8 +53,9 @@ db.commit()
 db.session_close()
 '''
 
-from sqlalchemy import create_engine, Column, ForeignKey, desc, asc, distinct, and_
-from sqlalchemy.orm import sessionmaker, relationship, class_mapper, ColumnProperty
+from sqlalchemy import create_engine, Column, ForeignKey, desc, asc, and_
+from sqlalchemy.orm import sessionmaker, relationship, class_mapper
+from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
 
@@ -124,7 +125,8 @@ class Db(object):
         if cls == Meter:
             query = self._query_meter(args, order=order, order_attr=order_attr)
         elif cls == MeterRecord:
-            query = self._query_meter_record(args, order=order, order_attr=order_attr)
+            query = self._query_meter_record(args, order=order,
+                                             order_attr=order_attr)
         elif cls == Host:
             query = self._query_host(args, order=order, order_attr=order_attr)
         else:
@@ -153,7 +155,7 @@ class Db(object):
         """
         self._session.delete(obj)
 
-    def _query_meter_record(self, args, order='asc', order_attr=None):
+    def _query_meter_record(self, args, order='asc', order_attr='timestamp'):
         filter_args = {}
         start_time = None
         end_time = None
@@ -178,8 +180,6 @@ class Db(object):
         if query is not None and order is not None:
             if order_attr is None:
                 order_attr = 'timestamp'
-            print 'order_attr = %s' % order_attr
-            print getattr(MeterRecord, order_attr)
             query = query.order_by(asc(getattr(MeterRecord, order_attr))
                            if order == 'asc'
                            else desc(getattr(MeterRecord, order_attr)))
@@ -218,8 +218,9 @@ class GiraffeBase(object):
         object.
         """
         if not realname:
-            return [prop.key for prop in class_mapper(type(self)).iterate_properties
-                if isinstance(prop, ColumnProperty)]
+            return [prop.key
+                    for prop in class_mapper(type(self)).iterate_properties
+                    if isinstance(prop, ColumnProperty)]
         else:
             return [name.key for name in type(self).__table__.columns]
 

@@ -1,5 +1,3 @@
-__author__ = 'marcus, fbahr'
-
 import json
 import logging
 import threading
@@ -23,12 +21,9 @@ class Rest_API(threading.Thread):
         self.PARAM_AGGREGATION = 'aggregation'
         self.PARAM_CHART = 'chart'
         self.PARAM_LATEST = 'latest'
-
-        self.LIMIT = 2500
-
+        self.RESULT_LIMIT = 2500
         self.__pattern_timestamp = re.compile(
                 '^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
-
         self.db = db.connect('%s://%s:%s@%s/%s' % (
                                     _config.get('db', 'vendor'),
                                     _config.get('db', 'user'),
@@ -217,7 +212,7 @@ class Rest_API(threading.Thread):
         meter = meters[0]
 
         # narrow down the search
-        limit = self.LIMIT
+        limit = self.RESULT_LIMIT
         order = 'asc'
         search_params = {'host_id': host.id, 'meter_id': meter.id}
         query_params = self.__query_params()
@@ -246,7 +241,7 @@ class Rest_API(threading.Thread):
         meter = meters[0]
 
         # narrow down the search
-        limit = self.LIMIT
+        limit = self.RESULT_LIMIT
         order = 'asc'
         search_params = {'project_id': project_id, 'meter_id': meter.id}
         query_params = self.__query_params()
@@ -275,7 +270,7 @@ class Rest_API(threading.Thread):
         meter = meters[0]
 
         # narrow down the search
-        limit = self.LIMIT
+        limit = self.RESULT_LIMIT
         order = 'asc'
         search_params = {'user_id': user_id, 'meter_id': meter.id}
         query_params = self.__query_params()
@@ -304,7 +299,7 @@ class Rest_API(threading.Thread):
         meter = meters[0]
 
         # narrow down the search
-        limit = self.LIMIT
+        limit = self.RESULT_LIMIT
         order = 'asc'
         search_params = {'resource_id': instance_id, 'meter_id': meter.id}
         query_params = self.__query_params()

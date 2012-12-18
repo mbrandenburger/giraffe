@@ -35,7 +35,7 @@ class Agent(object):
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def _callback_cpu_avg(self, params):
-        logger.debug("Meter message: %s" % params)
+        logger.debug("Meter message: %s" % list(params))
         message = MessageAdapter()
         message.host_name = _HOSTNAME
         message.signature = 'TODO'

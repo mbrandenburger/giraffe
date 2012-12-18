@@ -11,7 +11,11 @@ __date__    = '2012-12-13'
 from cement.core import foundation, controller  # < cement 2.0.2
 import requests                                 # < requests 0.14.2
 import json
-from prettytable import PrettyTable
+# from prettytable import PrettyTable
+from datetime import datetime
+# import matplotlib.pyplot as plt
+# import matplotlib.dates as mdates
+# import matplotlib.cbook as cbook
 from giraffe.common.config import Config
 
 import logging
@@ -95,19 +99,33 @@ class BaseController(controller.CementBaseController):
 
 
     def __print_as_csv(self, r_json):
+        if not r_json:
+            print 'Empty result set.'
+            return
+
         row = []
         for key, val in r_json[0].iteritems():
             row.append(key)
         print '\t'.join(row)
 
+        UNIX_EPOCH = datetime(1970, 1, 1, 0, 0)
         for msg in r_json:
             row = []
             for key, val in msg.iteritems():
-                row.append(val)
+                if key == 'timestamp':
+                    dt    = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
+                    # @fbahr: dirty hack
+                    # d_ord = dt.toordinal() * 24 * 3600
+                    # t_ord = dt.hour * 3600 + dt.minute * 60 + dt.second
+                    # val   = d_ord + t_ord
+                    delta = UNIX_EPOCH - dt
+                    val   = - delta.days * 24 * 3600 + delta.seconds
+                row.append(str(val))
             print '\t'.join(row)
 
 
     def __print_as_tab(self, r_json):
+        print "Warning: not yet implemented."
         pass
 
 

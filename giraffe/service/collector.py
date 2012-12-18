@@ -51,7 +51,7 @@ class Collector(threading.Thread):
         self.consumer.stop_consuming()
 
     def _collector_callback(self, params):
-        logger.debug("Collect message: %s", params)
+
         message = MessageAdapter()
         message.deserialize_from_str(params)
 
@@ -88,6 +88,7 @@ class Collector(threading.Thread):
                                      timestamp=r.timestamp,
                                      signature=message.signature)
                 self.db.save(record)
+                logger.debug("Message from %s: %s" % (host.name,record))
             except Exception:
                 logger.debug('WARNING: failed to insert host record %s' %
                              record)
@@ -108,6 +109,7 @@ class Collector(threading.Thread):
                                      timestamp=r.timestamp,
                                      signature=message.signature)
                 self.db.save(record)
+                logger.debug("Message from %s: %s" % (host.name,record))
             except Exception:
                 logger.debug('WARNING: failed to insert instance record %s' %
                              record)

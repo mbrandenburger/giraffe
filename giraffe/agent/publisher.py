@@ -23,5 +23,5 @@ class AgentPublisher(object):
         self.producer = BasicProducer(self.connector, self.exchange)
 
     def publish(self,params):
-        logger.debug("Publish message: %s",params)
+#        logger.debug("Publish message")
         self.producer.send(self.exchange, self.routing_key, params)

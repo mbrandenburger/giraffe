@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRTMEM_Usage,\
-    Host_PHYMEM_Usage
+    Host_PHYMEM_Usage, Host_UPTIME
 from giraffe.agent import publisher
 from giraffe.common.message_adapter import MessageAdapter
 from giraffe.common.config import Config
@@ -50,6 +50,11 @@ class Agent(object):
         # meter vir memory
         self.tasks.append(
             Host_VIRTMEM_Usage(self._callback_vir_mem, _METER_DURATION)
+        )
+
+        # meter vir memory
+        self.tasks.append(
+            Host_UPTIME(self._callback_uptime, _METER_DURATION)
         )
 
     def _build_message(self):
@@ -106,6 +111,18 @@ class Agent(object):
                 logger.debug("Meter message: virmem_usage=%s" % params[3])
                 self.message.add_host_record(
                     timestamp, 'virmem_usage', params[3], 0)
+            finally:
+                self.lock.release()
+
+    def _callback_uptime(self, params):
+        timestamp = self._timestamp_now()
+        if not self.lock.locked():
+            self.lock.acquire()
+            try:
+                logger.debug("Meter message: uptime=%s" % params)
+                self.message.add_host_record(
+                    timestamp, 'uptime', params, 0)
+
             finally:
                 self.lock.release()
 

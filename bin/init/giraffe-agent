@@ -12,21 +12,23 @@
 # Author: Marcus Brandenburger <m.brandenburger@tu-bs.de>
 
 
-# PATH=/sbin:/usr/sbin:/bin:/usr/bin
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Giraffe agent daemon"
-NAME=giraffe.agent
+NAME=giraffe-agent
 #DAEMON=/usr/sbin/$NAME
 #DAEMON_ARGS="--options args"
 PIDFILE=/var/run/giraffe/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 GIRAFFE_HOME=/opt/giraffe
-GIRAFFE_BIN=$GIRAFFE_HOME/bin/start_agent.sh
+GIRAFFE_BIN_DIR=$GIRAFFE_HOME/bin
+GIRAFFE_BIN=$GIRAFFE_BIN_DIR/start_agent.sh
 GIRAFFE_LOG=/var/log/giraffe/$NAME.log
-USER="giraffe"
+USER=giraffe
+GROUP=giraffe
 VERSION=0.1
 
 # Exit if the package is not installed
-[ -x "$DAEMON" ] || exit 0
+[ -x "$GIRAFFE_BIN" ] || exit 0
 
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
@@ -44,22 +46,18 @@ VERSION=0.1
 #
 do_start()
 {
-
+    echo "starting giraffe ..."
     # Return
     #   0 if daemon has been started
     #   1 if daemon was already running
     #   2 if daemon could not be started
-    start-stop-daemon --start --quiet --pidfile $PIDFILE \
-    	        --user $USER --group $GROUP \
-                -b --make-pidfile \
-                --chuid $USER \
-                --exec GIRAFFE_BIN --test > $LOG \
+    start-stop-daemon --start --quiet --chuid $USER:$GROUP --make-pidfile --pidfile $PIDFILE \
+                -b --chdir $GIRAFFE_BIN_DIR \
+                --exec $GIRAFFE_BIN --test > /dev/null \
         || return 1
-    start-stop-daemon --start --quiet --pidfile $PIDFILE \
-           	    --user $USER --group $GROUP \
-                -b --make-pidfile
-                --chuid $USER \
-                --exec GIRAFFE_BIN \
+    start-stop-daemon --start --quiet --chuid $USER:$GROUP --make-pidfile --pidfile $PIDFILE \
+                -b --chdir $GIRAFFE_BIN_DIR \
+                --exec $GIRAFFE_BIN \
     	|| return 2
     # Add code here, if necessary, that waits for the process to be ready
     # to handle requests from services started subsequently which depend
@@ -76,7 +74,7 @@ do_stop()
  	#   1 if daemon was already stopped
  	#   2 if daemon could not be stopped
  	#   other if a failure occurred
- 	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
+ 	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE
  	RETVAL="$?"
  	[ "$RETVAL" = 2 ] && return 2
  	# Wait for children to finish too if this is a daemon that forks
@@ -85,7 +83,7 @@ do_stop()
  	# that waits for the process to drop all resources that could be
  	# needed by services started subsequently.  A last resort is to
  	# sleep for some time.
- 	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+ 	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $GIRAFFE_BIN
  	[ "$?" = 2 ] && return 2
  	# Many daemons don't delete their pidfiles when they exit.
  	rm -f $PIDFILE
@@ -123,7 +121,7 @@ case "$1" in
 	esac
 	;;
   status)
-       status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+       status_of_proc -p "$PIDFILE" "$GIRAFFE_BIN" "$NAME" && exit 0 || exit $?
        ;;
   #reload|force-reload)
 	#

@@ -31,6 +31,9 @@ class AgentPublisher(threading.Thread):
         self.producer = BasicProducer(self.connector, self.exchange)
 
     def flush(self):
+        """
+        Sends current state of agents message to the broker.
+        """
         if not self.agent.lock.locked():
             self.agent.lock.acquire()
             try:

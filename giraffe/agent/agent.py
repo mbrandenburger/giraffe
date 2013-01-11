@@ -24,6 +24,9 @@ _SIGNATURE = "TODO"
 class Agent(object):
 
     def __init__(self):
+        """
+        Initializes a new Agent.
+        """
 
         self.lock = threading.Lock()
         self.timer = False
@@ -51,6 +54,7 @@ class Agent(object):
 
     def _build_message(self):
         """
+        Returns a new MessageAdapter object with hostname and signature
         :rtype : MessageAdapter
         """
         message = MessageAdapter()
@@ -59,6 +63,9 @@ class Agent(object):
         return message
 
     def _timestamp_now(self):
+        """
+        Returns current system time as formatted string "%Y-%m-%d %H:%M:%S"
+        """
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def _callback_cpu_avg(self, params):
@@ -103,6 +110,9 @@ class Agent(object):
                 self.lock.release()
 
     def launch(self):
+        """
+        Starts all publisher and all meter tasks.
+        """
         global logger
         try:
             # start all meter

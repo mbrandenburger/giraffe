@@ -15,8 +15,6 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Giraffe agent daemon"
 NAME=giraffe-agent
-#DAEMON=/usr/sbin/$NAME
-#DAEMON_ARGS="--options args"
 PIDFILE=/var/run/giraffe/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 GIRAFFE_HOME=/opt/giraffe

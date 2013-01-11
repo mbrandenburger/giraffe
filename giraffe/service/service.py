@@ -6,8 +6,8 @@ import time
 from giraffe.service.collector import Collector
 from giraffe.service.rest_api import Rest_API
 
-
 logger = logging.getLogger("service")
+
 
 class Service(object):
 
@@ -18,7 +18,6 @@ class Service(object):
 
         self.threads.append(self.collector)
         self.threads.append(self.rest_api)
-
 
     def launch(self):
         try:

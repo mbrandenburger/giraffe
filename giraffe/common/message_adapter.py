@@ -39,6 +39,10 @@ class MessageAdapter(object):
             raise AttributeError(('Neither adapter nor adaptee has the '
                                   'attribute "%s"') % name)
 
+    def len(self):
+        return len(self._adaptee.host_records) + len(
+            self._adaptee.instance_records)
+
     def add_host_record(self, timestamp, meter_type, value, duration):
         """
         Adds a host record to the underlying adaptee object.
@@ -54,8 +58,9 @@ class MessageAdapter(object):
         host_record.value = str(value)
         host_record.duration = duration
 
-    def add_instance_record(self, project_id, user_id, instance_id, timestamp,
-                          meter_type, value, duration):
+    def add_instance_record(
+            self, project_id, user_id, instance_id, timestamp, meter_type,
+            value, duration):
         """
         Adds an instance record to the underlying adaptee object.
         """

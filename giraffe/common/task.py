@@ -1,7 +1,7 @@
 __author__ = 'marcus'
 
-
 import threading
+
 
 class Task(threading.Thread):
 
@@ -16,7 +16,7 @@ class Task(threading.Thread):
     def registerCallback(self, listener):
         self.callbacks.append(listener)
 
-    def notifyCallback(self,param):
+    def notifyCallback(self, param):
         for listener in self.callbacks:
             listener(param)
 
@@ -26,7 +26,7 @@ class Task(threading.Thread):
     def stop(self):
         self.isRunning = False
         self.requestStop = False
-        self.callbacks = [];
+        self.callbacks = []
         self._Thread__stop()
 
 
@@ -42,8 +42,8 @@ class PeriodicMeterTask(Task):
         meter_msg = self.meter()
         self.notifyCallback(meter_msg)
 
-        if self.requestStop == False:
-            self.timer = threading.Timer(self.period,self.run)
+        if self.requestStop is False:
+            self.timer = threading.Timer(self.period, self.run)
             self.timer.start()
         else:
             self.isRunning = False

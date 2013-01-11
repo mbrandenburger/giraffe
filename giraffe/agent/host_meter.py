@@ -36,3 +36,16 @@ class Host_VIRTMEM_Usage(PeriodicMeterTask):
         Returns current virtual memory usage
         """
         return psutil.virtmem_usage()
+
+
+class Host_UPTIME(PeriodicMeterTask):
+    def meter(self):
+        """
+        Returns uptime in seconds
+        """
+        uptime = 0.0
+        try:
+            with open('/proc/uptime', 'r') as f:
+                uptime = float(f.readline().split()[0])
+        finally:
+            return uptime

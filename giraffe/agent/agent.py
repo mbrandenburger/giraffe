@@ -2,23 +2,18 @@ __author__ = 'marcus'
 
 import threading
 import time
-from datetime import datetime
-
+import logging
 from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRTMEM_Usage,\
     Host_PHYMEM_Usage, Host_UPTIME, Host_NETWORK_IO
 from giraffe.agent import publisher
-from giraffe.common.message_adapter import MessageAdapter
 from giraffe.common.config import Config
 
-import logging
 
 logger = logging.getLogger("agent")
 config = Config("giraffe.cfg")
 
 _FLUSH_DURATION = config.getint("agent", "duration")
 _METER_DURATION = int(_FLUSH_DURATION / 4)
-_HOSTNAME = config.get("agent", "hostname")
-_SIGNATURE = "TODO"
 
 
 class Agent(object):
@@ -27,15 +22,13 @@ class Agent(object):
         """
         Initializes a new Agent.
         """
-
-        self.lock = threading.Lock()
         self.timer = False
-        self.message = self._build_message()
         self.tasks = []
+        self.publisher = publisher.AgentPublisher(self)
 
-        # meter CPU AVG
+        # add publisher to tasks
         self.tasks.append(
-            publisher.AgentPublisher(self, _FLUSH_DURATION)
+            self.publisher
         )
 
         # meter CPU AVG
@@ -62,92 +55,23 @@ class Agent(object):
             Host_NETWORK_IO(self._callback_network_io, _METER_DURATION)
         )
 
-
-
-    def _build_message(self):
-        """
-        Returns a new MessageAdapter object with hostname and signature
-        :rtype : MessageAdapter
-        """
-        message = MessageAdapter()
-        message.host_name = _HOSTNAME
-        message.signature = _SIGNATURE
-        return message
-
-    def _timestamp_now(self):
-        """
-        Returns current system time as formatted string "%Y-%m-%d %H:%M:%S"
-        """
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     def _callback_cpu_avg(self, params):
-        timestamp = self._timestamp_now()
-        if not self.lock.locked():
-            self.lock.acquire()
-            try:
-                logger.debug("Meter message: loadavg_1m=%s" % params[0])
-                self.message.add_host_record(
-                    timestamp, 'loadavg_1m', params[0], 60)
-
-                logger.debug("Meter message: loadavg_5m=%s" % params[1])
-                self.message.add_host_record(
-                    timestamp, 'loadavg_5m', params[1], 300)
-
-                logger.debug("Meter message: loadavg_1mm=%s" % params[2])
-                self.message.add_host_record(
-                    timestamp, 'loadavg_15m', params[2], 1500)
-            finally:
-                self.lock.release()
+        self.publisher.add_meter('loadavg_1m', params[0], 60)
+        self.publisher.add_meter('loadavg_5m', params[1], 300)
+        self.publisher.add_meter('loadavg_15m', params[2], 1500)
 
     def _callback_phy_mem(self, params):
-        timestamp = self._timestamp_now()
-        if not self.lock.locked():
-            self.lock.acquire()
-            try:
-                logger.debug("Meter message: phymem_usage=%s" % params[3])
-                self.message.add_host_record(
-                    timestamp, 'phymem_usage', params[3], 0)
-            finally:
-                self.lock.release()
+        self.publisher.add_meter('phymem_usage', params[3], 0)
 
     def _callback_vir_mem(self, params):
-        timestamp = self._timestamp_now()
-        if not self.lock.locked():
-            self.lock.acquire()
-            try:
-                logger.debug("Meter message: virmem_usage=%s" % params[3])
-                self.message.add_host_record(
-                    timestamp, 'virmem_usage', params[3], 0)
-            finally:
-                self.lock.release()
+        self.publisher.add_meter('virmem_usage', params[3], 0)
 
     def _callback_uptime(self, params):
-        timestamp = self._timestamp_now()
-        if not self.lock.locked():
-            self.lock.acquire()
-            try:
-                logger.debug("Meter message: uptime=%s" % params)
-                self.message.add_host_record(
-                    timestamp, 'uptime', params, 0)
-
-            finally:
-                self.lock.release()
+        self.publisher.add_meter('uptime', params, 0)
 
     def _callback_network_io(self, params):
-        timestamp = self._timestamp_now()
-        if not self.lock.locked():
-            self.lock.acquire()
-            try:
-                logger.debug("Meter message: network_io_tx=%s" % params[0])
-                self.message.add_host_record(
-                    timestamp, 'network_io_tx', params[0], 0)
-
-                logger.debug("Meter message: network_io_rx=%s" % params[1])
-                self.message.add_host_record(
-                    timestamp, 'network_io_rx', params[1], 0)
-
-            finally:
-                self.lock.release()
+        self.publisher.add_meter('network_io_tx', params[0], 0)
+        self.publisher.add_meter('network_io_rx', params[1], 0)
 
     def launch(self):
         """

@@ -49,3 +49,12 @@ class Host_UPTIME(PeriodicMeterTask):
                 uptime = float(f.readline().split()[0])
         finally:
             return uptime
+
+
+class Host_NETWORK_IO(PeriodicMeterTask):
+    def meter(self):
+        """
+        Returns current network I/O in byte
+        """
+        return psutil.network_io_counters()
+

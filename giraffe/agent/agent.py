@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRTMEM_Usage,\
-    Host_PHYMEM_Usage, Host_UPTIME
+    Host_PHYMEM_Usage, Host_UPTIME, Host_NETWORK_IO
 from giraffe.agent import publisher
 from giraffe.common.message_adapter import MessageAdapter
 from giraffe.common.config import Config
@@ -52,10 +52,17 @@ class Agent(object):
             Host_VIRTMEM_Usage(self._callback_vir_mem, _METER_DURATION)
         )
 
-        # meter vir memory
+        # meter host uptime
         self.tasks.append(
             Host_UPTIME(self._callback_uptime, _METER_DURATION)
         )
+
+        # meter host network io
+        self.tasks.append(
+            Host_NETWORK_IO(self._callback_network_io, _METER_DURATION)
+        )
+
+
 
     def _build_message(self):
         """
@@ -122,6 +129,22 @@ class Agent(object):
                 logger.debug("Meter message: uptime=%s" % params)
                 self.message.add_host_record(
                     timestamp, 'uptime', params, 0)
+
+            finally:
+                self.lock.release()
+
+    def _callback_network_io(self, params):
+        timestamp = self._timestamp_now()
+        if not self.lock.locked():
+            self.lock.acquire()
+            try:
+                logger.debug("Meter message: network_io_tx=%s" % params[0])
+                self.message.add_host_record(
+                    timestamp, 'network_io_tx', params[0], 0)
+
+                logger.debug("Meter message: network_io_rx=%s" % params[1])
+                self.message.add_host_record(
+                    timestamp, 'network_io_rx', params[1], 0)
 
             finally:
                 self.lock.release()

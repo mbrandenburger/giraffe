@@ -31,7 +31,7 @@ LOG = logging.getLogger(__name__)
 
 class IndexView(tables.DataTableView):
     table_class = HostsTable
-    template_name = 'giraffe/hosts/index.html'
+    template_name = 'giraffe_dashboard/hosts/index.html'
 
     def get_data(self):
         # Gather our cats
@@ -44,7 +44,7 @@ class IndexView(tables.DataTableView):
 
 
 class DetailView(generic.TemplateView):
-    template_name = 'giraffe/hosts/detail.html'
+    template_name = 'giraffe_dashboard/hosts/detail.html'
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context

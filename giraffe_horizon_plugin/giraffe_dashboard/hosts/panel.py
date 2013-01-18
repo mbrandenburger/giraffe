@@ -17,7 +17,7 @@
 from django.utils.translation import ugettext as _
 
 import horizon
-import giraffe.dashboard
+import giraffe_dashboard.dashboard
 
 
 class HostPanel(horizon.Panel):

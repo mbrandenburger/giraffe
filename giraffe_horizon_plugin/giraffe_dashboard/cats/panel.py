@@ -25,4 +25,4 @@ class CatPanel(horizon.Panel):
     slug = 'cats'
 
 
-giraffe.dashboard.GiraffePlugin.register(CatPanel)
+giraffe_dashboard.dashboard.GiraffePlugin.register(CatPanel)

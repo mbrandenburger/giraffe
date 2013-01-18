@@ -25,4 +25,4 @@ class HostPanel(horizon.Panel):
     slug = 'hosts'
 
 
-giraffe.dashboard.GiraffePlugin.register(HostPanel)
+giraffe_dashboard.dashboard.GiraffePlugin.register(HostPanel)

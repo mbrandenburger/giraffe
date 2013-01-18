@@ -21,7 +21,7 @@ import horizon
 
 class GiraffePlugin(horizon.Dashboard):
     name = _("Giraffe")
-    slug = "giraffe"
+    slug = "giraffe_dashboard"
     panels = ('hosts', 'cats',)
     default_panel = 'cats'
     nav = True

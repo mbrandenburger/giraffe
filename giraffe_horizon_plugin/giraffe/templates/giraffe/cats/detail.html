@@ -1,0 +1,12 @@
+{% extends 'settings/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Cats!" %}{% endblock %}
+
+{% block page_header %}
+  {% include "horizon/common/_page_header.html" with title=_("Cats!") %}
+{% endblock page_header %}
+
+{% block settings_main %}
+    <h2>Behold! It's a <b>{{cat.type}}</b> cat!</b></h2>
+    <a href="{{cat.url}}"> <img src="{{ cat.thumb }}"/></a>
+{% endblock %}

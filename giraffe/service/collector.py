@@ -88,7 +88,10 @@ class Collector(threading.Thread):
                                      timestamp=r.timestamp,
                                      signature=message.signature)
                 self.db.save(record)
-                logger.debug("Message from %s: %s" % (host.name,record))
+                logger.debug("Message from %s: %s" % (host.name, record))
+                # update host activity
+                if r.timestamp > host.activity:
+                    host.activity = r.timestamp
             except Exception:
                 logger.debug('WARNING: failed to insert host record %s' %
                              record)
@@ -109,7 +112,10 @@ class Collector(threading.Thread):
                                      timestamp=r.timestamp,
                                      signature=message.signature)
                 self.db.save(record)
-                logger.debug("Message from %s: %s" % (host.name,record))
+                logger.debug("Message from %s: %s" % (host.name, record))
+                # update host activity
+                if r.timestamp > host.activity:
+                    host.activity = r.timestamp
             except Exception:
                 logger.debug('WARNING: failed to insert instance record %s' %
                              record)

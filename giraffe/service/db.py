@@ -273,6 +273,7 @@ class Host(Base):
     id = Column(INTEGER(5, unsigned=True), primary_key=True)
     name = Column('host_name', VARCHAR(20), nullable=False,
                   doc='distinctive name of the physical machine, e.g. uncinus')
+    activity = Column('activity', TIMESTAMP(), nullable=True, default=None)
     records = relationship('MeterRecord', backref='host')
 
     def __repr__(self):

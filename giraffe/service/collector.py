@@ -1,5 +1,6 @@
 import logging
 import threading
+from datetime import datetime
 
 from giraffe.common.message_adapter import MessageAdapter
 from giraffe.common.config import Config
@@ -50,6 +51,12 @@ class Collector(threading.Thread):
         logger.debug("Stop collecting from rabbit")
         self.consumer.stop_consuming()
 
+    def _str_to_datetime(self, timestamp_str):
+        return datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+
+    def _datetime_to_str(self, datetime_obj):
+        return datetime_obj.strftime("%Y-%m-%d %H:%M:%S")
+
     def _collector_callback(self, params):
 
         message = MessageAdapter()
@@ -90,11 +97,13 @@ class Collector(threading.Thread):
                 self.db.save(record)
                 logger.debug("Message from %s: %s" % (host.name, record))
                 # update host activity
-                if r.timestamp > host.activity:
-                    host.activity = r.timestamp
-            except Exception:
+                record_timestamp = self._str_to_datetime(r.timestamp)
+                if record_timestamp > host.activity:
+                    host.activity = record_timestamp
+            except Exception as e:
                 logger.debug('WARNING: failed to insert host record %s' %
                              record)
+                print e
 
         # insert all instance records
         for r in message.instance_records:
@@ -114,8 +123,9 @@ class Collector(threading.Thread):
                 self.db.save(record)
                 logger.debug("Message from %s: %s" % (host.name, record))
                 # update host activity
-                if r.timestamp > host.activity:
-                    host.activity = r.timestamp
+                record_timestamp = self._str_to_datetime(r.timestamp)
+                if record_timestamp > host.activity:
+                    host.activity = record_timestamp
             except Exception:
                 logger.debug('WARNING: failed to insert instance record %s' %
                              record)

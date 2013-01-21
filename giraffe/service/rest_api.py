@@ -33,10 +33,23 @@ class Rest_API(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        self.server = srv.start(self, host=_config.get('flask', 'host'),
-                                      port=_config.getint('flask', 'port'),
-                                      user=_config.get('flask', 'user'),
-                                      password=_config.get('flask', 'pass'))
+        conf = dict(log_name='Auth',
+            auth_host=_config.get('service', 'auth_host'),
+            auth_port=_config.getint('service', 'auth_port'),
+            auth_protocol=_config.get('service', 'auth_protocol'),
+            admin_token=_config.get('service', 'admin_token'),
+            delay_auth_decision=_config.getint('service', 'delay_auth_decision'),
+            rest_api=self,
+            host=_config.get('flask', 'host'),
+            port=_config.getint('flask', 'port'),
+            user=_config.get('flask', 'user'),
+            password=_config.get('flask', 'pass'))
+
+        self.server = srv.start(conf)
+#        self.server = srv.start(self, host=_config.get('flask', 'host'),
+#                                      port=_config.getint('flask', 'port'),
+#                                      user=_config.get('flask', 'user'),
+#                                      password=_config.get('flask', 'pass'))
 
     def stop(self):
         self._Thread__stop()

@@ -2,21 +2,22 @@
 usage: ./start_client -r=<query>
                             ^ e.g., <query>="/hosts/<host-id>"
 """
-
-__author__  = 'fbahr'
-__version__ = '0.1.1'
-__date__    = '2012-12-13'
+__author__  = 'fbahr, marcus'
+__version__ = '0.2.0'
+__date__    = '2013-01-21'
 
 
 from cement.core import foundation, controller  # < cement 2.0.2
 import requests                                 # < requests 0.14.2
 import json
+import os
 # from prettytable import PrettyTable
 from datetime import datetime
 # import matplotlib.pyplot as plt
 # import matplotlib.dates as mdates
 # import matplotlib.cbook as cbook
 from giraffe.common.config import Config
+from keystoneclient.v2_0 import client as ksclient
 
 import logging
 logger = logging.getLogger("client")
@@ -30,6 +31,27 @@ class BaseController(controller.CementBaseController):
 #   def __init__(self, *args, **kwargs):
 #       super(BaseController, self).__init__(*args, **kwargs)
 
+
+    def authAndReturnToken(self):
+#        TODO(Marcus): Add CLI params
+        kwargs = {
+            'username': os.getenv('OS_USERNAME'),
+            'password': os.getenv('OS_PASSWORD'),
+            'tenant_id': os.getenv('OS_TENANT_ID'),
+            'tenant_name': os.getenv('OS_TENANT_NAME'),
+            'auth_url':  os.getenv('OS_AUTH_URL'),
+            'service_type': os.getenv('OS_SERVICE_TYPE'),
+            'endpoint_type': os.getenv('OS_ENDPOINT_TYPE'),
+            'insecure': False
+        }
+        _ksclient =ksclient.Client(username=kwargs.get('username'),
+            password=kwargs.get('password'),
+            tenant_id=kwargs.get('tenant_id'),
+            tenant_name=kwargs.get('tenant_name'),
+            auth_url=kwargs.get('auth_url'),
+            insecure=kwargs.get('insecure'))
+
+        return _ksclient.auth_token
 
     class Meta:
         """
@@ -70,11 +92,22 @@ class BaseController(controller.CementBaseController):
     def default(self):
         url = None
 
+
+
+
         try:
             url = ''.join(['http://', self.pargs.endpoint, self.pargs.request])
             logger.debug('Query: %s' % url)
 
-            r = requests.get(url, auth=(self.pargs.username, self.pargs.password))
+            #r = requests.get(url, headers=auth_header)
+            auth_token = self.authAndReturnToken()
+            auth_header = {'X-Auth-Token': auth_token}
+
+#            TODO(Marcus): Auth is depricated ... remove
+            r = requests.get(url, auth=(self.pargs.username,
+                                        self.pargs.password),
+                            headers=auth_header)
+
             logger.debug('HTTP response status code: %s' % r.status_code)
 
             r.raise_for_status()

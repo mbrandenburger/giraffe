@@ -1,7 +1,6 @@
 __author__ = 'marcus, fbahr'
 
 import sys
-import os
 import subprocess
 import logging
 import psutil
@@ -26,28 +25,38 @@ def get_instance_pid(uuid):
 
 
 class Instance_UPTIME(PeriodicMeterTask):
+    def __init__(self):
+        self.conn = libvirt.openReadOnly(None)
+        if not self.conn:
+            logger.exception('Failed to open connection to the hypervisor.')
+            sys.exit(1)
+
     def meter(self):
         """
         Returns a list of IDs and corresponding uptimes (in seconds) for all
         instances running on a specific host
         """
-        conn = libvirt.openReadOnly(None)
-        if not conn:
-            logger.exception('Failed to open connection to the hypervisor.')
-            sys.exit(1)
-
         uptimes = []
-        for id in conn.listDomainsID():
-            domain = conn.lookupByID(id)
-            uuid = domain.UUIDString()
 
-            pid = get_instance_pid(uuid)
-            process = psutil.Process(pid)
+        try:
+            #@[fbahr] To do: Lookups for UUIDs and PIDs are expensive, so:
+            #         figure out a way to perform these only whenever really
+            #         neccessary 
+            for domain_id in self.conn.listDomainsID():
+                domain = self.conn.lookupByID(domain_id)
+                uuid = domain.UUIDString()
 
-            uptimes.append([
-                uuid,
-                float('%1.2f' % ((time.time() - process.create_time) * 1000))
-                ])
+                pid = get_instance_pid(uuid)
+                process = psutil.Process(pid)
+
+                uptimes.append([
+                    uuid,
+                    float('%1.2f' % ((time.time() - process.create_time) * 1000))
+                    ])
+        except Exception:
+            # Warning! Fails silently...
+            logger.exception('Failed to open connection to the hypervisor.')
+            self.conn = libvirt.openReadOnly(None)
 
         return uptimes
 
@@ -55,6 +64,7 @@ class Instance_UPTIME(PeriodicMeterTask):
 class Instance_NETWORK_IO(PeriodicMeterTask):
     def meter(self):
         """
-        Returns current network I/O in byte
+        Returns a list of IDs and corresponding network I/O (in bytes) for all
+        instances running on a specific host
         """
         pass

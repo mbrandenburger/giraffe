@@ -78,13 +78,15 @@ def get_instance_ids(connection, pids=True):
     return ids
 
 
-class Instance_UUIDs(PeriodicMeterTask):
+class PeriodicInstanceMeterTask(PeriodicMeterTask):
     def __init__(self):
         self.conn = libvirt.openReadOnly(None)
         if not self.conn:
             logger.exception('Failed to open connection to hypervisor.')
             sys.exit(1)
 
+
+class Instance_UUIDs(PeriodicInstanceMeterTask):
     def meter(self):
         """
         Returns a list of instance UUIDs
@@ -95,7 +97,7 @@ class Instance_UUIDs(PeriodicMeterTask):
             uuids = get_instance_ids(self.conn, pids=False).keys()
         except:
             # Warning! Fails silently...
-            logger.exception('Failed to open connection to hypervisor.')
+            logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
         return uuids
@@ -230,6 +232,8 @@ class Instance_NETWORK_IOs(PeriodicMeterTask):
 
 
 class Instance_DISK_IOs(PeriodicMeterTask):
+    #@[fbahr]: Actually, this should rather refer to Object (swift) and/or
+    #          Block Storage (cinder) usage.
     def __init__(self):
         self.conn = libvirt.openReadOnly(None)
         if not self.conn:
@@ -238,7 +242,7 @@ class Instance_DISK_IOs(PeriodicMeterTask):
 
     def meter(self):
         """
-        Returns a list of (UUID, bytes_read, bytes_written) tuples, one for 
+        Returns a list of (UUID, bytes_read, bytes_written) tuples, one for
         each instance running on a specific host
         """
         inst_ios = []
@@ -246,7 +250,7 @@ class Instance_DISK_IOs(PeriodicMeterTask):
         try:
             # dict of (uuid: (pid, instance-name)) elements
             inst_ids = get_instance_ids(self.conn)
-                    # list of (uuid, uptime) tuples
+            # list of (uuid, uptime) tuples
             inst_ios = [(uuid,
                          io_counter.read_bytes,
                          io_counter.write_bytes)

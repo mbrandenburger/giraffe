@@ -84,6 +84,8 @@ def timestamp(offset=0.0):
 
 class PeriodicInstanceMeterTask(PeriodicMeterTask):
     def __init__(self):
+        super(PeriodicInstanceMeterTask, self).__init__()
+
         self.conn = libvirt.openReadOnly(None)
         if not self.conn:
             logger.exception('Failed to open connection to hypervisor.')
@@ -112,9 +114,9 @@ class Instance_UUIDs(PeriodicInstanceMeterTask):
         return uuids
 
 
-class Instance_CPU_utilizations(PeriodicInstanceMeterTask):
+class Instance_CPU_Usages(PeriodicInstanceMeterTask):
     def __init__(self):
-        super(Instance_CPU_utilizations, self).__init__()
+        super(Instance_CPU_Usages, self).__init__()
         self.utilization_map = {}
 
     def meter(self):
@@ -162,33 +164,22 @@ class Instance_CPU_utilizations(PeriodicInstanceMeterTask):
 
 
 class Instance_PHYMEM_Usages(PeriodicInstanceMeterTask):
-    #@[fbahr]: Join with Instance_VIRTMEM_Usages?
-
-    def meter(self):
-        """ 
-        Returns a list of current physical memory usage for every instance 
-        running on a specific host
-        """
-        raise NotImplementedError()
-
-
-class Instance_VIRTMEM_Usages(PeriodicInstanceMeterTask):
-    #@[fbahr]: Join with Instance_PHYMEM_Usages?
+    #@[fbahr]: Join with Instance_VIRMEM_Usages?
 
     def meter(self):
         """
-        Returns a list of (UUID, timestamp, virtmem) tuples, one for each 
+        Returns a list of (UUID, timestamp, phymem) tuples, one for each 
         instance running on a specific host
         """
-        virtmem = []
+        phymem = []
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
             inst_ids = get_instance_ids(self.conn)
             # list of (uuid, uptime) tuples
-            virtmem = [(uuid,
+            phymem = [(uuid,
                         timestamp(),
-                        mem_info.vms)
+                        mem_info.rss)
                         for (uuid, mem_info) \
                             in [(k, psutil.Process(v[0]).get_memory_info()) \
                                 for k, v in inst_ids.iteritems()]]
@@ -197,7 +188,37 @@ class Instance_VIRTMEM_Usages(PeriodicInstanceMeterTask):
             logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
-        # return virtmem
+        # return phymem
+
+        raise NotImplementedError()
+
+
+class Instance_VIRMEM_Usages(PeriodicInstanceMeterTask):
+    #@[fbahr]: Join with Instance_PHYMEM_Usages?
+
+    def meter(self):
+        """
+        Returns a list of (UUID, timestamp, virmem) tuples, one for each 
+        instance running on a specific host
+        """
+        virmem = []
+
+        try:
+            # dict of (uuid: (pid, instance-name)) elements
+            inst_ids = get_instance_ids(self.conn)
+            # list of (uuid, uptime) tuples
+            virmem = [(uuid,
+                       timestamp(),
+                       mem_info.vms)
+                       for (uuid, mem_info) \
+                           in [(k, psutil.Process(v[0]).get_memory_info()) \
+                               for k, v in inst_ids.iteritems()]]
+        except:
+            # Warning! Fails silently...
+            logger.exception('Connection to hypervisor failed; reset.')
+            self.conn = libvirt.openReadOnly(None)
+
+        # return virmem
 
         raise NotImplementedError()
 

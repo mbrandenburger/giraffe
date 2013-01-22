@@ -1,16 +1,8 @@
+__author__ = 'marcus'
 
 import os
 import psutil
 from giraffe.common.task import PeriodicMeterTask
-
-
-class Host_CPU_AVG(PeriodicMeterTask):
-    def meter(self):
-        """
-        Returns current system load average
-        """
-        avg = os.getloadavg()
-        return avg
 
 
 class Host_UNAME(PeriodicMeterTask):
@@ -18,8 +10,15 @@ class Host_UNAME(PeriodicMeterTask):
         """
         Returns uname
         """
-        uname = os.uname()
-        return uname
+        return os.uname()
+
+
+class Host_CPU_AVG(PeriodicMeterTask):
+    def meter(self):
+        """
+        Returns current system load average
+        """
+        return os.getloadavg()
 
 
 class Host_PHYMEM_Usage(PeriodicMeterTask):
@@ -30,7 +29,7 @@ class Host_PHYMEM_Usage(PeriodicMeterTask):
         return psutil.phymem_usage()
 
 
-class Host_VIRTMEM_Usage(PeriodicMeterTask):
+class Host_VIRMEM_Usage(PeriodicMeterTask):
     def meter(self):
         """
         Returns current virtual memory usage
@@ -58,3 +57,10 @@ class Host_NETWORK_IO(PeriodicMeterTask):
         """
         return psutil.network_io_counters()
 
+
+class Host_DISK_IO(PeriodicMeterTask):
+    def meter(self):
+        """
+        Returns current disk I/O in byte
+        """
+        raise NotImplementedError()

@@ -3,10 +3,10 @@ __author__ = 'marcus'
 import threading
 import time
 import logging
-from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRTMEM_Usage, \
+from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRMEM_Usage, \
     Host_PHYMEM_Usage, Host_UPTIME, Host_NETWORK_IO
 from giraffe.agent.instance_meter import Instance_CPU_Usages, \
-    Instance_VIRTMEM_Usages, Instance_PHYMEM_Usages, Instance_UPTIMEs, \
+    Instance_VIRMEM_Usages, Instance_PHYMEM_Usages, Instance_UPTIMEs, \
     Instance_NETWORK_IOs
 from giraffe.agent import publisher
 from giraffe.common.config import Config
@@ -47,7 +47,7 @@ class Agent(object):
 
         # meter host vir memory
         self.tasks.append(
-            Host_VIRTMEM_Usage(self._callback_vir_mem, _METER_DURATION)
+            Host_VIRMEM_Usage(self._callback_vir_mem, _METER_DURATION)
         )
 
         # meter host uptime
@@ -71,7 +71,7 @@ class Agent(object):
 
         # meter instances vir memory 
         self.tasks.append(
-            Instance_VIRTMEM_Usages(
+            Instance_VIRMEM_Usages(
                 self._callback_inst_vir_mem,
                 _METER_DURATION)
         )

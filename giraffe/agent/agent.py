@@ -101,10 +101,10 @@ class Agent(object):
     # CB METHODS FOR INSTANCE METERS ------------------------------------------
 
     def _callback_inst_phy_mem(self, params):
-        self.publisher.add_meter('inst_phymem_usage', params[3], 0) # params?
+        self.publisher.add_meter('inst_phymem_usages', params[3], 0) # params?
 
     def _callback_inst_vir_mem(self, params):
-        self.publisher.add_meter('inst_virmem_usage', params[3], 0) # params?
+        self.publisher.add_meter('inst_virmem_usages', params[3], 0) # params?
 
 
     # -------------------------------------------------------------------------

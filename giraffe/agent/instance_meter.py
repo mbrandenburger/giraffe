@@ -64,7 +64,7 @@ def get_instance_ids(connection, pids=True):
         # now, ids = dict of (uuid: (pid, instance-name)) elements
         for row in tabular:
             col = row.split()
-            ids[col[2]] = (col[0], col[1])
+            ids[col[2]] = (int(col[0]), col[1])
 
         # ^ alt. implementation
         # ---------------------
@@ -180,21 +180,21 @@ class Instance_UPTIMEs(PeriodicMeterTask):
 
     def meter(self):
         """
-        Returns a list of (UUIDs, uptime [in seconds]) tuples for all
-        instances running on a specific host
+        Returns a list of (UUID, uptime [in seconds]) tuples, one for each
+        instance running on a specific host
         """
         uptimes = []
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            instance_ids = get_instance_ids(self.conn)
+            inst_ids = get_instance_ids(self.conn)
             # list of (uuid, uptime) tuples
             uptimes = [(uuid,
                         float('%1.2f'
                               % ((time.time() - process.create_time) * 1000)))
                        for (uuid, process) \
-                           in [(k, psutil.Process(int(v[0]))) \
-                               for k, v in instance_ids.iteritems()]]
+                           in [(k, psutil.Process(v[0])) \
+                               for k, v in inst_ids.iteritems()]]
 
             # ^ alt. implementation
             # ---------------------
@@ -214,7 +214,7 @@ class Instance_UPTIMEs(PeriodicMeterTask):
             #         ])
         except:
             # Warning! Fails silently...
-            logger.exception('Failed to open connection to hypervisor.')
+            logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
         return uptimes
@@ -230,8 +230,33 @@ class Instance_NETWORK_IOs(PeriodicMeterTask):
 
 
 class Instance_DISK_IOs(PeriodicMeterTask):
+    def __init__(self):
+        self.conn = libvirt.openReadOnly(None)
+        if not self.conn:
+            logger.exception('Failed to open connection to hypervisor.')
+            sys.exit(1)
+
     def meter(self):
         """
-        Returns current disk I/O in byte
+        Returns a list of (UUID, bytes_read, bytes_written) tuples, one for 
+        each instance running on a specific host
         """
+        inst_ios = []
+
+        try:
+            # dict of (uuid: (pid, instance-name)) elements
+            inst_ids = get_instance_ids(self.conn)
+                    # list of (uuid, uptime) tuples
+            inst_ios = [(uuid,
+                         io_counter.read_bytes,
+                         io_counter.write_bytes)
+                        for (uuid, io_counter) \
+                            in [(k, psutil.Process(v[0]).get_io_counters()) \
+                                for k, v in inst_ids.iteritems()]]
+        except:
+            # Warning! Fails silently...
+            logger.exception('Connection to hypervisor failed; reset.')
+            self.conn = libvirt.openReadOnly(None)
+
+        # return inst_ios
         raise NotImplementedError()

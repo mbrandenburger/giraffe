@@ -1,5 +1,9 @@
 __author__ = 'marcus, fbahr'
 
+"""
+3rd-party modules/dependencies: psutil, libvirt
+"""
+
 import sys
 import subprocess
 import logging
@@ -27,7 +31,7 @@ def get_instance_ids(connection, pids=True):
     #         so: figure out a way to perform these only whenever
     #         really neccessary
     ids = {}
-    
+
     try:
         # dict of (uuid: None) elements, in short: instances running on a host
         for domain_id in connection.listDomainsID():
@@ -48,7 +52,7 @@ def get_instance_ids(connection, pids=True):
                          "grep uuid ",
                          "grep -v grep ",
                          "grep '"
-                         + "\|".join([str(uuid) for uuid in ids.keys()])
+                         + "\|".join(ids.keys())
                          + "' ",
                          "awk '{print $1, $12, $14}'"])
 
@@ -59,8 +63,8 @@ def get_instance_ids(connection, pids=True):
 
         # now, ids = dict of (uuid: (pid, instance-name)) elements
         for row in tabular:
-            for col in row.split():
-                ids[col[2]] = (col[0], col[1])
+            col = row.split()
+            ids[col[2]] = (col[0], col[1])
 
         # ^ alt. implementation
         # ---------------------
@@ -78,7 +82,7 @@ class Instance_UUIDs(PeriodicMeterTask):
     def __init__(self):
         self.conn = libvirt.openReadOnly(None)
         if not self.conn:
-            logger.exception('Failed to open connection to the hypervisor.')
+            logger.exception('Failed to open connection to hypervisor.')
             sys.exit(1)
 
     def meter(self):
@@ -91,7 +95,7 @@ class Instance_UUIDs(PeriodicMeterTask):
             uuids = get_instance_ids(self.conn, pids=False).keys()
         except:
             # Warning! Fails silently...
-            logger.exception('Failed to open connection to the hypervisor.')
+            logger.exception('Failed to open connection to hypervisor.')
             self.conn = libvirt.openReadOnly(None)
 
         return uuids
@@ -101,7 +105,7 @@ class Instance_CPU_utilizations(PeriodicMeterTask):
     def __init__(self):
         self.conn = libvirt.openReadOnly(None)
         if not self.conn:
-            logger.exception('Failed to open connection to the hypervisor.')
+            logger.exception('Failed to open connection to hypervisor.')
             sys.exit(1)
         self.utilization_map = {}
 
@@ -171,7 +175,7 @@ class Instance_UPTIMEs(PeriodicMeterTask):
     def __init__(self):
         self.conn = libvirt.openReadOnly(None)
         if not self.conn:
-            logger.exception('Failed to open connection to the hypervisor.')
+            logger.exception('Failed to open connection to hypervisor.')
             sys.exit(1)
 
     def meter(self):
@@ -208,9 +212,10 @@ class Instance_UPTIMEs(PeriodicMeterTask):
             #         uuid,
             #         float('%1.2f' % ((time.time() - process.create_time) * 1000))
             #         ])
-        except Exception:
+        except Exception as e:
             # Warning! Fails silently...
-            logger.exception('Failed to open connection to the hypervisor.')
+            print e
+            logger.exception('Failed to open connection to hypervisor.')
             self.conn = libvirt.openReadOnly(None)
 
         return uptimes

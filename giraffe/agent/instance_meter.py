@@ -193,7 +193,7 @@ class Instance_UPTIMEs(PeriodicMeterTask):
                         float('%1.2f'
                               % ((time.time() - process.create_time) * 1000)))
                        for (uuid, process) \
-                           in [(k, psutil.Process(v[0])) \
+                           in [(k, psutil.Process(int(v[0]))) \
                                for k, v in instance_ids.iteritems()]]
 
             # ^ alt. implementation
@@ -212,9 +212,8 @@ class Instance_UPTIMEs(PeriodicMeterTask):
             #         uuid,
             #         float('%1.2f' % ((time.time() - process.create_time) * 1000))
             #         ])
-        except Exception as e:
+        except:
             # Warning! Fails silently...
-            print e
             logger.exception('Failed to open connection to hypervisor.')
             self.conn = libvirt.openReadOnly(None)
 

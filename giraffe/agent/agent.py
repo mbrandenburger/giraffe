@@ -3,11 +3,13 @@ __author__ = 'marcus'
 import threading
 import time
 import logging
-from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRTMEM_Usage,\
+from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRTMEM_Usage, \
     Host_PHYMEM_Usage, Host_UPTIME, Host_NETWORK_IO
+from giraffe.agent.instance_meter import Instance_CPU_Usages, \
+    Instance_VIRTMEM_Usages, Instance_PHYMEM_Usages, Instance_UPTIMEs, \
+    Instance_NETWORK_IOs
 from giraffe.agent import publisher
 from giraffe.common.config import Config
-
 
 logger = logging.getLogger("agent")
 config = Config("giraffe.cfg")
@@ -31,16 +33,19 @@ class Agent(object):
             self.publisher
         )
 
-        # meter CPU AVG
+        # HOST METERS ---------------------------------------------------------
+
+        # meter host CPU AVG
         self.tasks.append(
             Host_CPU_AVG(self._callback_cpu_avg, _METER_DURATION)
         )
-        # meter phy memory
+
+        # meter host phy memory
         self.tasks.append(
             Host_PHYMEM_Usage(self._callback_phy_mem, _METER_DURATION)
         )
 
-        # meter vir memory
+        # meter host vir memory
         self.tasks.append(
             Host_VIRTMEM_Usage(self._callback_vir_mem, _METER_DURATION)
         )
@@ -54,6 +59,25 @@ class Agent(object):
         self.tasks.append(
             Host_NETWORK_IO(self._callback_network_io, _METER_DURATION)
         )
+
+        # INSTANCE METERS -----------------------------------------------------
+
+        # meter instance phy memory
+        self.tasks.append(
+            Instance_PHYMEM_Usages(
+                self._callback_inst_phy_mem,
+                _METER_DURATION)
+        )
+
+        # meter instances vir memory 
+        self.tasks.append(
+            Instance_VIRTMEM_Usages(
+                self._callback_inst_vir_mem,
+                _METER_DURATION)
+        )
+
+
+    # CB METHODS FOR HOST METERS ----------------------------------------------
 
     def _callback_cpu_avg(self, params):
         self.publisher.add_meter('loadavg_1m', params[0], 60)
@@ -72,6 +96,18 @@ class Agent(object):
     def _callback_network_io(self, params):
         self.publisher.add_meter('network_io_tx', params[0], 0)
         self.publisher.add_meter('network_io_rx', params[1], 0)
+
+
+    # CB METHODS FOR INSTANCE METERS ------------------------------------------
+
+    def _callback_inst_phy_mem(self, params):
+        self.publisher.add_meter('inst_phymem_usage', params[3], 0) # params?
+
+    def _callback_inst_vir_mem(self, params):
+        self.publisher.add_meter('inst_virmem_usage', params[3], 0) # params?
+
+
+    # -------------------------------------------------------------------------
 
     def launch(self):
         """

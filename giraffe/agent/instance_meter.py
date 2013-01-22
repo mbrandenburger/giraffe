@@ -78,6 +78,10 @@ def get_instance_ids(connection, pids=True):
     return ids
 
 
+def timestamp(offset=0.0):
+    return float('%1.2f' % (time.time() - offset))
+
+
 class PeriodicInstanceMeterTask(PeriodicMeterTask):
     def __init__(self):
         self.conn = libvirt.openReadOnly(None)
@@ -138,7 +142,7 @@ class Instance_CPU_utilizations(PeriodicInstanceMeterTask):
             #- self.utilization_map[uuid] = (cpu_info['cpu_time'],
             #-                               time.time())
             self.utilization_map[uuid] = (cpu_time,
-                                          time.time())
+                                          timestamp())
 
             cpu_util = 0.0
             if prev_cpu_times:
@@ -183,7 +187,7 @@ class Instance_VIRTMEM_Usages(PeriodicInstanceMeterTask):
             inst_ids = get_instance_ids(self.conn)
             # list of (uuid, uptime) tuples
             virtmem = [(uuid,
-                        time.time(),
+                        timestamp(),
                         mem_info.vms)
                         for (uuid, mem_info) \
                             in [(k, psutil.Process(v[0]).get_memory_info()) \
@@ -211,9 +215,8 @@ class Instance_UPTIMEs(PeriodicInstanceMeterTask):
             inst_ids = get_instance_ids(self.conn)
             # list of (uuid, uptime) tuples
             uptimes = [(uuid,
-                        time.time(), 
-                        float('%1.2f'
-                              % ((time.time() - process.create_time) * 1000)))
+                        timestamp(), 
+                        timestamp(offset=process.create_time))
                        for (uuid, process) \
                            in [(k, psutil.Process(v[0])) \
                                for k, v in inst_ids.iteritems()]]
@@ -232,7 +235,7 @@ class Instance_UPTIMEs(PeriodicInstanceMeterTask):
             #
             #     uptimes.append([
             #         uuid,
-            #         float('%1.2f' % ((time.time() - process.create_time) * 1000))
+            #         timestamp(offset=process.create_time())
             #         ])
         except:
             # Warning! Fails silently...
@@ -267,7 +270,7 @@ class Instance_DISK_IOs(PeriodicInstanceMeterTask):
             inst_ids = get_instance_ids(self.conn)
             # list of (uuid, uptime) tuples
             inst_ios = [(uuid,
-                         time.time(),
+                         timestamp(),
                          io_counter.read_bytes,
                          io_counter.write_bytes)
                         for (uuid, io_counter) \

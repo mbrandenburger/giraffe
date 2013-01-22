@@ -87,6 +87,11 @@ class PeriodicInstanceMeterTask(PeriodicMeterTask):
 
 
 class Instance_UUIDs(PeriodicInstanceMeterTask):
+    #@[fbahr]: Actually, this is rather a host meter... for the time being,
+    #          left as an instance metering task [since: subclassing 
+    #          PeriodicInstanceMeterTask]
+    #          Hence, rather than a list of UUIDs, a record (UNAME,
+    #          timestamp,  list of UUIDs) should be returned
     def meter(self):
         """
         Returns a list of instance UUIDs
@@ -103,12 +108,9 @@ class Instance_UUIDs(PeriodicInstanceMeterTask):
         return uuids
 
 
-class Instance_CPU_utilizations(PeriodicMeterTask):
+class Instance_CPU_utilizations(PeriodicInstanceMeterTask):
     def __init__(self):
-        self.conn = libvirt.openReadOnly(None)
-        if not self.conn:
-            logger.exception('Failed to open connection to hypervisor.')
-            sys.exit(1)
+        super(Instance_CPU_utilizations, self).__init__()
         self.utilization_map = {}
 
     def meter(self):
@@ -116,7 +118,7 @@ class Instance_CPU_utilizations(PeriodicMeterTask):
         Returns a list of CPU utilization for every instance running on a
         specific host
         """
-        domains = [self.conn.lookupByID(domain_id) 
+        domains = [self.conn.lookupByID(domain_id)
                    for domain_id in self.conn.listDomainsID()]
 
         for domain in domains:
@@ -134,9 +136,9 @@ class Instance_CPU_utilizations(PeriodicMeterTask):
 
             prev_cpu_times = self.utilization_map.get(uuid)
             #- self.utilization_map[uuid] = (cpu_info['cpu_time'],
-            #-                               datetime.datetime.now())
+            #-                               time.time())
             self.utilization_map[uuid] = (cpu_time,
-                                          datetime.datetime.now())
+                                          time.time())
 
             cpu_util = 0.0
             if prev_cpu_times:
@@ -155,7 +157,9 @@ class Instance_CPU_utilizations(PeriodicMeterTask):
         return cpu_util
 
 
-class Instance_PHYMEM_Usages(PeriodicMeterTask):
+class Instance_PHYMEM_Usages(PeriodicInstanceMeterTask):
+    #@[fbahr]: Join with Instance_VIRTMEM_Usages?
+
     def meter(self):
         """ 
         Returns a list of current physical memory usage for every instance 
@@ -164,26 +168,41 @@ class Instance_PHYMEM_Usages(PeriodicMeterTask):
         raise NotImplementedError()
 
 
-class Instance_VIRTMEM_Usages(PeriodicMeterTask):
+class Instance_VIRTMEM_Usages(PeriodicInstanceMeterTask):
+    #@[fbahr]: Join with Instance_PHYMEM_Usages?
+
     def meter(self):
-        """ 
-        Returns a list of current virtual memory usage for every instance 
-        running on a specific host
         """
+        Returns a list of (UUID, timestamp, virtmem) tuples, one for each 
+        instance running on a specific host
+        """
+        virtmem = []
+
+        try:
+            # dict of (uuid: (pid, instance-name)) elements
+            inst_ids = get_instance_ids(self.conn)
+            # list of (uuid, uptime) tuples
+            virtmem = [(uuid,
+                        time.time(),
+                        mem_info.vms)
+                        for (uuid, mem_info) \
+                            in [(k, psutil.Process(v[0]).get_memory_info()) \
+                                for k, v in inst_ids.iteritems()]]
+        except:
+            # Warning! Fails silently...
+            logger.exception('Connection to hypervisor failed; reset.')
+            self.conn = libvirt.openReadOnly(None)
+
+        # return virtmem
+
         raise NotImplementedError()
 
 
-class Instance_UPTIMEs(PeriodicMeterTask):
-    def __init__(self):
-        self.conn = libvirt.openReadOnly(None)
-        if not self.conn:
-            logger.exception('Failed to open connection to hypervisor.')
-            sys.exit(1)
-
+class Instance_UPTIMEs(PeriodicInstanceMeterTask):
     def meter(self):
         """
-        Returns a list of (UUID, uptime [in seconds]) tuples, one for each
-        instance running on a specific host
+        Returns a list of (UUID, timestamp, uptime [in seconds]) tuples, one
+        for each instance running on a specific host
         """
         uptimes = []
 
@@ -192,6 +211,7 @@ class Instance_UPTIMEs(PeriodicMeterTask):
             inst_ids = get_instance_ids(self.conn)
             # list of (uuid, uptime) tuples
             uptimes = [(uuid,
+                        time.time(), 
                         float('%1.2f'
                               % ((time.time() - process.create_time) * 1000)))
                        for (uuid, process) \
@@ -222,7 +242,7 @@ class Instance_UPTIMEs(PeriodicMeterTask):
         return uptimes
 
 
-class Instance_NETWORK_IOs(PeriodicMeterTask):
+class Instance_NETWORK_IOs(PeriodicInstanceMeterTask):
     def meter(self):
         """
         Returns a list of IDs and corresponding network I/O (in bytes) for all
@@ -231,19 +251,14 @@ class Instance_NETWORK_IOs(PeriodicMeterTask):
         return NotImplementedError()
 
 
-class Instance_DISK_IOs(PeriodicMeterTask):
+class Instance_DISK_IOs(PeriodicInstanceMeterTask):
     #@[fbahr]: Actually, this should rather refer to Object (swift) and/or
     #          Block Storage (cinder) usage.
-    def __init__(self):
-        self.conn = libvirt.openReadOnly(None)
-        if not self.conn:
-            logger.exception('Failed to open connection to hypervisor.')
-            sys.exit(1)
 
     def meter(self):
         """
-        Returns a list of (UUID, bytes_read, bytes_written) tuples, one for
-        each instance running on a specific host
+        Returns a list of (UUID, timestamp, bytes_read, bytes_written) tuples,
+        one for each instance running on a specific host
         """
         inst_ios = []
 
@@ -252,6 +267,7 @@ class Instance_DISK_IOs(PeriodicMeterTask):
             inst_ids = get_instance_ids(self.conn)
             # list of (uuid, uptime) tuples
             inst_ios = [(uuid,
+                         time.time(),
                          io_counter.read_bytes,
                          io_counter.write_bytes)
                         for (uuid, io_counter) \

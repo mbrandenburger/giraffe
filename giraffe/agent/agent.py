@@ -73,7 +73,7 @@ class Agent(object):
 
         # meter instances uptime
         self.tasks.append(
-            Host_UPTIME(self._callback_inst_uptime, _METER_DURATION)
+            Inst_UPTIME(self._callback_inst_uptime, _METER_DURATION)
         )
 
 

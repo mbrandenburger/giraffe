@@ -22,25 +22,27 @@ class Host_CPU_AVG(PeriodicMeterTask):
 
 
 class Host_PHYMEM_Usage(PeriodicMeterTask):
+    # @[fbahr]: Join with Host_VIRMEM_Usage?
     def meter(self):
         """
         Returns current physical memory usage
         """
-        # deprecated in psutil v0.6.0
-        # return psutil.phymem_usage()
-        # usage(total=25269719040L, used=11895799808L, free=13373919232L, percent=16.8)
-
+        # psutil.phymem_usage() deprecated in psutil v0.6.0
         mem = psutil.virtual_memory()
         return [mem.total, mem.used, mem.free, mem.percent]
-        # return _nt_sysmeminfo(mem.total, mem.used, mem.free, mem.percent)
+        # ^ return _nt_sysmeminfo(mem.total, mem.used, mem.free, mem.percent)
+        #   -> usage(total=..L, used=1..L, free=..L, percent=x.y)
 
 
 class Host_VIRMEM_Usage(PeriodicMeterTask):
+    # @[fbahr]: Join with Host_PHYMEM_Usage?
     def meter(self):
         """
         Returns current virtual memory usage
         """
-        return psutil.virtmem_usage()
+        # psutil.virtmem_usage() deprecated in psutil v0.6.0
+        return psutil.swap_memory()
+        # -> swap(total=..L, used=..L, free=..L, percent=x.y, sin=.., sout=..)
 
 
 class Host_UPTIME(PeriodicMeterTask):

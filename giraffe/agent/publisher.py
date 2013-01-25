@@ -9,7 +9,6 @@ from giraffe.common.rabbit_mq_connector import Connector
 from giraffe.common.rabbit_mq_connector import BasicProducer
 from giraffe.common.config import *
 
-
 logger = logging.getLogger("agent")
 config = Config("giraffe.cfg")
 
@@ -18,7 +17,7 @@ _RABBIT_QUEUE = config.get("rabbit", "queue")
 _RABBIT_EXCHANGE = config.get("rabbit", "exchange")
 _RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
 _FLUSH_DURATION = config.getint("agent", "duration")
-_HOSTNAME = config.get("agent", "hostname")
+_HOSTNAME = config.get("agent", "hostname") # ...considered harmful.
 _SIGNATURE = "TODO"
 
 
@@ -53,20 +52,32 @@ class AgentPublisher(threading.Thread):
         message.signature = _SIGNATURE
         return message
 
-    def add_meter(self, meter_type, meter_value, meter_duration):
+    def add_meter_record(self, meter_type, meter_value, meter_duration):
         """
         Add new meter record to meter message
-        Params: Meter type, value and meter duration
+        Params: meter type [as string], value(s), and duration [in seconds]
         """
-        timestamp = self._timestamp_now()
-        logger.debug("Add meter: %s=%s" % (meter_type, meter_value))
+        # @[fbahr]: Instead of passing meter_type as a string, either meter
+        #           or typed meter values should be returned.
+        logger.debug("Add meter record: %s=%s" % (meter_type, meter_value))
+
         if not self.lock.locked():
             self.lock.acquire()
             try:
-                self.message.add_host_record(
-                    timestamp, meter_type, meter_value, meter_duration)
+                if meter_type.startswith("inst"):
+                    self.message.add_inst_record(
+                        meter_type,
+                        meter_value,
+                        meter_duration)
+                else:
+                    self.message.add_host_record(
+                        self._timestamp_now(),
+                        meter_type,
+                        meter_value,
+                        meter_duration)
             finally:
                 self.lock.release()
+
 
     def flush(self):
         """

@@ -80,36 +80,36 @@ class Agent(object):
     # CB METHODS FOR HOST METERS ----------------------------------------------
 
     def _callback_cpu_avg(self, params):
-        self.publisher.add_meter('loadavg_1m', params[0], 60)
-        self.publisher.add_meter('loadavg_5m', params[1], 300)
-        self.publisher.add_meter('loadavg_15m', params[2], 1500)
+        self.publisher.add_meter_record('loadavg_1m', params[0], 60)
+        self.publisher.add_meter_record('loadavg_5m', params[1], 300)
+        self.publisher.add_meter_record('loadavg_15m', params[2], 1500)
 
     def _callback_phy_mem(self, params):
-        self.publisher.add_meter('phymem_usage', params[3], 0)
+        self.publisher.add_meter_record('phymem_usage', params[3], 0)
 
     def _callback_vir_mem(self, params):
-        self.publisher.add_meter('virmem_usage', params[3], 0)
+        self.publisher.add_meter_record('virmem_usage', params[3], 0)
 
     def _callback_uptime(self, params):
-        self.publisher.add_meter('uptime', params, 0)
+        self.publisher.add_meter_record('uptime', params, 0)
 
     def _callback_network_io(self, params):
-        self.publisher.add_meter('network_io_tx', params[0], 0)
-        self.publisher.add_meter('network_io_rx', params[1], 0)
+        self.publisher.add_meter_record('network_io_tx', params[0], 0)
+        self.publisher.add_meter_record('network_io_rx', params[1], 0)
 
 
     # CB METHODS FOR INSTANCE METERS ------------------------------------------
 
     def _callback_inst_phy_mem(self, params):
-        self.publisher.add_meter('inst_phymem_usage', params, None)
-        # self.publisher.add_meter('inst_phymem_usage', params[3], 0)
+        self.publisher.add_meter_record('inst_phymem_usage', params, 0)
+        # self.publisher.add_meter_record('inst_phymem_usage', params[3], 0)
 
     def _callback_inst_vir_mem(self, params):
-        self.publisher.add_meter('inst_virmem_usage', params, None)
-        # self.publisher.add_meter('inst_virmem_usage', params[3], 0)
+        self.publisher.add_meter_record('inst_virmem_usage', params, 0)
+        # self.publisher.add_meter_record('inst_virmem_usage', params[3], 0)
 
     def _callback_inst_uptime(self, params):
-        self.publisher.add_meter('inst_uptime', params, None)
+        self.publisher.add_meter_record('inst_uptime', params, 0)
 
 
     # -------------------------------------------------------------------------

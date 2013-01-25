@@ -119,11 +119,11 @@ class Inst_UUIDs(PeriodicInstanceMeterTask):
         return uuids
 
 
-class Inst_CPU_Usages(PeriodicInstanceMeterTask):
+class Inst_CPU_Usage(PeriodicInstanceMeterTask):
     #@[fbahr]: Leverage/reuse get_instance_ids()?
 
     def __init__(self):
-        super(Inst_CPU_Usages, self).__init__()
+        super(Inst_CPU_Usage, self).__init__()
         self.utilization_map = {}
 
     def meter(self):
@@ -244,7 +244,7 @@ class Inst_VIRMEM_Usage(PeriodicInstanceMeterTask):
         return virmem
 
 
-class Inst_UPTIMEs(PeriodicInstanceMeterTask):
+class Inst_UPTIME(PeriodicInstanceMeterTask):
     def meter(self):
         """
         Returns a list of (UUID, timestamp, uptime [in seconds]) tuples, one
@@ -255,30 +255,13 @@ class Inst_UPTIMEs(PeriodicInstanceMeterTask):
         try:
             # dict of (uuid: (pid, instance-name)) elements
             inst_ids = get_instance_ids(self.conn)
-            # list of (uuid, uptime) tuples
+            # list of (uuid, timestamp, uptime) tuples
             uptimes = [(uuid,
-                        timestamp(), 
+                        timestamp(),
                         timestamp(offset=process.create_time))
                        for (uuid, process) \
                            in [(k, psutil.Process(v[0])) \
                                for k, v in inst_ids.iteritems()]]
-
-            # ^ alt. implementation
-            # ---------------------
-            # uuids = [self.conn.lookupByID(domain_id).UUIDString() 
-            #          for domain_id in self.conn.listDomainsID()]
-            #
-            # for domain_id in self.conn.listDomainsID():
-            #     domain = self.conn.lookupByID(domain_id)
-            #     uuid = domain.UUIDString()
-            #
-            #     pid = get_instance_pid(uuid)
-            #     process = psutil.Process(pid)
-            #
-            #     uptimes.append([
-            #         uuid,
-            #         timestamp(offset=process.create_time())
-            #         ])
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
@@ -287,7 +270,7 @@ class Inst_UPTIMEs(PeriodicInstanceMeterTask):
         return uptimes
 
 
-class Inst_NETWORK_IOs(PeriodicInstanceMeterTask):
+class Inst_NETWORK_IO(PeriodicInstanceMeterTask):
     def meter(self):
         """
         Returns a list of IDs and corresponding network I/O (in bytes) for all
@@ -296,7 +279,7 @@ class Inst_NETWORK_IOs(PeriodicInstanceMeterTask):
         return NotImplementedError()
 
 
-class Inst_DISK_IOs(PeriodicInstanceMeterTask):
+class Inst_DISK_IO(PeriodicInstanceMeterTask):
     #@[fbahr]: Actually, this should rather refer to Object (swift) and/or
     #          Block Storage (cinder) usage.
 

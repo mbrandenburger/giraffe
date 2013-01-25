@@ -5,9 +5,8 @@ import time
 import logging
 from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRMEM_Usage, \
     Host_PHYMEM_Usage, Host_UPTIME, Host_NETWORK_IO
-from giraffe.agent.instance_meter import Instance_CPU_Usages, \
-    Instance_VIRMEM_Usages, Instance_PHYMEM_Usages, Instance_UPTIMEs, \
-    Instance_NETWORK_IOs
+from giraffe.agent.instance_meter import Inst_CPU_Usage, Inst_VIRMEM_Usage, \
+    Inst_PHYMEM_Usage, Inst_UPTIME, Inst_NETWORK_IO
 from giraffe.agent import publisher
 from giraffe.common.config import Config
 
@@ -64,16 +63,17 @@ class Agent(object):
 
         # meter instance phy memory
         self.tasks.append(
-            Instance_PHYMEM_Usages(
-                self._callback_inst_phy_mem,
-                _METER_DURATION)
+            Inst_PHYMEM_Usage(self._callback_inst_phy_mem, _METER_DURATION)
         )
 
-        # meter instances vir memory 
+        # meter instances vir memory
         self.tasks.append(
-            Instance_VIRMEM_Usages(
-                self._callback_inst_vir_mem,
-                _METER_DURATION)
+            Inst_VIRMEM_Usage(self._callback_inst_vir_mem, _METER_DURATION)
+        )
+
+        # meter instances uptime
+        self.tasks.append(
+            Host_UPTIME(self._callback_inst_uptime, _METER_DURATION)
         )
 
 
@@ -101,10 +101,15 @@ class Agent(object):
     # CB METHODS FOR INSTANCE METERS ------------------------------------------
 
     def _callback_inst_phy_mem(self, params):
-        self.publisher.add_meter('inst_phymem_usages', params[3], 0) # params?
+        self.publisher.add_meter('inst_phymem_usage', params, None)
+        # self.publisher.add_meter('inst_phymem_usage', params[3], 0)
 
     def _callback_inst_vir_mem(self, params):
-        self.publisher.add_meter('inst_virmem_usages', params[3], 0) # params?
+        self.publisher.add_meter('inst_virmem_usage', params, None)
+        # self.publisher.add_meter('inst_virmem_usage', params[3], 0)
+
+    def _callback_inst_uptime(self, params):
+        self.publisher.add_meter('inst_uptime', params, None)
 
 
     # -------------------------------------------------------------------------

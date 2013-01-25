@@ -26,7 +26,13 @@ class Host_PHYMEM_Usage(PeriodicMeterTask):
         """
         Returns current physical memory usage
         """
-        return psutil.phymem_usage()
+        # deprecated in psutil v0.6.0
+        # return psutil.phymem_usage()
+        # usage(total=25269719040L, used=11895799808L, free=13373919232L, percent=16.8)
+
+        mem = psutil.virtual_memory()
+        return [mem.total, mem.used, mem.free, mem.percent]
+        # return _nt_sysmeminfo(mem.total, mem.used, mem.free, mem.percent)
 
 
 class Host_VIRMEM_Usage(PeriodicMeterTask):

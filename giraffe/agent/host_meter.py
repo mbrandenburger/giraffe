@@ -23,6 +23,7 @@ class Host_CPU_AVG(PeriodicMeterTask):
 
 class Host_PHYMEM_Usage(PeriodicMeterTask):
     # @[fbahr]: Join with Host_VIRMEM_Usage?
+
     def meter(self):
         """
         Returns current physical memory usage
@@ -36,6 +37,7 @@ class Host_PHYMEM_Usage(PeriodicMeterTask):
 
 class Host_VIRMEM_Usage(PeriodicMeterTask):
     # @[fbahr]: Join with Host_PHYMEM_Usage?
+
     def meter(self):
         """
         Returns current virtual memory usage

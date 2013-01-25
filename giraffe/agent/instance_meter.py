@@ -1,6 +1,11 @@
 __author__ = 'marcus, fbahr'
 
 """
+-------------------------------------------------------------------------------
+Implemented meters
+-------------------------------------------------------------------------------
+Inst_PHYMEM_Usages
+
 3rd-party modules/dependencies: psutil, libvirt
 """
 
@@ -15,7 +20,6 @@ import psutil
 import libvirt
 
 import time
-from datetime import datetime, timedelta
 from giraffe.common.task import PeriodicMeterTask
 
 
@@ -92,12 +96,13 @@ class PeriodicInstanceMeterTask(PeriodicMeterTask):
             sys.exit(1)
 
 
-class Instance_UUIDs(PeriodicInstanceMeterTask):
+class Inst_UUIDs(PeriodicInstanceMeterTask):
     #@[fbahr]: Actually, this is rather a host meter... for the time being,
     #          left as an instance metering task [since: subclassing 
     #          PeriodicInstanceMeterTask]
     #          Hence, rather than a list of UUIDs, a record (UNAME,
     #          timestamp,  list of UUIDs) should be returned
+
     def meter(self):
         """
         Returns a list of instance UUIDs
@@ -114,9 +119,11 @@ class Instance_UUIDs(PeriodicInstanceMeterTask):
         return uuids
 
 
-class Instance_CPU_Usages(PeriodicInstanceMeterTask):
+class Inst_CPU_Usages(PeriodicInstanceMeterTask):
+    #@[fbahr]: Leverage/reuse get_instance_ids()?
+
     def __init__(self):
-        super(Instance_CPU_Usages, self).__init__()
+        super(Inst_CPU_Usages, self).__init__()
         self.utilization_map = {}
 
     def meter(self):
@@ -124,37 +131,43 @@ class Instance_CPU_Usages(PeriodicInstanceMeterTask):
         Returns a list of CPU utilization for every instance running on a
         specific host
         """
-        domains = [self.conn.lookupByID(domain_id)
-                   for domain_id in self.conn.listDomainsID()]
+        try:
+            #@[fbahr]: 
+            #  - What about /proc/<pid>/stat?
+            #  - psutil.process.get_memory_percent() and %CPU as reported by
+            #    virt-top differ significantly
 
-        for domain in domains:
-            uuid = domain.UUIDString()
+            domains = [self.conn.lookupByID(domain_id)
+                       for domain_id in self.conn.listDomainsID()]
 
-            # pid = get_instance_pid(uuid)
-            # process = psutil.Process(pid)
-            # load_avg = process.get_cpu_percent(interval=1.0)
+            for domain in domains:
+                uuid = domain.UUIDString()
 
-            infos = domain.info()
-            cpu_time = infos[2]
-            num_cpus = infos[3]
-            #- cpu_info = self.conn.get_info({'name': domain.name()})
-            #- ^ @[fbahr]: required for cpu_info['cpu_time'], cpu_info['num_cpu'] 
+                prev_cpu_times = self.utilization_map.get(uuid)
+            #-  self.utilization_map[uuid] = (cpu_info['cpu_time'],
+            #-                                time.time())
 
-            prev_cpu_times = self.utilization_map.get(uuid)
-            #- self.utilization_map[uuid] = (cpu_info['cpu_time'],
-            #-                               time.time())
-            self.utilization_map[uuid] = (cpu_time,
-                                          timestamp())
+            #   pid = get_instance_pid(uuid)
+            #   process = psutil.Process(pid)
+            #   load_avg = process.get_cpu_percent(interval=1.0)
 
-            cpu_util = 0.0
-            if prev_cpu_times:
-                prev_cpu = prev_cpu_times[0]
-                prev_timestamp = prev_cpu_times[1]
+            #-  cpu_info = self.conn.get_info({'name': domain.name()})
+            #-  num_cpus, cpu_time = cpu_info['num_cpu'], cpu_info['cpu_time']
+                infos = domain.info()
+                num_cpus, cpu_time = infos[3], infos[4]
 
-                delta = self.utilization_map[uuid][1] - prev_timestamp
-                elapsed = (delta.seconds * (10**6) + delta.microseconds) * 1000
+                self.utilization_map[uuid] = (cpu_time, timestamp())
 
-                cores_fraction = 1.0 / num_cpus
+                cpu_util = 0.0
+                if prev_cpu_times:
+                    prev_cpu = prev_cpu_times[0]
+                    prev_timestamp = prev_cpu_times[1]
+
+                    delta = self.utilization_map[uuid][1] - prev_timestamp
+                    elapsed = (delta.seconds * (10**6) + delta.microseconds) * 1000
+
+                    cores_fraction = 1.0 / num_cpus
+
             # account for cpu_time being reset when the instance is restarted
             time_used = (cpu_time - prev_cpu
                          if prev_cpu <= cpu_time else
@@ -163,12 +176,16 @@ class Instance_CPU_Usages(PeriodicInstanceMeterTask):
         return cpu_util
 
 
-class Instance_PHYMEM_Usages(PeriodicInstanceMeterTask):
-    #@[fbahr]: Join with Instance_VIRMEM_Usages?
+class Inst_PHYMEM_Usages(PeriodicInstanceMeterTask):
+    #@[fbahr]: Join with Inst_VIRMEM_Usages?
+
+    def __init__(self):
+        super(Inst_PHYMEM_Usages, self).__init__()
+        self.psutil_vmem = psutil.virtual_memory()
 
     def meter(self):
         """
-        Returns a list of (UUID, timestamp, phymem) tuples, one for each 
+        Returns a list of (UUID, timestamp, phymem-attr) tuples, one for each 
         instance running on a specific host
         """
         phymem = []
@@ -177,9 +194,13 @@ class Instance_PHYMEM_Usages(PeriodicInstanceMeterTask):
             # dict of (uuid: (pid, instance-name)) elements
             inst_ids = get_instance_ids(self.conn)
             # list of (uuid, uptime) tuples
+
+            # list of (uuid, timestamp, phymem in bytes, phymem usage in pct)
+            # tupls
             phymem = [(uuid,
-                        timestamp(),
-                        mem_info.rss)
+                       timestamp(),
+                       mem_info.rss,
+                       mem_info.rss / self.psutil_vmem.total)
                         for (uuid, mem_info) \
                             in [(k, psutil.Process(v[0]).get_memory_info()) \
                                 for k, v in inst_ids.iteritems()]]
@@ -188,13 +209,11 @@ class Instance_PHYMEM_Usages(PeriodicInstanceMeterTask):
             logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
-        # return phymem
-
-        raise NotImplementedError()
+        return phymem
 
 
-class Instance_VIRMEM_Usages(PeriodicInstanceMeterTask):
-    #@[fbahr]: Join with Instance_PHYMEM_Usages?
+class Inst_VIRMEM_Usages(PeriodicInstanceMeterTask):
+    #@[fbahr]: Join with Inst_PHYMEM_Usages?
 
     def meter(self):
         """
@@ -223,7 +242,7 @@ class Instance_VIRMEM_Usages(PeriodicInstanceMeterTask):
         raise NotImplementedError()
 
 
-class Instance_UPTIMEs(PeriodicInstanceMeterTask):
+class Inst_UPTIMEs(PeriodicInstanceMeterTask):
     def meter(self):
         """
         Returns a list of (UUID, timestamp, uptime [in seconds]) tuples, one
@@ -266,7 +285,7 @@ class Instance_UPTIMEs(PeriodicInstanceMeterTask):
         return uptimes
 
 
-class Instance_NETWORK_IOs(PeriodicInstanceMeterTask):
+class Inst_NETWORK_IOs(PeriodicInstanceMeterTask):
     def meter(self):
         """
         Returns a list of IDs and corresponding network I/O (in bytes) for all
@@ -275,7 +294,7 @@ class Instance_NETWORK_IOs(PeriodicInstanceMeterTask):
         return NotImplementedError()
 
 
-class Instance_DISK_IOs(PeriodicInstanceMeterTask):
+class Inst_DISK_IOs(PeriodicInstanceMeterTask):
     #@[fbahr]: Actually, this should rather refer to Object (swift) and/or
     #          Block Storage (cinder) usage.
 

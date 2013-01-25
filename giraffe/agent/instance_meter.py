@@ -4,7 +4,7 @@ __author__ = 'marcus, fbahr'
 -------------------------------------------------------------------------------
 Implemented meters
 -------------------------------------------------------------------------------
-Inst_PHYMEM_Usages
+Inst_PHYMEM_Usage
 
 3rd-party modules/dependencies: psutil, libvirt
 """
@@ -176,16 +176,16 @@ class Inst_CPU_Usages(PeriodicInstanceMeterTask):
         return cpu_util
 
 
-class Inst_PHYMEM_Usages(PeriodicInstanceMeterTask):
-    #@[fbahr]: Join with Inst_VIRMEM_Usages?
+class Inst_PHYMEM_Usage(PeriodicInstanceMeterTask):
+    #@[fbahr]: Join with Inst_VIRMEM_Usage?
 
     def __init__(self):
-        super(Inst_PHYMEM_Usages, self).__init__()
+        super(Inst_PHYMEM_Usage, self).__init__()
         self.psutil_vmem = psutil.virtual_memory()
 
     def meter(self):
         """
-        Returns a list of (UUID, timestamp, phymem-attr) tuples, one for each 
+        Returns a list of (UUID, timestamp, phymem-attr) tuples, one for each
         instance running on a specific host
         """
         phymem = []
@@ -193,14 +193,12 @@ class Inst_PHYMEM_Usages(PeriodicInstanceMeterTask):
         try:
             # dict of (uuid: (pid, instance-name)) elements
             inst_ids = get_instance_ids(self.conn)
-            # list of (uuid, uptime) tuples
-
-            # list of (uuid, timestamp, phymem in bytes, phymem usage in pct)
-            # tupls
+            # list of (uuid, timestamp, phymem [in bytes], phymem usage [in
+            # pct of total]) tuples
             phymem = [(uuid,
                        timestamp(),
                        mem_info.rss,
-                       mem_info.rss / self.psutil_vmem.total)
+                       float(mem_info.rss) / self.psutil_vmem.total)
                         for (uuid, mem_info) \
                             in [(k, psutil.Process(v[0]).get_memory_info()) \
                                 for k, v in inst_ids.iteritems()]]
@@ -212,12 +210,16 @@ class Inst_PHYMEM_Usages(PeriodicInstanceMeterTask):
         return phymem
 
 
-class Inst_VIRMEM_Usages(PeriodicInstanceMeterTask):
-    #@[fbahr]: Join with Inst_PHYMEM_Usages?
+class Inst_VIRMEM_Usage(PeriodicInstanceMeterTask):
+    #@[fbahr]: Join with Inst_PHYMEM_Usage?
+
+    def __init__(self):
+        super(Inst_VIRMEM_Usage, self).__init__()
+        self.psutil_smem = psutil.swap_memory()
 
     def meter(self):
         """
-        Returns a list of (UUID, timestamp, virmem) tuples, one for each 
+        Returns a list of (UUID, timestamp, virmem-attr) tuples, one for each
         instance running on a specific host
         """
         virmem = []
@@ -225,10 +227,12 @@ class Inst_VIRMEM_Usages(PeriodicInstanceMeterTask):
         try:
             # dict of (uuid: (pid, instance-name)) elements
             inst_ids = get_instance_ids(self.conn)
-            # list of (uuid, uptime) tuples
+            # list of (uuid, timestamp, virmem [in bytes], virmem usage [in
+            # pct of total]) tuples
             virmem = [(uuid,
                        timestamp(),
-                       mem_info.vms)
+                       mem_info.vms,
+                       float(mem_info.vms) / self.psutil_smem.total)
                        for (uuid, mem_info) \
                            in [(k, psutil.Process(v[0]).get_memory_info()) \
                                for k, v in inst_ids.iteritems()]]
@@ -237,9 +241,7 @@ class Inst_VIRMEM_Usages(PeriodicInstanceMeterTask):
             logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
-        # return virmem
-
-        raise NotImplementedError()
+        return virmem
 
 
 class Inst_UPTIMEs(PeriodicInstanceMeterTask):

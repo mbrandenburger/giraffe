@@ -5,7 +5,7 @@ import giraffe.service.db as db
 from giraffe.service.db import Host, Meter, MeterRecord
 
 
-class DbTestCase(unittest.TestCase):
+class DbTestCases(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.db = db.connect('mysql://user:pass@127.0.0.1/schema')
@@ -21,7 +21,7 @@ class DbTestCase(unittest.TestCase):
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def setUp(self):
-        super(DbTestCase, self).setUp()
+        super(DbTestCases, self).setUp()
         self.meter = Meter(name='unit_test_meter',
                       description='created in setUpClass',
                       unit_name='kb', data_type='int')
@@ -45,7 +45,7 @@ class DbTestCase(unittest.TestCase):
         self.db.commit()
 
     def tearDown(self):
-        super(DbTestCase, self).tearDown()
+        super(DbTestCases, self).tearDown()
         self.db.rollback()
         self.db.delete(self.record)
         self.db.delete(self.meter)

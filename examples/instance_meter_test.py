@@ -1,10 +1,11 @@
-import libvirt
+__author__ = 'marcus'
+
+import os
 import sys
 import subprocess
-import psutil
 import datetime
-
-__author__ = 'marcus'
+import psutil
+import libvirt
 
 
 def getInstancePID(uuid):
@@ -25,7 +26,6 @@ if conn is None:
 
 #try:
 else:
-
     (model, memory, cpus, mhz, nodes, socket, cores, threads) = conn.getInfo()
     print 'System info:'
     print 'Model = %s' % model
@@ -46,14 +46,19 @@ else:
         uuid = dom.UUIDString()
         pid = getInstancePID(uuid)
         process = psutil.Process(pid)
+
+        # libvirt -------------------------------------------------------------
         print 'ID = %d' % id
         print 'Name =  %s' % dom.name()
         print 'UUID = %s' % uuid
         print 'OSType = %s' % dom.OSType()
         print 'State = %d' % infos[0]
         print 'Max Memory = %d' % infos[1]
+        print 'Current amount of memory used = %d' % infos[2]
         print 'Number of virt CPUs = %d' % infos[3]
-        print 'CPU Time (in ns) = %d' % infos[2]
+        print 'CPU Time (in ns) = %d' % infos[4]
+
+        # psutil -------------------------------------------------------------
         print 'PID = %s' % pid
         print 'Status is %s' % str(process.status)
         print 'Username = %s' % process.username
@@ -67,10 +72,11 @@ else:
         print 'Memory Info = %s' % list(process.get_memory_info())
         print 'External Memory Info = %s' % list(process.get_ext_memory_info())
         #print 'Memory Maps = %s' % list(process.get_memory_maps())
-        print 'I/O Counter = %s' % list(process.get_io_counters())
+        print 'I/O Counter = %s' % list(process.get_io_counters()) # disk I/O
         #print 'Open Files = %s' % list(process.get_open_files())
         print 'Open Connectionsi = %s' % list(process.get_connections())
         print ' '
+
 #except:
 #    print 'Errror'
 #    sys.exit(1)

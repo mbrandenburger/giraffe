@@ -17,10 +17,18 @@ from datetime import datetime
 # import matplotlib.dates as mdates
 # import matplotlib.cbook as cbook
 from giraffe.common.config import Config
+from giraffe.service.db import Meter, MeterRecord
 from keystoneclient.v2_0 import client as ksclient
 
 import logging
 logger = logging.getLogger("client")
+
+
+def _create_url_from(endpoint, path, params=None):
+    url = ''.join(['http://', endpoint, path, '?' if params else ''])
+    if params:
+        url = url + '&'.join(params)
+    return url
 
 
 class BaseController(controller.CementBaseController):
@@ -33,7 +41,7 @@ class BaseController(controller.CementBaseController):
 
 
     def authAndReturnToken(self):
-#        TODO(Marcus): Add CLI params
+#       TODO(Marcus): Add CLI params
         kwargs = {
             'username': os.getenv('OS_USERNAME'),
             'password': os.getenv('OS_PASSWORD'),
@@ -44,7 +52,7 @@ class BaseController(controller.CementBaseController):
             'endpoint_type': os.getenv('OS_ENDPOINT_TYPE'),
             'insecure': False
         }
-        _ksclient =ksclient.Client(username=kwargs.get('username'),
+        _ksclient = ksclient.Client(username=kwargs.get('username'),
             password=kwargs.get('password'),
             tenant_id=kwargs.get('tenant_id'),
             tenant_name=kwargs.get('tenant_name'),
@@ -62,10 +70,6 @@ class BaseController(controller.CementBaseController):
         description = 'Command-line interface to the Giraffe API.'
 
         _config     = Config('giraffe.cfg')
-
-
-        # default config options
-        # config_defaults = {}
 
 
         # command line arguments
@@ -92,9 +96,6 @@ class BaseController(controller.CementBaseController):
     def default(self):
         url = None
 
-
-
-
         try:
             url = ''.join(['http://', self.pargs.endpoint, self.pargs.request])
             logger.debug('Query: %s' % url)
@@ -103,7 +104,7 @@ class BaseController(controller.CementBaseController):
             auth_token = self.authAndReturnToken()
             auth_header = {'X-Auth-Token': auth_token}
 
-#            TODO(Marcus): Auth is depricated ... remove
+#           TODO(Marcus): Auth is depricated ... remove
             r = requests.get(url, auth=(self.pargs.username,
                                         self.pargs.password),
                             headers=auth_header)
@@ -118,7 +119,6 @@ class BaseController(controller.CementBaseController):
                 self.__print_as_tab(r.json)
             else:
                 print json.dumps(r.json, indent=4)
-
 
         except requests.exceptions.HTTPError:
             print '\nBad request [HTTP %s]: %s' % (r.status_code, url)
@@ -158,9 +158,7 @@ class BaseController(controller.CementBaseController):
 
 
     def __print_as_tab(self, r_json):
-        print "Warning: not yet implemented."
-        pass
-
+        raise NotImplementedError("Warning: not yet implemented.")
 
 
 class GiraffeClient(foundation.CementApp):
@@ -168,22 +166,50 @@ class GiraffeClient(foundation.CementApp):
         label = 'giraffe-client'
         base_controller = BaseController()
 
-#   def __init__(self, **kwargs):
-#       foundation.CementApp.__init__(self, kwargs)
+    def __init__(self, **kwargs):
+        super(GiraffeClient, self).__init__(kwargs)
+
+        self.config = Config('giraffe.cfg')
+        self.username = self.config.get('client', 'user')
+        self.password = self.config.get('client', 'pass')
+        self.endpoint = ':'.join([self.config.get('client', 'host'),
+                                  self.config.get('client', 'port')])
+
+    def meters(self, query_params=None):
+        request = '/meters'
+        url = ''.join(['http://', self.endpoint, request])
+        lst = requests.get(url, auth=(self.username, self.password)).json
+        # ^ lst = list of
+        #           {u'unit_name': u'[seconds|..]',
+        #            u'description': u'<description>',
+        #            u'id': u'<meter_id (int)>',
+        #            u'data_type': u'[float|..]',
+        #            u'name': u'<meter_name (string)>'}
+        #         dicts
+        meters = []
+        for elem in lst:
+            m = Meter()
+            m.id = elem['id']
+            m.name = elem['name']
+            m.description = elem['description']
+            m.unit_name = elem['unit_name']
+            m.data_type = elem['data_type']
+            meters.append(m)
+        return meters
 
 
 def main():
-    #create an application
+    #creating an application
     app = GiraffeClient()
 
     try:
-        # setup the application
+        # setting up the application
         app.setup()
         app.run()
     except Exception as e:
         print e
     finally:
-        # close the application
+        # closing the application
         app.close()
 
 

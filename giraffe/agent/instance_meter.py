@@ -4,14 +4,26 @@ __author__ = 'marcus, fbahr'
 -------------------------------------------------------------------------------
 Implemented meters
 -------------------------------------------------------------------------------
-Inst_PHYMEM_Usage
++ [Inst_UUIDs]
+- Inst_CPU_Usage    (raises NotImplementedError)
++ Inst_PHYMEM_Usage
++ Inst_VIRMEM_Usage
++ Inst_UPTIME
+- Inst_NETWORK_IO   (raises NotImplementedError)
++ Inst_DISK_IO      (raises NotImplementedError, though)
 
-3rd-party modules/dependencies: psutil, libvirt
+-------------------------------------------------------------------------------
+3rd-party modules/dependencies
+-------------------------------------------------------------------------------
+psutil
+libvirt
 """
 
 import sys
 import subprocess
 import logging
+import time
+
 import psutil
 
 # try:
@@ -19,7 +31,6 @@ import psutil
 # except ImportError:
 import libvirt
 
-import time
 from giraffe.common.task import PeriodicMeterTask
 
 
@@ -86,9 +97,9 @@ def timestamp(offset=0.0):
     return float('%1.2f' % (time.time() - offset))
 
 
-class PeriodicInstanceMeterTask(PeriodicMeterTask):
+class PeriodicInstMeterTask(PeriodicMeterTask):
     def __init__(self, callback, period):
-        super(PeriodicInstanceMeterTask, self).__init__(callback, period)
+        super(PeriodicInstMeterTask, self).__init__(callback, period)
 
         self.conn = libvirt.openReadOnly(None)
         if not self.conn:
@@ -96,10 +107,10 @@ class PeriodicInstanceMeterTask(PeriodicMeterTask):
             sys.exit(1)
 
 
-class Inst_UUIDs(PeriodicInstanceMeterTask):
+class Inst_UUIDs(PeriodicInstMeterTask):
     #@[fbahr]: Actually, this is rather a host meter... for the time being,
     #          left as an instance metering task [since: subclassing 
-    #          PeriodicInstanceMeterTask]
+    #          PeriodicInstMeterTask]
     #          Hence, rather than a list of UUIDs, a record (UNAME,
     #          timestamp,  list of UUIDs) should be returned
 
@@ -119,7 +130,7 @@ class Inst_UUIDs(PeriodicInstanceMeterTask):
         return uuids
 
 
-class Inst_CPU_Usage(PeriodicInstanceMeterTask):
+class Inst_CPU_Usage(PeriodicInstMeterTask):
     #@[fbahr]: Leverage/reuse get_instance_ids()?
 
     def __init__(self, callback, period):
@@ -131,6 +142,8 @@ class Inst_CPU_Usage(PeriodicInstanceMeterTask):
         Returns a list of CPU utilization for every instance running on a
         specific host
         """
+        raise NotImplementedError()
+
         try:
             #@[fbahr]: 
             #  - What about /proc/<pid>/stat?
@@ -178,7 +191,7 @@ class Inst_CPU_Usage(PeriodicInstanceMeterTask):
             logger.exception("%s" % e)
 
 
-class Inst_PHYMEM_Usage(PeriodicInstanceMeterTask):
+class Inst_PHYMEM_Usage(PeriodicInstMeterTask):
     #@[fbahr]: Join with Inst_VIRMEM_Usage?
 
     def __init__(self, callback, period):
@@ -212,7 +225,7 @@ class Inst_PHYMEM_Usage(PeriodicInstanceMeterTask):
         return phymem
 
 
-class Inst_VIRMEM_Usage(PeriodicInstanceMeterTask):
+class Inst_VIRMEM_Usage(PeriodicInstMeterTask):
     #@[fbahr]: Join with Inst_PHYMEM_Usage?
 
     def __init__(self, callback, period):
@@ -246,7 +259,7 @@ class Inst_VIRMEM_Usage(PeriodicInstanceMeterTask):
         return virmem
 
 
-class Inst_UPTIME(PeriodicInstanceMeterTask):
+class Inst_UPTIME(PeriodicInstMeterTask):
     def meter(self):
         """
         Returns a list of (UUID, timestamp, uptime [in seconds]) tuples, one
@@ -272,7 +285,7 @@ class Inst_UPTIME(PeriodicInstanceMeterTask):
         return uptimes
 
 
-class Inst_NETWORK_IO(PeriodicInstanceMeterTask):
+class Inst_NETWORK_IO(PeriodicInstMeterTask):
     def meter(self):
         """
         Returns a list of IDs and corresponding network I/O (in bytes) for all
@@ -281,7 +294,7 @@ class Inst_NETWORK_IO(PeriodicInstanceMeterTask):
         return NotImplementedError()
 
 
-class Inst_DISK_IO(PeriodicInstanceMeterTask):
+class Inst_DISK_IO(PeriodicInstMeterTask):
     #@[fbahr]: Actually, this should rather refer to Object (swift) and/or
     #          Block Storage (cinder) usage.
 

@@ -11,8 +11,8 @@ from cement.core import foundation, controller  # < cement 2.0.2
 import requests                                 # < requests 0.14.2
 import json
 import os
-# from prettytable import PrettyTable
 from datetime import datetime
+# from prettytable import PrettyTable
 # import matplotlib.pyplot as plt
 # import matplotlib.dates as mdates
 # import matplotlib.cbook as cbook
@@ -24,11 +24,43 @@ import logging
 logger = logging.getLogger("client")
 
 
-def _create_url_from(endpoint, path, params=None):
-    url = ''.join(['http://', endpoint, path, '?' if params else ''])
-    if params:
-        url = url + '&'.join(params)
-    return url
+class URLBuilder(object):
+    @staticmethod
+    def build(protocol, endpoint, path, params=None):
+        """
+        Aux function to build a URL (string) from protocol, endpoint, path,
+        and parameters.
+        """
+        url = ''.join([protocol, '://', endpoint, path, '?' if params else ''])
+        if params:
+            url = url + '&'.join(params)
+        return url
+
+
+class AuthClient(object):
+    @staticmethod
+    def get_token(**kwargs):
+        params = {
+            'username': kwargs['username'],  # os.getenv('OS_USERNAME')
+            'password': kwargs['password'],  # os.getenv('OS_PASSWORD')
+            'tenant_id': os.getenv('OS_TENANT_ID'),
+            'tenant_name': os.getenv('OS_TENANT_NAME'),
+            'auth_url':  os.getenv('OS_AUTH_URL'),
+            'service_type': os.getenv('OS_SERVICE_TYPE'),
+            'endpoint_type': os.getenv('OS_ENDPOINT_TYPE'),
+            'insecure': False
+        }
+
+        _ksclient = ksclient.Client(
+            username=params.get('username'),
+            password=params.get('password'),
+            tenant_id=params.get('tenant_id'),
+            tenant_name=params.get('tenant_name'),
+            auth_url=params.get('auth_url'),
+            insecure=params.get('insecure')
+        )
+
+        return _ksclient.auth_token
 
 
 class BaseController(controller.CementBaseController):
@@ -39,27 +71,6 @@ class BaseController(controller.CementBaseController):
 #   def __init__(self, *args, **kwargs):
 #       super(BaseController, self).__init__(*args, **kwargs)
 
-
-    def authAndReturnToken(self):
-#       TODO(Marcus): Add CLI params
-        kwargs = {
-            'username': os.getenv('OS_USERNAME'),
-            'password': os.getenv('OS_PASSWORD'),
-            'tenant_id': os.getenv('OS_TENANT_ID'),
-            'tenant_name': os.getenv('OS_TENANT_NAME'),
-            'auth_url':  os.getenv('OS_AUTH_URL'),
-            'service_type': os.getenv('OS_SERVICE_TYPE'),
-            'endpoint_type': os.getenv('OS_ENDPOINT_TYPE'),
-            'insecure': False
-        }
-        _ksclient = ksclient.Client(username=kwargs.get('username'),
-            password=kwargs.get('password'),
-            tenant_id=kwargs.get('tenant_id'),
-            tenant_name=kwargs.get('tenant_name'),
-            auth_url=kwargs.get('auth_url'),
-            insecure=kwargs.get('insecure'))
-
-        return _ksclient.auth_token
 
     class Meta:
         """
@@ -74,18 +85,41 @@ class BaseController(controller.CementBaseController):
 
         # command line arguments
         arguments = [
-            (['-a', '--auth_url'], dict(action='store', help='$OS_AUTH_URL',    default=None)),
-            (['-u', '--username'], dict(action='store', help='$OS_USERNAME',    default=_config.get('client', 'user'))),
-            (['-p', '--password'], dict(action='store', help='$OS_PASSWORD',    default=_config.get('client', 'pass'))),
-            (['--tenant_id'],      dict(action='store', help='$OS_TENANT_ID',   default=None)),
-            (['--tenant_name'],    dict(action='store', help='$OS_TENANT_NAME', default=None)),
-
-            (['-e', '--endpoint'], dict(action='store', help='Service endpoint (domain:port)', default=':'.join([_config.get('client', 'host'), _config.get('client', 'port')]))),
-            (['-r', '--request'],  dict(action='store', help='encoded as URL path',            default=None)),
-
-            (['--json'],           dict(action='store_true', help='display output as plain JSON', default=True)),
-            (['--csv'],            dict(action='store_true', help='display output as CSV',        default=False)),
-            (['--tab'],            dict(action='store_true', help='display output as table',      default=False))
+            (['-a', '--auth_url'], \
+                dict(action='store', help='$OS_AUTH_URL', \
+                     default=None)),
+            (['-u', '--username'], \
+                dict(action='store', help='$OS_USERNAME', \
+                     default=os.getenv('OS_USERNAME') or \
+                             _config.get('client', 'user'))),
+            (['-p', '--password'], \
+                dict(action='store', help='$OS_PASSWORD', \
+                     default=os.getenv('OS_PASSWORD') or \
+                             _config.get('client', 'pass'))),
+            (['--tenant_id'], \
+                dict(action='store', help='$OS_TENANT_ID', \
+                     default=None)),
+            (['--tenant_name'], \
+                dict(action='store', help='$OS_TENANT_NAME', \
+                     default=None)),
+            # -----------------------------------------------------------------
+            (['-e', '--endpoint'], \
+                dict(action='store', help='Service endpoint (domain:port)', \
+                     default=':'.join([_config.get('client', 'host'), \
+                                       _config.get('client', 'port')]))),
+            (['-r', '--request'], \
+                dict(action='store', help='encoded as URL path', \
+                     default=None)),
+            # -----------------------------------------------------------------
+            (['--json'], \
+                 dict(action='store_true', help='display output as plain JSON', \
+                      default=True)),
+            (['--csv'], \
+                 dict(action='store_true', help='display output as CSV', \
+                      default=False)),
+            (['--tab'], \
+                 dict(action='store_true', help='display output as table', \
+                      default=False))
             ]
         #   ...
         #   (['-F', '--FLAG'],     dict(action='store_true', help='...'))
@@ -101,7 +135,7 @@ class BaseController(controller.CementBaseController):
             logger.debug('Query: %s' % url)
 
             #r = requests.get(url, headers=auth_header)
-            auth_token = self.authAndReturnToken()
+            auth_token = AuthClient.get_token()
             auth_header = {'X-Auth-Token': auth_token}
 
 #           TODO(Marcus): Auth is depricated ... remove
@@ -161,6 +195,7 @@ class BaseController(controller.CementBaseController):
         raise NotImplementedError("Warning: not yet implemented.")
 
 
+
 class GiraffeClient(foundation.CementApp):
     class Meta:
         label = 'giraffe-client'
@@ -172,12 +207,27 @@ class GiraffeClient(foundation.CementApp):
         self.config = Config('giraffe.cfg')
         self.username = self.config.get('client', 'user')
         self.password = self.config.get('client', 'pass')
+        self.protocol = 'http'
         self.endpoint = ':'.join([self.config.get('client', 'host'),
                                   self.config.get('client', 'port')])
 
-    def meters(self, query_params=None):
-        request = '/meters'
-        url = ''.join(['http://', self.endpoint, request])
+    @staticmethod
+    def __deserialize(cls, record):
+        obj = cls()
+        if cls is Meter:
+            obj.id, obj.name, obj.description, obj.unit_name, obj.data_type = \
+                record['id'], record['name'], record['description'], \
+                record['unit_name'], record['data_type']
+        elif cls is MeterRecord:
+            pass
+        return obj
+
+    def meters(self, params=None):
+        """
+        Returns a list of giraffe.service.db.Meter objects
+        """
+        path = '/meters'
+        url = URLBuilder.build(self.protocol, self.endpoint, path, params)
         lst = requests.get(url, auth=(self.username, self.password)).json
         # ^ lst = list of
         #           {u'unit_name': u'[seconds|..]',
@@ -186,16 +236,7 @@ class GiraffeClient(foundation.CementApp):
         #            u'data_type': u'[float|..]',
         #            u'name': u'<meter_name (string)>'}
         #         dicts
-        meters = []
-        for elem in lst:
-            m = Meter()
-            m.id = elem['id']
-            m.name = elem['name']
-            m.description = elem['description']
-            m.unit_name = elem['unit_name']
-            m.data_type = elem['data_type']
-            meters.append(m)
-        return meters
+        return [self.__deserialize(Meter, elem) for elem in lst]
 
 
 def main():

@@ -196,7 +196,7 @@ class Inst_PHYMEM_Usage(PeriodicInstMeterTask):
 
     def __init__(self, callback, period):
         super(Inst_PHYMEM_Usage, self).__init__(callback, period)
-        self.psutil_vmem = psutil.virtual_memory()
+        # self.psutil_vmem = psutil.virtual_memory()
 
     def meter(self):
         """
@@ -249,10 +249,10 @@ class Inst_VIRMEM_Usage(PeriodicInstMeterTask):
             virmem = [(uuid,
                        timestamp(),
                        mem_info.vms,
-                       float(mem_info.vms) / self.psutil_smem.total)
-                       for (uuid, mem_info) \
-                           in [(k, psutil.Process(v[0]).get_memory_info()) \
-                               for k, v in inst_ids.iteritems()]]
+                       float(mem_info.vms) / self.psutil_smem.total * 100)
+                      for (uuid, mem_info) \
+                          in [(k, psutil.Process(v[0]).get_memory_info()) \
+                              for k, v in inst_ids.iteritems()]]
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')

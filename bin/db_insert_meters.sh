@@ -32,26 +32,46 @@ print '\tdone'
 
 meters = []
 meters.append(Meter(name='loadavg_1m',
-              description='as measured by os.getloadavg() for 1 minute',
+              description='as measured by os.getloadavg() for 1 minute on the host',
               unit_name='processes',
               data_type='float'))
 meters.append(Meter(name='loadavg_5m',
-              description='as measured by os.getloadavg() for 5 minutes',
+              description='as measured by os.getloadavg() for 5 minutes on the host',
               unit_name='processes',
               data_type='float'))
 meters.append(Meter(name='loadavg_15m',
-              description='as measured by os.getloadavg() for 15 minutes',
+              description='as measured by os.getloadavg() for 15 minutes on the host',
               unit_name='processes',
               data_type='float'))
 meters.append(Meter(name='phymem_usage',
-              description='phyiscal memory usage as percentage',
+              description='phyiscal memory usageo on the host as percentage',
               unit_name='percent',
               data_type='float'))
 meters.append(Meter(name='virmem_usage',
-              description='virtual memory usage as percentage',
+              description='virtual memory usage on the host as percentage',
               unit_name='percent',
               data_type='float'))
-
+meters.append(Meter(name='uptime',
+              description='host uptime in seconds',
+              unit_name='seconds',
+              data_type='float'))
+meters.append(Meter(name='network_io_tx',
+              description='host network sent bytes',
+              unit_name='bytes',
+              data_type='float'))
+meters.append(Meter(name='network_io_rx',
+              description='host network received bytes',
+              unit_name='bytes',
+              data_type='float'))
+meters.append(Meter(name='inst_virmem_usage',
+              description='virtual memory usage of an instance as a percentage',
+              unit_name='percent',
+              data_type='float'))
+meters.append(Meter(name='inst_uptime',
+              description='instance uptime in seconds',
+              unit_name='seconds',
+              data_type='float'))
+              
 successes = 0
 for meter in meters:
     print 'Insert %s........' % meter,

@@ -3,14 +3,14 @@ __author__ = 'fbahr'
 import sys
 import unittest
 import logging
-from giraffe.agent.instance_meter import Inst_PHYMEM_Usage, Inst_VIRMEM_Usage
+from giraffe.agent.inst_meter import Inst_PHYMEM_Usage, Inst_VIRMEM_Usage
 
 
 class InstMeterTestCases(unittest.TestCase):
 
     python_version = int(''.join([str(i) for i in sys.version_info[0:3]]))
 
-    logger = logging.getLogger("service.collector.instance_meters")
+    logger = logging.getLogger("service.collector.inst_meters")
     logger.setLevel(logging.DEBUG)
     h = logging.StreamHandler()
     h.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))

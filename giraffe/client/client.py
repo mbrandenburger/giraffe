@@ -1,7 +1,8 @@
 """
-usage: ./start_client -r=<query>
-                            ^ e.g., <query>="/hosts/<host-id>"
+usage: ./start_client -q=<query> ...
+                         ^ e.g., <query>="/hosts/<host-id>"
 """
+
 __author__  = 'fbahr, marcus'
 __version__ = '0.2.0'
 __date__    = '2013-01-21'
@@ -85,6 +86,46 @@ class BaseController(controller.CementBaseController):
         # ! Warning: os.getenv over config.get, i.e., environment variables
         #            override params defined in giraffe.cfg 
         arguments = [
+            # -----------------------------------------------------------------
+            (['--host'], \
+                dict(action='store', help='', \
+                     default=None)),
+            (['--instance'], \
+                dict(action='store', help='', \
+                     default=None)),
+            (['--project'], \
+                dict(action='store', help='', \
+                     default=None)),
+            (['--user'], \
+                dict(action='store', help='', \
+                     default=None)),
+            (['--meter'], \
+                dict(action='store', help='', \
+                     default=None)),
+            # -----------------------------------------------------------------
+            (['-q', '--query'], \
+                dict(action='store', help='..encoded as REST API URL path '
+                                          '(overriden by giraffe-client'
+                                          ' method calls)', \
+                     default=None)),
+            # -----------------------------------------------------------------
+            (['--count'], \
+                dict(action='store_true', help='', \
+                     default=False)),
+            (['--latest'], \
+                dict(action='store_true', help='', \
+                     default=False)),
+            # -----------------------------------------------------------------
+            (['--json'], \
+                 dict(action='store_true', help='display output as plain JSON', \
+                      default=True)),
+            (['--csv'], \
+                 dict(action='store_true', help='diplay output as CSV', \
+                      default=False)),
+            (['--tab'], \
+                 dict(action='store_true', help=' output as table', \
+                      default=False)),
+            # -----------------------------------------------------------------
             (['-a', '--auth_url'], \
                 dict(action='store', help='$OS_AUTH_URL', \
                      default=os.getenv('OS_AUTH_URL') or \
@@ -108,22 +149,9 @@ class BaseController(controller.CementBaseController):
                              _config.get('client', 'tentant_name'))),
             # -----------------------------------------------------------------
             (['-e', '--endpoint'], \
-                dict(action='store', help='Service endpoint (domain:port)', \
+                dict(action='store', help='Giraffe service endpoint (domain:port)', \
                      default=':'.join([_config.get('client', 'host'), \
-                                       _config.get('client', 'port')]))),
-            (['-r', '--request'], \
-                dict(action='store', help='encoded as URL path', \
-                     default=None)),
-            # -----------------------------------------------------------------
-            (['--json'], \
-                 dict(action='store_true', help='display output as plain JSON', \
-                      default=True)),
-            (['--csv'], \
-                 dict(action='store_true', help='diplay output as CSV', \
-                      default=False)),
-            (['--tab'], \
-                 dict(action='store_true', help=' output as table', \
-                      default=False))
+                                       _config.get('client', 'port')])))
             ]
         #   ...
         #   (['-F', '--FLAG'],     dict(action='store_true', help='...'))
@@ -134,7 +162,7 @@ class BaseController(controller.CementBaseController):
         url = None
 
         try:
-            url = ''.join(['http://', self.pargs.endpoint, self.pargs.request])
+            url = ''.join(['http://', self.pargs.endpoint, self.pargs.query])
             logger.debug('Query: %s' % url)
 
             # TODO(Marcus): Auth is depricated ... remove
@@ -165,6 +193,83 @@ class BaseController(controller.CementBaseController):
             help_text.append('\nSee "client.py --help" for help on a specific command.')
             print '\n'.join(help_text)
 
+    @controller.expose()
+    def hosts(self):
+        self.pargs.query = '/hosts'
+        self.default()
+
+    @controller.expose()
+    def instances(self):
+        self.pargs.query = '/instances'
+        self.default()
+
+    @controller.expose()
+    def projects(self):
+        self.pargs.query = '/projects'
+        self.default()
+
+    @controller.expose()
+    def users(self):
+        self.pargs.query = '/users'
+        self.default()
+
+    @controller.expose()
+    def meters(self):
+        self.pargs.query = '/meters'
+        self.default()
+
+    @controller.expose()
+    def host_meter(self):
+        self.pargs.query = '/'.join(['/hosts', \
+                                     self.pargs.host \
+                                        if self.pargs.host
+                                        else '', \
+                                     'meters', \
+                                     self.pargs.meter \
+                                        if self.pargs.meter
+                                        else ''
+                                    ])
+        self.default()
+
+    @controller.expose(aliases=['instance-meter'])
+    def inst_meter(self):
+        self.pargs.query = '/'.join(['/instances', \
+                                     self.pargs.instance \
+                                        if self.pargs.instance
+                                        else '', \
+                                     'meters', \
+                                     self.pargs.meter \
+                                        if self.pargs.meter
+                                        else ''
+                                    ])
+        self.default()
+
+    @controller.expose(aliases=['project-meter'])
+    def proj_meter(self):
+        self.pargs.query = '/'.join(['/projects', \
+                                     self.pargs.project \
+                                        if self.pargs.project
+                                        else '', \
+                                     'meters', \
+                                     self.pargs.meter \
+                                        if self.pargs.meter
+                                        else ''
+                                    ])
+        self.default()
+
+    @controller.expose()
+    def user_meter(self):
+        self.pargs.query = '/'.join(['/users', \
+                                     self.pargs.user \
+                                        if self.pargs.user
+                                        else '', \
+                                     'meters', \
+                                     self.pargs.meter \
+                                        if self.pargs.meter
+                                        else ''
+                                    ])
+        self.default()
+
     def _print_as_csv(self, r_json):
         if not r_json:
             # logger.debug('Empty result set.')
@@ -181,7 +286,7 @@ class BaseController(controller.CementBaseController):
             row = []
             for key, val in msg.iteritems():
                 if key == 'timestamp':
-                    dt    = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
+                    dt = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
                     # @fbahr: dirty hack
                     # d_ord = dt.toordinal() * 24 * 3600
                     # t_ord = dt.hour * 3600 + dt.minute * 60 + dt.second

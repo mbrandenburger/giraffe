@@ -3,7 +3,7 @@ __author__ = 'fbahr'
 import sys
 import unittest
 import logging
-from giraffe.agent.instance_meter import Inst_PHYMEM_Usage
+from giraffe.agent.instance_meter import Inst_PHYMEM_Usage, Inst_VIRMEM_Usage
 
 
 class InstMeterTestCases(unittest.TestCase):
@@ -21,13 +21,19 @@ class InstMeterTestCases(unittest.TestCase):
     def setUpClass(cls):
         if InstMeterTestCases.python_version >= 270:
             cls.inst_phymem_usage = Inst_PHYMEM_Usage(None, 0)
+            cls.inst_virmem_usage = Inst_VIRMEM_Usage(None, 0)
 
     def setUp(self):
         if InstMeterTestCases.python_version < 270:
             self.inst_phymem_usage = Inst_PHYMEM_Usage(None, 0)
+            self.inst_virmem_usage = Inst_VIRMEM_Usage(None, 0)
 
     def test_inst_phymem_usage(self):
         meters = self.inst_phymem_usage.meter()
+        self.assertTrue(meters)
+
+    def test_inst_virmem_usage(self):
+        meters = self.inst_virmem_usage.meter()
         self.assertTrue(meters)
 
 

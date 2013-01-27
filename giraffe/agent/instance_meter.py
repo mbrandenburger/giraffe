@@ -87,8 +87,8 @@ def timestamp(offset=0.0):
 
 
 class PeriodicInstanceMeterTask(PeriodicMeterTask):
-    def __init__(self):
-        super(PeriodicInstanceMeterTask, self).__init__()
+    def __init__(self, callback, period):
+        super(PeriodicInstanceMeterTask, self).__init__(callback, period)
 
         self.conn = libvirt.openReadOnly(None)
         if not self.conn:
@@ -122,8 +122,8 @@ class Inst_UUIDs(PeriodicInstanceMeterTask):
 class Inst_CPU_Usage(PeriodicInstanceMeterTask):
     #@[fbahr]: Leverage/reuse get_instance_ids()?
 
-    def __init__(self):
-        super(Inst_CPU_Usage, self).__init__()
+    def __init__(self, callback, period):
+        super(Inst_CPU_Usage, self).__init__(callback, period)
         self.utilization_map = {}
 
     def meter(self):
@@ -168,19 +168,21 @@ class Inst_CPU_Usage(PeriodicInstanceMeterTask):
 
                     cores_fraction = 1.0 / num_cpus
 
-            # account for cpu_time being reset when the instance is restarted
+                # account for cpu_time being reset when the instance is restarted
             time_used = (cpu_time - prev_cpu
                          if prev_cpu <= cpu_time else
                          cpu_time)
             cpu_util = 100 * cores_fraction * time_used / elapsed
-        return cpu_util
+            return cpu_util
+        except Exception as e:
+            logger.exception("%s" % e)
 
 
 class Inst_PHYMEM_Usage(PeriodicInstanceMeterTask):
     #@[fbahr]: Join with Inst_VIRMEM_Usage?
 
-    def __init__(self):
-        super(Inst_PHYMEM_Usage, self).__init__()
+    def __init__(self, callback, period):
+        super(Inst_PHYMEM_Usage, self).__init__(callback, period)
         self.psutil_vmem = psutil.virtual_memory()
 
     def meter(self):
@@ -198,10 +200,10 @@ class Inst_PHYMEM_Usage(PeriodicInstanceMeterTask):
             phymem = [(uuid,
                        timestamp(),
                        mem_info.rss,
-                       float(mem_info.rss) / self.psutil_vmem.total)
-                        for (uuid, mem_info) \
-                            in [(k, psutil.Process(v[0]).get_memory_info()) \
-                                for k, v in inst_ids.iteritems()]]
+                       float(mem_info.rss) / self.psutil_vmem.total) \
+                      for (uuid, mem_info) \
+                          in [(k, psutil.Process(v[0]).get_memory_info()) \
+                              for k, v in inst_ids.iteritems()]]
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
@@ -213,8 +215,8 @@ class Inst_PHYMEM_Usage(PeriodicInstanceMeterTask):
 class Inst_VIRMEM_Usage(PeriodicInstanceMeterTask):
     #@[fbahr]: Join with Inst_PHYMEM_Usage?
 
-    def __init__(self):
-        super(Inst_VIRMEM_Usage, self).__init__()
+    def __init__(self, callback, period):
+        super(Inst_VIRMEM_Usage, self).__init__(callback, period)
         self.psutil_smem = psutil.swap_memory()
 
     def meter(self):

@@ -6,6 +6,7 @@ import giraffe.service.rest_server as srv
 from giraffe.common.config import Config
 import giraffe.service.db as db
 from giraffe.service.db import Host, Meter, MeterRecord
+from giraffe.service.db import MIN_TIMESTAMP, MAX_TIMESTAMP
 
 
 _logger = logging.getLogger("service.collector")
@@ -38,7 +39,8 @@ class Rest_API(threading.Thread):
             auth_port=_config.getint('service', 'auth_port'),
             auth_protocol=_config.get('service', 'auth_protocol'),
             admin_token=_config.get('service', 'admin_token'),
-            delay_auth_decision=_config.getint('service', 'delay_auth_decision'),
+            delay_auth_decision=_config.getint('service',
+                                               'delay_auth_decision'),
             rest_api=self,
             host=_config.get('flask', 'host'),
             port=_config.getint('flask', 'port'),
@@ -54,7 +56,7 @@ class Rest_API(threading.Thread):
     def stop(self):
         self._Thread__stop()
 
-    def __query_params(self, query_string):
+    def _query_params(self, query_string):
         """
         Returns the query parameters for the current request as a dictionary.
         Values of the format "YYYY-MM-DD_HH-ii-ss" are converted to the format
@@ -78,24 +80,35 @@ class Rest_API(threading.Thread):
                 continue
         return params
 
+    def _aggregate_meter_records(self, aggregation, record_args):
+        pass
+
     def route_root(self):
+        """
+        Route: /
+        Returns: Welcome message (string)
+        """
         return 'Welcome to Giraffe REST API'
 
     def route_hosts(self):
         """
         Route: hosts
+        Returns: List of Host objects, JSON-formatted
         """
         self.db.session_open()
-        hosts = self.db.load(Host)
+        hosts = self.db.load(Host, order='asc', order_attr='name')
         self.db.session_close()
         return json.dumps([host.to_dict() for host in hosts])
 
     def route_projects(self):
         """
         Route: projects
+        Returns: List of project names (string), JSON-formatted
         """
         self.db.session_open()
-        values = self.db.distinct_values(MeterRecord, 'project_id')
+        values = self.db.distinct_values(MeterRecord,
+                                         column='project_id',
+                                         order='asc')
         # remove null values
         if None in values:
             values.remove(None)
@@ -105,9 +118,12 @@ class Rest_API(threading.Thread):
     def route_users(self):
         """
         Route: users
+        Returns: List of user names (string), JSON-formatted
         """
         self.db.session_open()
-        values = self.db.distinct_values(MeterRecord, 'user_id')
+        values = self.db.distinct_values(MeterRecord,
+                                         column='user_id',
+                                         order='asc')
         # remove null values
         if None in values:
             values.remove(None)
@@ -117,9 +133,12 @@ class Rest_API(threading.Thread):
     def route_instances(self):
         """
         Route: instances
+        Returns: List of instance names (string), JSON-formatted
         """
         self.db.session_open()
-        values = self.db.distinct_values(MeterRecord, 'resource_id')
+        values = self.db.distinct_values(MeterRecord,
+                                         column='resource_id',
+                                         order='asc')
         # remove null values
         if None in values:
             values.remove(None)
@@ -129,6 +148,7 @@ class Rest_API(threading.Thread):
     def route_meters(self):
         """
         Route: meters
+        Returns: List of Meter objects, JSON-formatted
         """
         self.db.session_open()
         meters = self.db.load(Meter, order='asc', order_attr='name')
@@ -138,12 +158,17 @@ class Rest_API(threading.Thread):
     def route_hosts_hid(self):
         """
         Route: hosts/<host_id>
+        Returns: List of MeterRecord objects, JSON-formatted
         """
-        return 'TODO'
+        raise NotImplementedError(
+                  "The route \"hosts/<host_id>\" is not implemented yet")
 
-    def route_hosts_hid_meters_mid(self, host_id, meter_id, query_string=''):
+    def route_hosts_hid_meters_mid(self, host_id,
+                                         meter_id,
+                                         query_string=''):
         """
         Route: hosts/<host_id>/meters/<meter_id>
+        Returns: List of MeterRecord objects, JSON-formatted
         """
         self.db.session_open()
         hosts = self.db.load(Host, {'name': host_id}, limit=1)
@@ -151,7 +176,7 @@ class Rest_API(threading.Thread):
             return None
         host = hosts[0]
 
-        meters = hosts = self.db.load(Meter, {'name': meter_id}, limit=1)
+        meters = self.db.load(Meter, {'name': meter_id}, limit=1)
         if not meters:
             return None
         meter = meters[0]
@@ -159,25 +184,31 @@ class Rest_API(threading.Thread):
         # narrow down the search
         limit = self.RESULT_LIMIT
         order = 'asc'
-        search_params = {'host_id': host.id, 'meter_id': meter.id}
-        query_params = self.__query_params(query_string)
-        if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
-            search_params['timestamp'] = ['0000-01-01 00:00:00',
-                                          '2999-12-31 23:59:59']
-            if self.PARAM_START_TIME in query_params:
-                search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
-            if self.PARAM_END_TIME in query_params:
-                search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
-        if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
+        search = {'host_id': host.id, 'meter_id': meter.id}
+        query = self._query_params(query_string)
+        if self.PARAM_START_TIME in query or self.PARAM_END_TIME in query:
+            search['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+            if self.PARAM_START_TIME in query:
+                search['timestamp'][0] = query[self.PARAM_START_TIME]
+            if self.PARAM_END_TIME in query:
+                search['timestamp'][1] = query[self.PARAM_END_TIME]
+        if self.PARAM_LATEST in query and query[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
+        records = self.db.load(MeterRecord,
+                               search,
+                               limit=limit,
+                               order=order,
+                               order_attr='timestamp')
         self.db.session_close()
         return json.dumps([r.to_dict() for r in records])
 
-    def route_projects_pid_meters_mid(self, project_id, meter_id, query_string=''):
+    def route_projects_pid_meters_mid(self, project_id,
+                                            meter_id,
+                                            query_string=''):
         """
         Route: projects/<project_id>/meters/<meter_id>
+        Returns: List of MeterRecord objects, JSON-formatted
         """
         self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
@@ -188,25 +219,31 @@ class Rest_API(threading.Thread):
         # narrow down the search
         limit = self.RESULT_LIMIT
         order = 'asc'
-        search_params = {'project_id': project_id, 'meter_id': meter.id}
-        query_params = self.__query_params(query_string)
-        if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
-            search_params['timestamp'] = ['0000-01-01 00:00:00',
-                                          '2999-12-31 23:59:59']
-            if self.PARAM_START_TIME in query_params:
-                search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
-            if self.PARAM_END_TIME in query_params:
-                search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
-        if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
+        search = {'project_id': project_id, 'meter_id': meter.id}
+        query = self._query_params(query_string)
+        if self.PARAM_START_TIME in query or self.PARAM_END_TIME in query:
+            search['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+            if self.PARAM_START_TIME in query:
+                search['timestamp'][0] = query[self.PARAM_START_TIME]
+            if self.PARAM_END_TIME in query:
+                search['timestamp'][1] = query[self.PARAM_END_TIME]
+        if self.PARAM_LATEST in query and query[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
+        records = self.db.load(MeterRecord,
+                               search,
+                               limit=limit,
+                               order=order,
+                               order_attr='timestamp')
         self.db.session_close()
         return json.dumps([r.to_dict() for r in records])
 
-    def route_users_uid_meters_mid(self, user_id, meter_id, query_string=''):
+    def route_users_uid_meters_mid(self, user_id,
+                                         meter_id,
+                                         query_string=''):
         """
         Route: users/<user_id>/meters/<meter_id>
+        Returns: List of MeterRecord objects, JSON-formatted
         """
         self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
@@ -217,25 +254,32 @@ class Rest_API(threading.Thread):
         # narrow down the search
         limit = self.RESULT_LIMIT
         order = 'asc'
-        search_params = {'user_id': user_id, 'meter_id': meter.id}
-        query_params = self.__query_params(query_string)
-        if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
-            search_params['timestamp'] = ['0000-01-01 00:00:00',
+        search = {'user_id': user_id, 'meter_id': meter.id}
+        query = self._query_params(query_string)
+        if self.PARAM_START_TIME in query or self.PARAM_END_TIME in query:
+            search['timestamp'] = ['0000-01-01 00:00:00',
                                           '2999-12-31 23:59:59']
-            if self.PARAM_START_TIME in query_params:
-                search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
-            if self.PARAM_END_TIME in query_params:
-                search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
-        if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
+            if self.PARAM_START_TIME in query:
+                search['timestamp'][0] = query[self.PARAM_START_TIME]
+            if self.PARAM_END_TIME in query:
+                search['timestamp'][1] = query[self.PARAM_END_TIME]
+        if self.PARAM_LATEST in query and query[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
+        records = self.db.load(MeterRecord,
+                               search,
+                               limit=limit,
+                               order=order,
+                               order_attr='timestamp')
         self.db.session_close()
         return json.dumps([r.to_dict() for r in records])
 
-    def route_instances_iid_meters_mid(self, instance_id, meter_id, query_string=''):
+    def route_instances_iid_meters_mid(self, instance_id,
+                                             meter_id,
+                                             query_string=''):
         """
         Route: instances/<instance_id>/meters/<meter_id>
+        Returns: List of MeterRecord objects, JSON-formatted
         """
         self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
@@ -246,18 +290,22 @@ class Rest_API(threading.Thread):
         # narrow down the search
         limit = self.RESULT_LIMIT
         order = 'asc'
-        search_params = {'resource_id': instance_id, 'meter_id': meter.id}
-        query_params = self.__query_params(query_string)
-        if self.PARAM_START_TIME in query_params or self.PARAM_END_TIME in query_params:
-            search_params['timestamp'] = ['0000-01-01 00:00:00',
+        search = {'resource_id': instance_id, 'meter_id': meter.id}
+        query = self._query_params(query_string)
+        if self.PARAM_START_TIME in query or self.PARAM_END_TIME in query:
+            search['timestamp'] = ['0000-01-01 00:00:00',
                                           '2999-12-31 23:59:59']
-            if self.PARAM_START_TIME in query_params:
-                search_params['timestamp'][0] = query_params[self.PARAM_START_TIME]
-            if self.PARAM_END_TIME in query_params:
-                search_params['timestamp'][1] = query_params[self.PARAM_END_TIME]
-        if self.PARAM_LATEST in query_params and query_params[self.PARAM_LATEST] == '1':
+            if self.PARAM_START_TIME in query:
+                search['timestamp'][0] = query[self.PARAM_START_TIME]
+            if self.PARAM_END_TIME in query:
+                search['timestamp'][1] = query[self.PARAM_END_TIME]
+        if self.PARAM_LATEST in query and query[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        records = self.db.load(MeterRecord, search_params, limit=limit, order=order)
+        records = self.db.load(MeterRecord,
+                               search,
+                               limit=limit,
+                               order=order,
+                               order_attr='timestamp')
         self.db.session_close()
         return json.dumps([r.to_dict() for r in records])

@@ -7,6 +7,10 @@
 {% endblock page_header %}
 
 {% block giraffe_dashboard_main %}
-  <h3>{% trans "Giraffe Development Has Just Begun!" %}</h3>
-  {{ table.render }}
+  <div>
+  {{ service_status_table.render }}
+  </div>
+  <div>
+  {{ database_status_table.render }}
+  </div>
 {% endblock %}

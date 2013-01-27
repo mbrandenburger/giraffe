@@ -212,10 +212,12 @@ class Inst_PHYMEM_Usage(PeriodicInstMeterTask):
             # pct of total]) tuples
             phymem = [(uuid,
                        timestamp(),
-                       mem_info.rss,
-                       float(mem_info.rss) / self.psutil_vmem.total) \
-                      for (uuid, mem_info) \
-                          in [(k, psutil.Process(v[0]).get_memory_info()) \
+                       process.get_memory_info().rss,
+                       process.get_memory_percent())
+                       # ^= float(process.get_memory_info().rss)
+                       #    / self.psutil_vmem.total * 100
+                      for (uuid, process) \
+                          in [(k, psutil.Process(v[0])) \
                               for k, v in inst_ids.iteritems()]]
         except:
             # Warning! Fails silently...

@@ -49,7 +49,7 @@ class Rest_Server():
 
         @self.app.route('/projects')
         @self.app.route('/projects/')
-        @requires_auth
+        #@requires_auth
         def projects():
             result = self.rest_api.route_projects()
             if result is None:

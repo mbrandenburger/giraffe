@@ -8,7 +8,7 @@ from giraffe.service.db import Host, Meter, MeterRecord
 class DbTestCases(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.db = db.connect('mysql://user:pass@127.0.0.1/schema')
+        cls.db = db.connect('mysql://giraffedbadmin:aff3nZo0@127.0.0.1/giraffe')
         cls.db.session_open()
 
     @classmethod
@@ -139,3 +139,19 @@ class DbTestCases(unittest.TestCase):
         records = self.db.load(MeterRecord, order='desc', order_attr='value')
         self.assertEqual(len(records), 2)
         self.assertEqual(True if records[0].value > records[1].value else False, True)
+
+    def test_count(self):
+        meters = self.db.load(Meter)
+        meter_count = self.db.count(Meter)
+        host_count = self.db.count(Host, {'name': 'myhost', 'activity': None})
+        self.assertEqual(len(meters), meter_count)
+        self.assertEqual(1, host_count)
+
+    def test_distinct(self):
+        meter_name = 'unit_test_dist_meter'
+        meter = Meter(name=meter_name,
+                      description='created in test_distinct',
+                      unit_name='bytes', data_type='int')
+        self.db.save(meter)
+        distinct_values = self.db.distinct_values(Meter, 'name')
+        self.assertTrue(meter_name in distinct_values)

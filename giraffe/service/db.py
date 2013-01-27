@@ -53,11 +53,14 @@ db.commit()
 db.session_close()
 '''
 
-from sqlalchemy import create_engine, Column, ForeignKey, desc, asc, and_
+from sqlalchemy import create_engine, Column, ForeignKey, desc, asc, and_, func
 from sqlalchemy.orm import sessionmaker, relationship, class_mapper
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
+
+MIN_TIMESTAMP = '0000-01-01 00:00:00'
+MAX_TIMESTAMP = '2999-12-31 23:59:59'
 
 
 def connect(connectStr):
@@ -118,36 +121,32 @@ class Db(object):
         """
         Loads all persistent objects of the given class that meet the given
         arguments.
-        Meter objects are ordered by id descending.
-        MeterRecord objects are ordered by timestamp descending.
         """
-        query = None
-        if cls == Meter:
-            query = self._query_meter(args, order=order, order_attr=order_attr)
-        elif cls == MeterRecord:
-            query = self._query_meter_record(args, order=order,
-                                             order_attr=order_attr)
-        elif cls == Host:
-            query = self._query_host(args, order=order, order_attr=order_attr)
-        else:
-            raise Exception('Db.load() cannot handle objects of class "%s"' %
-                            cls)
+        query = self._query(cls, args, limit, order, order_attr)
+        return query.all()
 
-        if query is not None:
-            if limit is not None:
-                query = query.limit(limit)
-            #print query
-            return query.all()
-        else:
-            return []
-
-    def distinct_values(self, cls, column):
+    def distinct_values(self, cls, column, order=None):
         """
         Returns a list of distinct values for the given object class and
         column.
         """
-        values = self._session.query(getattr(cls, column)).distinct().all()
+        query = self._session.query(getattr(cls, column))
+        query = self._order(cls, query, order, column)
+        values = query.distinct().all()
         return [tupl[0] for tupl in values]
+
+    def count(self, cls, args={}):
+        """
+        Returns the number of all rows for the given object class.
+
+        An optional dictionary "args" can be passed that contains column values
+        which have to be matched (test for equality): the key is the column
+        name and the value the column value to match.
+        """
+        pk = class_mapper(cls).primary_key[0].name
+        query = self._session.query(func.count(getattr(cls, pk)))
+        query = self._filter(cls, query, args)
+        return query.first()[0]
 
     def delete(self, obj):
         """
@@ -155,57 +154,79 @@ class Db(object):
         """
         self._session.delete(obj)
 
-    def _query_meter_record(self, args, order='asc', order_attr='timestamp'):
-        filter_args = {}
-        start_time = None
-        end_time = None
-        for key in args:
-            if key.lower() == 'timestamp':
-                if type(args[key]) in (list, tuple):
-                    start_time = args[key][0]
-                    end_time = args[key][1]
-                    continue
-            if args[key] is not None:
-                filter_args[key] = args[key]
+    def _pk(self, cls, full=False):
+        """
+        Returns the primary key of the object class denoted by "cls".
+        If the PK is a composite key and "full" is True, then all Columns will
+        be returned. Otherwise only the name of the first PK column is
+        returned.
+        """
+        pk = class_mapper(cls).primary_key
+        if not full:
+            return pk[0].name
+        return pk
 
-        # no start and end time
-        if start_time is None and end_time is None:
-            query = self._session.query(MeterRecord).filter_by(**filter_args)
-        # start and end time
-        elif start_time is not None and end_time is not None:
-            query = self._session.query(MeterRecord).filter_by(**filter_args).\
-                        filter(and_(MeterRecord.timestamp >= start_time,
-                               MeterRecord.timestamp <= end_time))
-
-        if query is not None and order is not None:
-            if order_attr is None:
-                order_attr = 'timestamp'
-            query = query.order_by(asc(getattr(MeterRecord, order_attr))
-                           if order == 'asc'
-                           else desc(getattr(MeterRecord, order_attr)))
+    def _query(self, cls, args, limit=None, order=None, order_attr=None):
+        """
+        Returns a query object for the given arguments.
+        """
+        query = self._session.query(cls)
+        # apply filters
+        query = self._filter(cls, query, args)
+        # apply order
+        query = self._order(cls, query, order, order_attr)
+        # apply limit
+        if limit is not None:
+            return query.limit(limit)
         return query
 
-    def _query_meter(self, args, order='asc', order_attr='id'):
-        if order is not None:
-            if order_attr is None:
-                order_attr = 'id'
-            return self._session.query(Meter).filter_by(**args).\
-                        order_by(asc(getattr(Meter, order_attr))
-                                 if order == 'asc'
-                                 else desc(getattr(Meter, order_attr)))
-        else:
-            return self._session.query(Meter).filter_by(**args)
+    def _filter(self, cls, query, args):
+        """
+        Applies filters to the given query object and returns it again.
+        Columns can be tested for equality only, except for
+        MeterRecord.timestamp, which can be tested for an interval if a tuple
+        is given as value.
+        """
+        if cls == MeterRecord:
+            filter_args = {}
+            start_time = None
+            end_time = None
+            for key in args:
+                if key.lower() == 'timestamp':
+                    if type(args[key]) in (list, tuple):
+                        start_time = args[key][0]
+                        end_time = args[key][1]
+                        continue
+                if args[key] is not None:
+                    filter_args[key] = args[key]
 
-    def _query_host(self, args, order='asc', order_attr='id'):
-        if order is not None:
-            if order_attr is None:
-                order_attr = 'id'
-            return self._session.query(Host).filter_by(**args).\
-                        order_by(asc(getattr(Host, order_attr))
-                                 if order == 'asc'
-                                 else desc(getattr(Host, order_attr)))
+            # no start and end time
+            if start_time is None and end_time is None:
+                query = query.filter_by(**filter_args)
+            # start and end time
+            elif start_time is not None and end_time is not None:
+                query = query.filter_by(**filter_args).\
+                            filter(and_(MeterRecord.timestamp >= start_time,
+                                   MeterRecord.timestamp <= end_time))
+            return query
         else:
-            return self._session.query(Host).filter_by(**args)
+            return query.filter_by(**args)
+
+    def _order(self, cls, query, order, order_attr):
+        """
+        Applies order function to the query object and returns it again.
+        If "order" is not specified, the result set will be ordered in its
+        natural order. The "order" parameter can be either "asc" or "desc".
+        By default, the order_attr is the primary key (first column in case of
+        composite keys) if not specified otherwise.
+        """
+        if order is None:
+            return query
+        if order_attr is None:
+            order_attr = self._pk(cls)
+        return query.order_by(asc(getattr(cls, order_attr))
+                               if order == 'asc'
+                               else desc(getattr(cls, order_attr)))
 
 
 class GiraffeBase(object):

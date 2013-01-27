@@ -23,9 +23,17 @@ class ClientTestCases(unittest.TestCase):
         if ClientTestCases.python_version < 270:
             self.app = GiraffeClient()
 
-    def test_meters(self):
-        meters = self.app.meters()
+    def test_get_hosts(self):
+        hosts = self.app.get_hosts()
+        self.assertTrue(hosts)
+
+    def test_get_meters(self):
+        meters = self.app.get_meters()
         self.assertTrue(meters)
+
+    def test_get_host_meter_records(self):
+        meter_records = self.app.get_host_meter_records(host='uncinus', meter="loadavg_15m")
+        self.assertTrue(meter_records)
 
 
 if __name__ == '__main__':

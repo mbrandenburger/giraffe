@@ -17,7 +17,7 @@ from datetime import datetime
 # import matplotlib.dates as mdates
 # import matplotlib.cbook as cbook
 from giraffe.common.config import Config
-from giraffe.service.db import Meter, MeterRecord
+from giraffe.service.db import Host, Meter, MeterRecord
 from keystoneclient.v2_0 import client as ksclient
 
 import logging
@@ -40,16 +40,16 @@ class URLBuilder(object):
 class AuthClient(object):
     @staticmethod
     def get_token(**kwargs):
-        params = {
-            'username': kwargs['username'],  # os.getenv('OS_USERNAME')
-            'password': kwargs['password'],  # os.getenv('OS_PASSWORD')
-            'tenant_id': os.getenv('OS_TENANT_ID'),
-            'tenant_name': os.getenv('OS_TENANT_NAME'),
-            'auth_url':  os.getenv('OS_AUTH_URL'),
-            'service_type': os.getenv('OS_SERVICE_TYPE'),
-            'endpoint_type': os.getenv('OS_ENDPOINT_TYPE'),
-            'insecure': False
-        }
+        params = {}
+        params.update(kwargs)
+        # params['username'] = kwargs['username']  # os.getenv('OS_USERNAME')
+        # params['password'] = kwargs['password']  # os.getenv('OS_PASSWORD')
+        # params['tenant_id'] = kwargs['tenant_id']  # os.getenv('OS_TENANT_ID'),
+        # params['tenant_name'] = kwargs['tenant_name']  # os.getenv('OS_TENANT_NAME')
+        # params['auth_url'] = params['auth_url']  # os.getenv('OS_AUTH_URL')
+        # params['service_type'] = params['service_type']  # os.getenv('OS_SERVICE_TYPE')
+        # params['endpoint_type'] = params['endpoint_type']  # os.getenv('OS_ENDPOINT_TYPE')
+        params['insecure'] = False
 
         _ksclient = ksclient.Client(
             username=params.get('username'),
@@ -61,6 +61,7 @@ class AuthClient(object):
         )
 
         return _ksclient.auth_token
+
 
 
 class BaseController(controller.CementBaseController):
@@ -87,7 +88,9 @@ class BaseController(controller.CementBaseController):
         arguments = [
             (['-a', '--auth_url'], \
                 dict(action='store', help='$OS_AUTH_URL', \
-                     default=None)),
+                     default=os.getenv('OS_AUTH_URL') or \
+                             _config.get('identity', 'auth_url'))),
+            # -----------------------------------------------------------------
             (['-u', '--username'], \
                 dict(action='store', help='$OS_USERNAME', \
                      default=os.getenv('OS_USERNAME') or \
@@ -98,10 +101,12 @@ class BaseController(controller.CementBaseController):
                              _config.get('client', 'pass'))),
             (['--tenant_id'], \
                 dict(action='store', help='$OS_TENANT_ID', \
-                     default=None)),
+                     default=os.getenv('OS_TENANT_ID') or \
+                             _config.get('client', 'tentant_id'))),
             (['--tenant_name'], \
                 dict(action='store', help='$OS_TENANT_NAME', \
-                     default=None)),
+                     default=os.getenv('OS_TENANT_name') or \
+                             _config.get('client', 'tentant_name'))),
             # -----------------------------------------------------------------
             (['-e', '--endpoint'], \
                 dict(action='store', help='Service endpoint (domain:port)', \
@@ -115,10 +120,10 @@ class BaseController(controller.CementBaseController):
                  dict(action='store_true', help='display output as plain JSON', \
                       default=True)),
             (['--csv'], \
-                 dict(action='store_true', help='display output as CSV', \
+                 dict(action='store_true', help='diplay output as CSV', \
                       default=False)),
             (['--tab'], \
-                 dict(action='store_true', help='display output as table', \
+                 dict(action='store_true', help=' output as table', \
                       default=False))
             ]
         #   ...
@@ -134,14 +139,11 @@ class BaseController(controller.CementBaseController):
             url = ''.join(['http://', self.pargs.endpoint, self.pargs.request])
             logger.debug('Query: %s' % url)
 
-            #r = requests.get(url, headers=auth_header)
-            auth_token = AuthClient.get_token()
-            auth_header = {'X-Auth-Token': auth_token}
-
 #           TODO(Marcus): Auth is depricated ... remove
-            r = requests.get(url, auth=(self.pargs.username,
-                                        self.pargs.password),
-                            headers=auth_header)
+            # auth_token = AuthClient.get_token()
+            # auth_header = {'X-Auth-Token': auth_token}
+            # r = requests.get(url, headers=auth_header)
+            r = requests.get(url, auth=('admin', 'giraffe'))
 
             logger.debug('HTTP response status code: %s' % r.status_code)
 
@@ -155,6 +157,7 @@ class BaseController(controller.CementBaseController):
                 print json.dumps(r.json, indent=4)
 
         except requests.exceptions.HTTPError:
+            # @[fbahr]: What if... server down?
             print '\nBad request [HTTP %s]: %s' % (r.status_code, url)
 
         except:
@@ -214,15 +217,36 @@ class GiraffeClient(foundation.CementApp):
     @staticmethod
     def __deserialize(cls, record):
         obj = cls()
-        if cls is Meter:
+        if cls is Host:
+            obj.id, obj.name = \
+                record['id'], record['name']
+        elif cls is Meter:
             obj.id, obj.name, obj.description, obj.unit_name, obj.data_type = \
                 record['id'], record['name'], record['description'], \
                 record['unit_name'], record['data_type']
         elif cls is MeterRecord:
-            pass
+            obj.id, obj.host_id, obj.resource_id, \
+            obj.project_id, obj.user_id, obj.meter_id, \
+            obj.timestamp, obj.value, obj.duration = \
+                record['id'], record['host_id'], record['resource_id'], \
+                record['project_id'], record['user_id'], int(record['meter_id']), \
+                record['timestamp'], record['value'], record['duration']
         return obj
 
-    def meters(self, params=None):
+    def get_hosts(self, params=None):
+        """
+        Returns a list of giraffe.service.db.Host objects
+        """
+        path = '/hosts'
+        url = URLBuilder.build(self.protocol, self.endpoint, path, params)
+        lst = requests.get(url, auth=(self.username, self.password)).json
+        # ^ lst = list of
+        #           {'id': '<server_id (int)>',
+        #            'name': '<server_name>'}
+        #         dicts
+        return [self.__deserialize(Host, elem) for elem in lst]
+
+    def get_meters(self, params=None):
         """
         Returns a list of giraffe.service.db.Meter objects
         """
@@ -230,13 +254,34 @@ class GiraffeClient(foundation.CementApp):
         url = URLBuilder.build(self.protocol, self.endpoint, path, params)
         lst = requests.get(url, auth=(self.username, self.password)).json
         # ^ lst = list of
-        #           {u'unit_name': u'[seconds|..]',
-        #            u'description': u'<description>',
-        #            u'id': u'<meter_id (int)>',
-        #            u'data_type': u'[float|..]',
-        #            u'name': u'<meter_name (string)>'}
+        #           {'id': '<meter_id (int)>',
+        #            'name': '<meter_name (string)>',
+        #            'description': '<description>',
+        #            'unit_name': '[seconds|..]',
+        #            'data_type': '[float|..]'}
         #         dicts
         return [self.__deserialize(Meter, elem) for elem in lst]
+
+    def get_host_meter_records(self, host, meter, params=None):
+        """
+        Returns a list of giraffe.service.db.MeterRecord objects
+        """
+        path = '/'.join(['/hosts', host, 'meters', meter])
+        url = URLBuilder.build(self.protocol, self.endpoint, path, params)
+        lst = requests.get(url, auth=(self.username, self.password)).json
+        # ^ lst = list of
+        #           {'id': '<record_id (int)',
+        #            'host_id': '<host_id (string)>',
+        #            'resource_id': '<intance_id (string)>',
+        #            'project_id': '...',
+        #            'user_id': '...',
+        #            'meter_id': '... (int)',
+        #            'timestamp': '2013-01-27 08:46:35',
+        #            'value': '...',
+        #            'duration': '... (int)',
+        #            'signature': 'TODO'}
+        #         dicts
+        return [self.__deserialize(MeterRecord, elem) for elem in lst]
 
 
 def main():

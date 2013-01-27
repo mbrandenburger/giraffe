@@ -16,6 +16,7 @@ logger = logging.getLogger("service.rest_server")
 def start(conf):
     return Rest_Server(conf)
 
+
 class Rest_Server():
 #    def __init__(self, rest_api, host, port, username, password):
     def __init__(self, conf):
@@ -88,44 +89,48 @@ class Rest_Server():
         @self.app.route('/hosts/<host_id>/meters/<meter_id>/')
         #@requires_auth
         def hosts_hid_meters_mid(host_id, meter_id):
-            result = self.rest_api.route_hosts_hid_meters_mid(host_id,
-                                                              meter_id,
-                                                              request.query_string)
+            result = self.rest_api.\
+                        route_hosts_hid_meters_mid(host_id, meter_id,
+                                                   request.query_string)
             if result is None:
-                return Response(response='host or meter not available', status=404)
+                return Response(response='host or meter not available',
+                                status=404)
             return result
 
         @self.app.route('/projects/<project_id>/meters/<meter_id>')
         @self.app.route('/projects/<project_id>/meters/<meter_id>/')
         #@requires_auth
         def projects_pid_meters_mid(project_id, meter_id):
-            result = self.rest_api.route_projects_pid_meters_mid(project_id,
-                                                                 meter_id,
-                                                                 request.query_string)
+            result = self.rest_api.\
+                        route_projects_pid_meters_mid(project_id, meter_id,
+                                                      request.query_string)
             if result is None:
-                return Response(response='project or meter not available', status=404)
+                return Response(response='project or meter not available',
+                                status=404)
             return result
 
         @self.app.route('/users/<user_id>/meters/<meter_id>')
         @self.app.route('/users/<user_id>/meters/<meter_id>/')
         #@requires_auth
         def users_pid_meters_mid(user_id, meter_id):
-            result = self.rest_api.route_users_uid_meters_mid(user_id,
-                                                              meter_id,
-                                                              request.query_string)
+            result = self.rest_api.\
+                        route_users_uid_meters_mid(user_id, meter_id,
+                                                   request.query_string)
             if result is None:
-                return Response(response='user or meter not available', status=404)
+                return Response(response='user or meter not available',
+                                status=404)
             return result
 
         @self.app.route('/instances/<instance_id>/meters/<meter_id>')
         @self.app.route('/instances/<instance_id>/meters/<meter_id>/')
         #@requires_auth
         def instances_iid_meters_mid(instance_id, meter_id):
-            result = self.rest_api.route_instances_iid_meters_mid(instance_id,
-                                                                  meter_id,
-                                                                  request.query_string)
+            result = self.rest_api.\
+                        route_instances_iid_meters_mid(instance_id, meter_id,
+                                                       request.query_string)
             if result is None:
-                return Response(response='instance or meter not available', status=404)
+                return Response(response='instance or meter not available',
+                                status=404)
             return result
 
         # this line starts the flask server

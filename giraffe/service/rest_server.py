@@ -33,7 +33,6 @@ class Rest_Server():
 
         @self.app.route('/')
         def root():
-            logger.debug('in the root route!')
             result = self.rest_api.route_root()
             if result is None:
                 return Response(response='root not available', status=404)
@@ -43,47 +42,47 @@ class Rest_Server():
         @self.app.route('/hosts/')
         #@requires_auth
         def hosts():
-            result = self.rest_api.route_hosts()
+            result = self.rest_api.route_hosts(request.query_string)
             if result is None:
                 return Response(response='hosts not available', status=404)
-            return self.rest_api.route_hosts()
+            return str(result)
 
         @self.app.route('/projects')
         @self.app.route('/projects/')
         #@requires_auth
         def projects():
-            result = self.rest_api.route_projects()
+            result = self.rest_api.route_projects(request.query_string)
             if result is None:
                 return Response(response='projects not available', status=404)
-            return result
+            return str(result)
 
         @self.app.route('/users')
         @self.app.route('/users/')
         #@requires_auth
         def users():
-            result = self.rest_api.route_users()
+            result = self.rest_api.route_users(request.query_string)
             if result is None:
                 return Response(response='users not available', status=404)
-            return result
+            return str(result)
 
         @self.app.route('/instances')
         @self.app.route('/instances/')
         #@requires_auth
         def instances():
             logger.debug('aetschibaetschi')
-            result = self.rest_api.route_instances()
+            result = self.rest_api.route_instances(request.query_string)
             if result is None:
                 return Response(response='instances not available', status=404)
-            return result
+            return str(result)
 
         @self.app.route('/meters')
         @self.app.route('/meters/')
         #@requires_auth
         def meters():
-            result = self.rest_api.route_meters()
+            result = self.rest_api.route_meters(request.query_string)
             if result is None:
                 return Response(response='meters not available', status=404)
-            return result
+            return str(result)
 
         @self.app.route('/hosts/<host_id>/meters/<meter_id>')
         @self.app.route('/hosts/<host_id>/meters/<meter_id>/')
@@ -95,7 +94,7 @@ class Rest_Server():
             if result is None:
                 return Response(response='host or meter not available',
                                 status=404)
-            return result
+            return str(result)
 
         @self.app.route('/projects/<project_id>/meters/<meter_id>')
         @self.app.route('/projects/<project_id>/meters/<meter_id>/')
@@ -107,7 +106,7 @@ class Rest_Server():
             if result is None:
                 return Response(response='project or meter not available',
                                 status=404)
-            return result
+            return str(result)
 
         @self.app.route('/users/<user_id>/meters/<meter_id>')
         @self.app.route('/users/<user_id>/meters/<meter_id>/')
@@ -119,7 +118,7 @@ class Rest_Server():
             if result is None:
                 return Response(response='user or meter not available',
                                 status=404)
-            return result
+            return str(result)
 
         @self.app.route('/instances/<instance_id>/meters/<meter_id>')
         @self.app.route('/instances/<instance_id>/meters/<meter_id>/')
@@ -131,10 +130,11 @@ class Rest_Server():
             if result is None:
                 return Response(response='instance or meter not available',
                                 status=404)
-            return result
+            return str(result)
 
         # this line starts the flask server
         self.app.run(host=conf.get('host'), port=conf.get('port'))
+        # end of __init__
 
 #    def __requires_auth(self, f):
 #        def __check_auth(username, password):

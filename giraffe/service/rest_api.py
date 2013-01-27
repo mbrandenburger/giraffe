@@ -80,85 +80,132 @@ class Rest_API(threading.Thread):
                 continue
         return params
 
-    def _aggregate_meter_records(self, aggregation, record_args):
-        pass
+    def _aggregate(self, cls, aggregation, record_args):
+        """
+        Returns an aggregation of an attribute of the given object class
+        according to the 'aggregation' parameter:
+        - count: returns the number of MeterRecord objects that match the given
+        arguments
+        """
+        if aggregation == 'count':
+            return self.db.count(cls, record_args)
+        return None
 
     def route_root(self):
         """
         Route: /
         Returns: Welcome message (string)
+        Query params: -
         """
         return 'Welcome to Giraffe REST API'
 
-    def route_hosts(self):
+    def route_hosts(self, query_string=''):
         """
         Route: hosts
         Returns: List of Host objects, JSON-formatted
+        Query params: aggregation=[count]
         """
+        query = self._query_params(query_string)
+        _logger.debug(query)
         self.db.session_open()
-        hosts = self.db.load(Host, order='asc', order_attr='name')
+        if self.PARAM_AGGREGATION in query:
+            result = self._aggregate(Host, query[self.PARAM_AGGREGATION], {})
+        else:
+            hosts = self.db.load(Host, order='asc', order_attr='name')
+            result = json.dumps([host.to_dict() for host in hosts])
         self.db.session_close()
-        return json.dumps([host.to_dict() for host in hosts])
+        return result
 
-    def route_projects(self):
+    def route_projects(self, query_string=''):
         """
         Route: projects
         Returns: List of project names (string), JSON-formatted
+        Query params: aggregation=[count]
         """
+        query = self._query_params(query_string)
         self.db.session_open()
-        values = self.db.distinct_values(MeterRecord,
-                                         column='project_id',
+        values = self.db.distinct_values(MeterRecord, column='project_id',
                                          order='asc')
+        self.db.session_close()
+
         # remove null values
         if None in values:
             values.remove(None)
-        self.db.session_close()
+
+        # do count aggregation
+        # note: this is a work-around until Project objects are available
+        if self.PARAM_AGGREGATION in query:
+            if query[self.PARAM_AGGREGATION] == 'count':
+                return str(len(values))
         return json.dumps(values)
 
-    def route_users(self):
+    def route_users(self, query_string=''):
         """
         Route: users
         Returns: List of user names (string), JSON-formatted
+        Query params: aggregation=[count]
         """
+        query = self._query_params(query_string)
         self.db.session_open()
-        values = self.db.distinct_values(MeterRecord,
-                                         column='user_id',
+        values = self.db.distinct_values(MeterRecord, column='user_id',
                                          order='asc')
+        self.db.session_close()
+
         # remove null values
         if None in values:
             values.remove(None)
-        self.db.session_close()
+
+        # do count aggregation
+        # note: this is a work-around until User objects are available
+        if self.PARAM_AGGREGATION in query:
+            if query[self.PARAM_AGGREGATION] == 'count':
+                return str(len(values))
         return json.dumps(values)
 
-    def route_instances(self):
+    def route_instances(self, query_string=''):
         """
         Route: instances
         Returns: List of instance names (string), JSON-formatted
+        Query params: aggregation=[count]
         """
+        query = self._query_params(query_string)
         self.db.session_open()
-        values = self.db.distinct_values(MeterRecord,
-                                         column='resource_id',
+        values = self.db.distinct_values(MeterRecord, column='resource_id',
                                          order='asc')
+        self.db.session_close()
+
         # remove null values
         if None in values:
             values.remove(None)
-        self.db.session_close()
+
+        # do count aggregation
+        # note: this is a work-around until Instance objects are available
+        if self.PARAM_AGGREGATION in query:
+            if query[self.PARAM_AGGREGATION] == 'count':
+                return str(len(values))
         return json.dumps(values)
 
-    def route_meters(self):
+    def route_meters(self, query_string=''):
         """
         Route: meters
         Returns: List of Meter objects, JSON-formatted
+        Query params: aggregation=[count]
         """
+        query = self._query_params(query_string)
         self.db.session_open()
-        meters = self.db.load(Meter, order='asc', order_attr='name')
+        if self.PARAM_AGGREGATION in query:
+            result = self._aggregate(Meter, query[self.PARAM_AGGREGATION], {})
+        else:
+            meters = self.db.load(Meter, order='asc', order_attr='name')
+            result = json.dumps([meter.to_dict() for meter in meters])
         self.db.session_close()
-        return json.dumps([meter.to_dict() for meter in meters])
+        return str(result)
 
     def route_hosts_hid(self):
         """
         Route: hosts/<host_id>
         Returns: List of MeterRecord objects, JSON-formatted
+        Query params: -
         """
         raise NotImplementedError(
                   "The route \"hosts/<host_id>\" is not implemented yet")
@@ -169,7 +216,9 @@ class Rest_API(threading.Thread):
         """
         Route: hosts/<host_id>/meters/<meter_id>
         Returns: List of MeterRecord objects, JSON-formatted
+        Query params: start_time, end_time, aggregation=[count]
         """
+        query = self._query_params(query_string)
         self.db.session_open()
         hosts = self.db.load(Host, {'name': host_id}, limit=1)
         if not hosts:
@@ -181,27 +230,30 @@ class Rest_API(threading.Thread):
             return None
         meter = meters[0]
 
-        # narrow down the search
+        # narrow down the args
         limit = self.RESULT_LIMIT
         order = 'asc'
-        search = {'host_id': host.id, 'meter_id': meter.id}
-        query = self._query_params(query_string)
+        args = {'host_id': host.id, 'meter_id': meter.id}
         if self.PARAM_START_TIME in query or self.PARAM_END_TIME in query:
-            search['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
             if self.PARAM_START_TIME in query:
-                search['timestamp'][0] = query[self.PARAM_START_TIME]
+                args['timestamp'][0] = query[self.PARAM_START_TIME]
             if self.PARAM_END_TIME in query:
-                search['timestamp'][1] = query[self.PARAM_END_TIME]
+                args['timestamp'][1] = query[self.PARAM_END_TIME]
         if self.PARAM_LATEST in query and query[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        records = self.db.load(MeterRecord,
-                               search,
-                               limit=limit,
-                               order=order,
-                               order_attr='timestamp')
+
+        if self.PARAM_AGGREGATION in query:
+            result = self._aggregate(MeterRecord,
+                                     query[self.PARAM_AGGREGATION],
+                                     args)
+        else:
+            records = self.db.load(MeterRecord, args, limit=limit, order=order,
+                                   order_attr='timestamp')
+            result = json.dumps([r.to_dict() for r in records])
         self.db.session_close()
-        return json.dumps([r.to_dict() for r in records])
+        return result
 
     def route_projects_pid_meters_mid(self, project_id,
                                             meter_id,
@@ -210,33 +262,37 @@ class Rest_API(threading.Thread):
         Route: projects/<project_id>/meters/<meter_id>
         Returns: List of MeterRecord objects, JSON-formatted
         """
+        query = self._query_params(query_string)
         self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
         if not meters:
             return None
         meter = meters[0]
 
-        # narrow down the search
+        # narrow down the args
         limit = self.RESULT_LIMIT
         order = 'asc'
-        search = {'project_id': project_id, 'meter_id': meter.id}
-        query = self._query_params(query_string)
+        args = {'project_id': project_id, 'meter_id': meter.id}
         if self.PARAM_START_TIME in query or self.PARAM_END_TIME in query:
-            search['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
             if self.PARAM_START_TIME in query:
-                search['timestamp'][0] = query[self.PARAM_START_TIME]
+                args['timestamp'][0] = query[self.PARAM_START_TIME]
             if self.PARAM_END_TIME in query:
-                search['timestamp'][1] = query[self.PARAM_END_TIME]
+                args['timestamp'][1] = query[self.PARAM_END_TIME]
         if self.PARAM_LATEST in query and query[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        records = self.db.load(MeterRecord,
-                               search,
-                               limit=limit,
-                               order=order,
-                               order_attr='timestamp')
+
+        if self.PARAM_AGGREGATION in query:
+            result = self._aggregate(MeterRecord,
+                                     query[self.PARAM_AGGREGATION],
+                                     args)
+        else:
+            records = self.db.load(MeterRecord, args, limit=limit, order=order,
+                                   order_attr='timestamp')
+            result = json.dumps([r.to_dict() for r in records])
         self.db.session_close()
-        return json.dumps([r.to_dict() for r in records])
+        return result
 
     def route_users_uid_meters_mid(self, user_id,
                                          meter_id,
@@ -244,35 +300,39 @@ class Rest_API(threading.Thread):
         """
         Route: users/<user_id>/meters/<meter_id>
         Returns: List of MeterRecord objects, JSON-formatted
+        Query params: start_time, end_time, aggregation=[count]
         """
+        query = self._query_params(query_string)
         self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
         if not meters:
             return None
         meter = meters[0]
 
-        # narrow down the search
+        # narrow down the args
         limit = self.RESULT_LIMIT
         order = 'asc'
-        search = {'user_id': user_id, 'meter_id': meter.id}
-        query = self._query_params(query_string)
+        args = {'user_id': user_id, 'meter_id': meter.id}
         if self.PARAM_START_TIME in query or self.PARAM_END_TIME in query:
-            search['timestamp'] = ['0000-01-01 00:00:00',
-                                          '2999-12-31 23:59:59']
+            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
             if self.PARAM_START_TIME in query:
-                search['timestamp'][0] = query[self.PARAM_START_TIME]
+                args['timestamp'][0] = query[self.PARAM_START_TIME]
             if self.PARAM_END_TIME in query:
-                search['timestamp'][1] = query[self.PARAM_END_TIME]
+                args['timestamp'][1] = query[self.PARAM_END_TIME]
         if self.PARAM_LATEST in query and query[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        records = self.db.load(MeterRecord,
-                               search,
-                               limit=limit,
-                               order=order,
-                               order_attr='timestamp')
+
+        if self.PARAM_AGGREGATION in query:
+            result = self._aggregate(MeterRecord,
+                                     query[self.PARAM_AGGREGATION],
+                                     args)
+        else:
+            records = self.db.load(MeterRecord, args, limit=limit, order=order,
+                                   order_attr='timestamp')
+            result = json.dumps([r.to_dict() for r in records])
         self.db.session_close()
-        return json.dumps([r.to_dict() for r in records])
+        return result
 
     def route_instances_iid_meters_mid(self, instance_id,
                                              meter_id,
@@ -280,32 +340,36 @@ class Rest_API(threading.Thread):
         """
         Route: instances/<instance_id>/meters/<meter_id>
         Returns: List of MeterRecord objects, JSON-formatted
+        Query params: start_time, end_time, aggregation=[count]
         """
+        query = self._query_params(query_string)
         self.db.session_open()
         meters = self.db.load(Meter, {'name': meter_id}, limit=1)
         if not meters:
             return None
         meter = meters[0]
 
-        # narrow down the search
+        # narrow down the args
         limit = self.RESULT_LIMIT
         order = 'asc'
-        search = {'resource_id': instance_id, 'meter_id': meter.id}
-        query = self._query_params(query_string)
+        args = {'resource_id': instance_id, 'meter_id': meter.id}
         if self.PARAM_START_TIME in query or self.PARAM_END_TIME in query:
-            search['timestamp'] = ['0000-01-01 00:00:00',
-                                          '2999-12-31 23:59:59']
+            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
             if self.PARAM_START_TIME in query:
-                search['timestamp'][0] = query[self.PARAM_START_TIME]
+                args['timestamp'][0] = query[self.PARAM_START_TIME]
             if self.PARAM_END_TIME in query:
-                search['timestamp'][1] = query[self.PARAM_END_TIME]
+                args['timestamp'][1] = query[self.PARAM_END_TIME]
         if self.PARAM_LATEST in query and query[self.PARAM_LATEST] == '1':
             limit = 1
             order = 'desc'
-        records = self.db.load(MeterRecord,
-                               search,
-                               limit=limit,
-                               order=order,
-                               order_attr='timestamp')
+
+        if self.PARAM_AGGREGATION in query:
+            result = self._aggregate(MeterRecord,
+                                     query[self.PARAM_AGGREGATION],
+                                     args)
+        else:
+            records = self.db.load(MeterRecord, args, limit=limit, order=order,
+                                   order_attr='timestamp')
+            result = json.dumps([r.to_dict() for r in records])
         self.db.session_close()
-        return json.dumps([r.to_dict() for r in records])
+        return result

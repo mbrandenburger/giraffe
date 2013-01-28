@@ -40,16 +40,15 @@ class URLBuilder(object):
 
 class AuthClient(object):
     @staticmethod
-    def get_token(**kwargs):
+    def get_token(credentials=None, **kwargs):
         params = {}
+        if credentials: params.update(credentials)
         params.update(kwargs)
         # params['username'] = kwargs['username']  # os.getenv('OS_USERNAME')
         # params['password'] = kwargs['password']  # os.getenv('OS_PASSWORD')
         # params['tenant_id'] = kwargs['tenant_id']  # os.getenv('OS_TENANT_ID'),
         # params['tenant_name'] = kwargs['tenant_name']  # os.getenv('OS_TENANT_NAME')
         # params['auth_url'] = params['auth_url']  # os.getenv('OS_AUTH_URL')
-        # params['service_type'] = params['service_type']  # os.getenv('OS_SERVICE_TYPE')
-        # params['endpoint_type'] = params['endpoint_type']  # os.getenv('OS_ENDPOINT_TYPE')
         params['insecure'] = False
 
         _ksclient = ksclient.Client(
@@ -165,11 +164,10 @@ class BaseController(controller.CementBaseController):
             url = ''.join(['http://', self.pargs.endpoint, self.pargs.query])
             logger.debug('Query: %s' % url)
 
-            # TODO(Marcus): Auth is depricated ... remove
-            # auth_token = AuthClient.get_token()
-            # auth_header = {'X-Auth-Token': auth_token}
-            # r = requests.get(url, headers=auth_header)
-            r = requests.get(url, auth=('admin', 'giraffe'))
+            #@[fbahr]: dirty hack, getting dict instance from self.pargs 
+            _kwargs = dict((k,v) for (k,v) in self.pargs._get_kwargs())
+            auth_token = AuthClient.get_token(credentials=_kwargs)
+            r = requests.get(url, headers={'X-Auth-Token': auth_token})
 
             logger.debug('HTTP response status code: %s' % r.status_code)
 
@@ -308,9 +306,15 @@ class GiraffeClient(foundation.CementApp):
     def __init__(self, **kwargs):
         super(GiraffeClient, self).__init__(kwargs)
 
+        #@[fbahr]: Hack, for the time being -----------------------------------
         self.config = Config('giraffe.cfg')
-        self.username = self.config.get('client', 'user')
-        self.password = self.config.get('client', 'pass')
+        self.auth_url = self.config.get('identity', 'auth_url')
+        self.username = self.config.get('identity', 'user')
+        self.password = self.config.get('identity', 'pass')
+        self.tenant_name = self.config.get('identity', 'tenant_name')
+        self.tenant_id = self.config.get('identity', 'tenant_id')
+        # ---------------------------------------------------------------------
+
         self.protocol = 'http'
         self.endpoint = ':'.join([self.config.get('client', 'host'),
                                   self.config.get('client', 'port')])
@@ -353,7 +357,17 @@ class GiraffeClient(foundation.CementApp):
         # end of class _ResultSet ---------------------------------------------
 
         url = URLBuilder.build(self.protocol, self.endpoint, path, params)
-        lst = requests.get(url, auth=(self.username, self.password)).json
+
+        #@[marcus,fbahr]: To be move to GiraffeClient.__init__? ---------------
+        auth_token = AuthClient.get_token(
+                        auth_url=self.auth_url,
+                        username=self.username,
+                        password=self.password,
+                        tenant_name=self.tenant_name
+                        )
+        # ---------------------------------------------------------------------
+
+        lst = requests.get(url, headers={'X-Auth-Token': auth_token}).json
         return _ResultSet(lst)
 
     def get_hosts(self, params=None):

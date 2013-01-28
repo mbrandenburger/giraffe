@@ -12,6 +12,10 @@ Implemented meters
 - Inst_NETWORK_IO   (raises NotImplementedError)
 + Inst_DISK_IO      (raises NotImplementedError, though)
 
+? Inst_ ...         [meter for cinder (block storage) operations]
+? Inst_ ...         [meter for swift (object storage) operations]
+?       ...
+
 -------------------------------------------------------------------------------
 3rd-party modules/dependencies
 -------------------------------------------------------------------------------
@@ -20,9 +24,10 @@ libvirt
 """
 
 import sys
+import time
 import subprocess
 import logging
-import time
+from xml.etree import ElementTree as ETree
 
 import psutil
 
@@ -34,7 +39,7 @@ import libvirt
 from giraffe.common.task import PeriodicMeterTask
 
 
-logger = logging.getLogger("service.collector.instance_meters")
+logger = logging.getLogger("service.collector.inst_meters")
 
 
 def get_instance_ids(connection, pids=True):
@@ -297,8 +302,9 @@ class Inst_NETWORK_IO(PeriodicInstMeterTask):
 
 
 class Inst_DISK_IO(PeriodicInstMeterTask):
-    #@[fbahr]: Actually, this should rather refer to Object (swift) and/or
-    #          Block Storage (cinder) usage.
+    #@[fbahr]: This meter is supposed to track "block storage" operations;
+    #          ...what about: cinder (block storage) and swift (object storage)
+    #          operations?
 
     def meter(self):
         """
@@ -308,16 +314,41 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
         inst_ios = []
 
         try:
-            # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = get_instance_ids(self.conn)
-            # list of (uuid, uptime) tuples
-            inst_ios = [(uuid,
-                         timestamp(),
-                         io_counter.read_bytes,
-                         io_counter.write_bytes)
-                        for (uuid, io_counter) \
-                            in [(k, psutil.Process(v[0]).get_io_counters()) \
-                                for k, v in inst_ids.iteritems()]]
+            # # dict of (uuid: (pid, instance-name)) elements
+            # inst_ids = get_instance_ids(self.conn)
+            # # list of (uuid, uptime) tuples
+            # inst_ios = [(uuid,
+            #             timestamp(),
+            #             io_counter.read_bytes,
+            #             io_counter.write_bytes)
+            #            for (uuid, io_counter) \
+            #                in [(k, psutil.Process(v[0]).get_io_counters()) \
+            #                    for k, v in inst_ids.iteritems()]]
+
+            # ^ alternative implementation ------------------------------------
+            domains = [self.conn.lookupByID(dom_id) \
+                       for dom_id in self.conn.listDomainsID()]
+
+            dom_descr = dict((dom, (dom.UUIDString(), dom.XMLDesc(0))) \
+                             for dom in domains)
+
+            for dom, descr in dom_descr.iteritems():
+                devices = filter(bool, \
+                                 [target.get('dev') for target in \
+                                  ETree.fromstring(descr[1]). \
+                                        findall('devices/disk/target')])
+
+                block_stats = [dom.blockStats(dev) for dev in devices]
+
+                s = [sum(stat) for stat in zip(*block_stats)]
+
+                inst_ios.append((uuid,
+                                 timestamp(),
+                                 s[0],   # r_requests
+                                 s[1],   # r_bytes
+                                 s[2],   # w_requests
+                                 s[3])   # w_bytes
+                #                s[4])   # errors
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
@@ -325,3 +356,43 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
 
         # return inst_ios
         raise NotImplementedError()
+
+# ----------------------------------------------------------------------------
+# from /ceilometer
+# ----------------------------------------------------------------------------
+#
+#    class DiskIOPollster(LibVirtPollster):
+#
+#        DISKIO_USAGE_MESSAGE = ' '.join(["DISKIO USAGE:",
+#                                         "%s %s:",
+#                                         "read-requests=%d",
+#                                         "read-bytes=%d",
+#                                         "write-requests=%d",
+#                                         "write-bytes=%d",
+#                                         "errors=%d",
+#                                         ])
+#
+#        def get_counters(self, manager, instance):
+#            conn = get_libvirt_connection()
+#            instance_name = _instance_name(instance)
+#            try:
+#                disks = conn.get_disks(instance_name)
+#            except Exception as err:
+#                self.LOG.warning('Ignoring instance %s: %s', instance_name, err)
+#                self.LOG.exception(err)
+#            else:
+#                r_bytes, r_requests, w_bytes, w_requests = 0, 0, 0, 0
+#                for disk in disks:
+#                    stats = conn.block_stats(instance_name, disk)
+#                    r_bytes    += stats[0]
+#                    r_requests += stats[1]
+#                    w_bytes    += stats[3]
+#                    w_requests += stats[2]
+#                yield make_counter_from_instance(instance,
+#                                                 name='disk.read.requests',
+#                                                 type=counter.TYPE_CUMULATIVE,
+#                                                 volume=r_requests,
+#                                                 )
+#                ...
+#                (the same for: disk.read.bytes, disk.write.requests/bytes)
+

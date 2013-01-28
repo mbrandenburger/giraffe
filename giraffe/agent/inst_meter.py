@@ -10,7 +10,7 @@ Implemented meters
 + Inst_VIRMEM_Usage
 + Inst_UPTIME
 - Inst_NETWORK_IO   (raises NotImplementedError)
-+ Inst_DISK_IO      (raises NotImplementedError, though)
++ Inst_DISK_IO
 
 ? Inst_ ...         [meter for cinder (block storage) operations]
 ? Inst_ ...         [meter for swift (object storage) operations]

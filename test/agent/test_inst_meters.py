@@ -3,7 +3,8 @@ __author__ = 'fbahr'
 import sys
 import unittest
 import logging
-from giraffe.agent.inst_meter import Inst_PHYMEM_Usage, Inst_VIRMEM_Usage
+from giraffe.agent.inst_meter import Inst_PHYMEM_Usage, Inst_VIRMEM_Usage, \
+                                     Inst_DISK_IO
 
 
 class InstMeterTestCases(unittest.TestCase):
@@ -16,17 +17,18 @@ class InstMeterTestCases(unittest.TestCase):
     h.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
     logger.addHandler(h)
 
-
     @classmethod
     def setUpClass(cls):
         if InstMeterTestCases.python_version >= 270:
             cls.inst_phymem_usage = Inst_PHYMEM_Usage(None, 0)
             cls.inst_virmem_usage = Inst_VIRMEM_Usage(None, 0)
+            cls.inst_disk_io = Inst_DISK_IO(None, 0)
 
     def setUp(self):
         if InstMeterTestCases.python_version < 270:
             self.inst_phymem_usage = Inst_PHYMEM_Usage(None, 0)
             self.inst_virmem_usage = Inst_VIRMEM_Usage(None, 0)
+            self.inst_disk_io = Inst_DISK_IO(None, 0)
 
     def test_inst_phymem_usage(self):
         meters = self.inst_phymem_usage.meter()
@@ -34,6 +36,12 @@ class InstMeterTestCases(unittest.TestCase):
 
     def test_inst_virmem_usage(self):
         meters = self.inst_virmem_usage.meter()
+        self.assertTrue(meters)
+
+    def test_inst_disk_io(self):
+        meters = self.inst_disk_io.meter()
+        for m in meters:
+            print m
         self.assertTrue(meters)
 
 

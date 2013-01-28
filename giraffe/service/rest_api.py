@@ -110,6 +110,7 @@ class Rest_API(threading.Thread):
         self.db.session_open()
         if self.PARAM_AGGREGATION in query:
             result = self._aggregate(Host, query[self.PARAM_AGGREGATION], {})
+            result = json.dumps(result)
         else:
             hosts = self.db.load(Host, order='asc', order_attr='name')
             result = json.dumps([host.to_dict() for host in hosts])
@@ -136,7 +137,7 @@ class Rest_API(threading.Thread):
         # note: this is a work-around until Project objects are available
         if self.PARAM_AGGREGATION in query:
             if query[self.PARAM_AGGREGATION] == 'count':
-                return str(len(values))
+                return json.dumps(str(len(values)))
         return json.dumps(values)
 
     def route_users(self, query_string=''):
@@ -159,7 +160,7 @@ class Rest_API(threading.Thread):
         # note: this is a work-around until User objects are available
         if self.PARAM_AGGREGATION in query:
             if query[self.PARAM_AGGREGATION] == 'count':
-                return str(len(values))
+                return json.dumps(str(len(values)))
         return json.dumps(values)
 
     def route_instances(self, query_string=''):
@@ -182,7 +183,7 @@ class Rest_API(threading.Thread):
         # note: this is a work-around until Instance objects are available
         if self.PARAM_AGGREGATION in query:
             if query[self.PARAM_AGGREGATION] == 'count':
-                return str(len(values))
+                return json.dumps(str(len(values)))
         return json.dumps(values)
 
     def route_meters(self, query_string=''):
@@ -195,6 +196,7 @@ class Rest_API(threading.Thread):
         self.db.session_open()
         if self.PARAM_AGGREGATION in query:
             result = self._aggregate(Meter, query[self.PARAM_AGGREGATION], {})
+            result = json.dumps(result)
         else:
             meters = self.db.load(Meter, order='asc', order_attr='name')
             result = json.dumps([meter.to_dict() for meter in meters])
@@ -248,6 +250,7 @@ class Rest_API(threading.Thread):
             result = self._aggregate(MeterRecord,
                                      query[self.PARAM_AGGREGATION],
                                      args)
+            result = json.dumps(result)
         else:
             records = self.db.load(MeterRecord, args, limit=limit, order=order,
                                    order_attr='timestamp')
@@ -287,6 +290,7 @@ class Rest_API(threading.Thread):
             result = self._aggregate(MeterRecord,
                                      query[self.PARAM_AGGREGATION],
                                      args)
+            result = json.dumps(result)
         else:
             records = self.db.load(MeterRecord, args, limit=limit, order=order,
                                    order_attr='timestamp')
@@ -327,6 +331,7 @@ class Rest_API(threading.Thread):
             result = self._aggregate(MeterRecord,
                                      query[self.PARAM_AGGREGATION],
                                      args)
+            result = json.dumps(result)
         else:
             records = self.db.load(MeterRecord, args, limit=limit, order=order,
                                    order_attr='timestamp')
@@ -367,6 +372,7 @@ class Rest_API(threading.Thread):
             result = self._aggregate(MeterRecord,
                                      query[self.PARAM_AGGREGATION],
                                      args)
+            result = json.dumps(result)
         else:
             records = self.db.load(MeterRecord, args, limit=limit, order=order,
                                    order_attr='timestamp')

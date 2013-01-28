@@ -36,12 +36,10 @@ class ClientTestCases(unittest.TestCase):
 #       self.assertTrue(meter_records)
 
     def test_get_latest_host_meter_record(self):
-        # @[fbahr]: Syntax issue? '/hosts/uncinus/meters/loadavg_15m?latest'
-        #           returns all meter records for loadavg_15m
         latest_meter_record = self.app.get_host_meter_records( \
                                   host='uncinus', \
                                   meter="loadavg_15m", \
-                                  params=['latest'])
+                                  params=['latest=1'])
         self.assertTrue(latest_meter_record)
 
 

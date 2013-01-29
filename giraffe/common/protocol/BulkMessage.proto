@@ -4,22 +4,24 @@ message BulkMessage {
     required string signature = 1;
     required string host_name = 2;
     repeated HostRecord host_records = 3;
-    repeated InstanceRecord instance_records = 4;
+    repeated InstRecord inst_records = 4;
 }
 
-message InstanceRecord {
+message InstRecord {
     required string user_id = 1;
     required string project_id = 2;
-    required string instance_id = 3;
+    required string inst_id = 3;
     required string timestamp = 4;
-    required string type = 5;
+    required string meter_name = 5;
     required string value = 6;
     required int32 duration = 7;
+    optional string meter_type = 8;
 }
 
 message HostRecord {
     required string timestamp = 1;
-    required string type = 2;
+    required string meter_name = 2;
     required string value = 3;
     required int32 duration = 4;
+    optional string meter_type = 5;
 }

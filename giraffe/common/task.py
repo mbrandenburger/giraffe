@@ -38,7 +38,6 @@ class PeriodicMeterTask(Task):
         self.timer = None
 
     def run(self):
-
         meter_msg = self.meter()
         self.notifyCallback(meter_msg)
 

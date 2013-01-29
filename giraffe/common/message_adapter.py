@@ -57,14 +57,14 @@ class MessageAdapter(object):
         host_record.value = str(value)
         host_record.duration = duration
 
-    def add_instance_record(
-            self, project_id, user_id, instance_id, timestamp, meter_type,
-            value, duration):
+    def add_inst_record(self, project_id, user_id, instance_id, timestamp, \
+                              meter_type, value, duration):
         """
         Adds an instance record to the underlying adaptee object.
         """
         if self._adaptee.instance_records is None:
             self._adaptee.instance_records = []
+
         instance_record = self._adaptee.instance_records.add()
         instance_record.project_id = project_id
         instance_record.user_id = user_id

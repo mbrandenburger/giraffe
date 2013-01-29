@@ -65,10 +65,17 @@ class AgentPublisher(threading.Thread):
             self.lock.acquire()
             try:
                 if meter_type.startswith("inst"):
-                    self.message.add_inst_record(
-                        meter_type,
-                        meter_value,
-                        meter_duration)
+                    #@[fbahr]: Gathering information about project & user id
+                    #          ...how/where?
+                    for record in meter_value:
+                        self.message.add_inst_record(
+                            timestamp=record[1],
+                            meter_type=meter_type,
+                            value=meter_value,
+                            duration=meter_duration,
+                            project_id=None,
+                            instance_id=record[0],
+                            user_id=None)
                 else:
                     self.message.add_host_record(
                         self._timestamp_now(),

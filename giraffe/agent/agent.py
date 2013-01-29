@@ -4,9 +4,11 @@ import threading
 import time
 import logging
 from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRMEM_Usage, \
-    Host_PHYMEM_Usage, Host_UPTIME, Host_NETWORK_IO
-from giraffe.agent.instance_meter import Inst_CPU_Usage, Inst_VIRMEM_Usage, \
-    Inst_PHYMEM_Usage, Inst_UPTIME, Inst_NETWORK_IO
+                                     Host_PHYMEM_Usage, Host_UPTIME, \
+                                     Host_NETWORK_IO
+from giraffe.agent.inst_meter import Inst_CPU_Usage, Inst_VIRMEM_Usage, \
+                                     Inst_PHYMEM_Usage, Inst_UPTIME, \
+                                     Inst_DISK_IO, Inst_NETWORK_IO
 from giraffe.agent import publisher
 from giraffe.common.config import Config
 
@@ -54,7 +56,7 @@ class Agent(object):
             Host_UPTIME(self._callback_uptime, _METER_DURATION)
         )
 
-        # meter host network io
+        # meter host network I/O
         self.tasks.append(
             Host_NETWORK_IO(self._callback_network_io, _METER_DURATION)
         )
@@ -66,14 +68,19 @@ class Agent(object):
             Inst_PHYMEM_Usage(self._callback_inst_phy_mem, _METER_DURATION)
         )
 
-        # meter instances vir memory
+        # meter instance vir memory
         self.tasks.append(
             Inst_VIRMEM_Usage(self._callback_inst_vir_mem, _METER_DURATION)
         )
 
-        # meter instances uptime
+        # meter instance uptime
         self.tasks.append(
             Inst_UPTIME(self._callback_inst_uptime, _METER_DURATION)
+        )
+
+        # meter instance disk I/O 
+        self.tasks.append(
+            Inst_DISK_IO(self._callback_inst_disk_io, _METER_DURATION)
         )
 
 
@@ -110,6 +117,26 @@ class Agent(object):
 
     def _callback_inst_uptime(self, params):
         self.publisher.add_meter_record('inst_uptime', params, 0)
+
+    def _callback_inst_disk_io(self, params):
+        zipped_params = zip(*params)
+        descriptors = zipped_params[0:2]  # uuids and timestamps
+        self.publisher.add_meter_record(
+                            'inst.disk.io.read.requests',
+                            zip(*(descriptors + [zip(*zipped_params)[0]])),
+                            0)
+        self.publisher.add_meter_record(
+                            'inst.disk.io.read.bytes',
+                            zip(*(descriptors + [zip(*zipped_params)[1]])),
+                            0)
+        self.publisher.add_meter_record(
+                            'inst.disk.io.write.requests',
+                            zip(*(descriptors + [zip(*zipped_params)[2]])),
+                            0)
+        self.publisher.add_meter_record(
+                            'inst.disk.io.write.bytes',
+                            zip(*(descriptors + [zip(*zipped_params)[3]])),
+                            0)
 
 
     # -------------------------------------------------------------------------

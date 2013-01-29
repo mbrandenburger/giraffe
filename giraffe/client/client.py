@@ -144,7 +144,7 @@ class BaseController(controller.CementBaseController):
                              _config.get('client', 'tenant_id'))),
             (['--tenant_name'], \
                 dict(action='store', help='$OS_TENANT_NAME', \
-                     default=os.getenv('OS_TENANT_name') or \
+                     default=os.getenv('OS_TENANT_NAME') or \
                              _config.get('client', 'tenant_name'))),
             # -----------------------------------------------------------------
             (['-e', '--endpoint'], \
@@ -167,7 +167,12 @@ class BaseController(controller.CementBaseController):
             #@[fbahr]: dirty hack, getting dict instance from self.pargs 
             _kwargs = dict((k,v) for (k,v) in self.pargs._get_kwargs())
             auth_token = AuthClient.get_token(credentials=_kwargs)
-            r = requests.get(url, headers={'X-Auth-Token': auth_token})
+
+            try:
+                print "auth_token:", auth_token
+                r = requests.get(url, headers={'X-Auth-Token': auth_token})
+            except Exception as e:
+                print "Exception:", e
 
             logger.debug('HTTP response status code: %s' % r.status_code)
 

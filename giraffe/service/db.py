@@ -268,7 +268,7 @@ class Meter(Base):
                       'mysql_charset': 'utf8'}
 
     id = Column(TINYINT(2, unsigned=True), primary_key=True)
-    name = Column('meter_name', VARCHAR(20), nullable=False)
+    name = Column('meter_name', VARCHAR(80), nullable=False)
     description = Column('meter_desc', VARCHAR(255), nullable=False,
                          default='', doc='meter description')
     unit_name = Column('unit_name', VARCHAR(20), nullable=False,
@@ -276,6 +276,8 @@ class Meter(Base):
     data_type = Column('data_type', VARCHAR(20), nullable=False,
                        doc=('name of the python data type for casting,'
                             ' e.g. int, float..'))
+    type = Column('meter_type', VARCHAR(40), nullable=False, \
+                  doc='meter type, either gauge, cumulative or delta')
     records = relationship('MeterRecord', backref='meter')
 
     def __repr__(self):
@@ -330,8 +332,14 @@ class MeterRecord(Base):
                         nullable=True, default=None)
 
     def __repr__(self):
-        return "MeterRecord(%s, %d,'%s','%s', %s)" % (self.id,
-                                                      self.meter_id,
-                                                      self.value,
-                                                      self.duration,
-                                                      self.timestamp)
+        return "MeterRecord(%s, %d, '%s', '%s', %s)" % (self.id,
+                                                        self.meter_id,
+                                                        self.value,
+                                                        self.duration,
+                                                        self.timestamp)
+        # return "MeterRecord(id=%s, meter_id=%d, " \
+        #       "value='%s', duration='%s', timestamp=%s)" % (self.id,
+        #                                                     self.meter_id,
+        #                                                     self.value,
+        #                                                     self.duration,
+        #                                                     self.timestamp)

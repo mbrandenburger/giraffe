@@ -141,11 +141,11 @@ class BaseController(controller.CementBaseController):
             (['--tenant_id'], \
                 dict(action='store', help='$OS_TENANT_ID', \
                      default=os.getenv('OS_TENANT_ID') or \
-                             _config.get('client', 'tentant_id'))),
+                             _config.get('client', 'tenant_id'))),
             (['--tenant_name'], \
                 dict(action='store', help='$OS_TENANT_NAME', \
                      default=os.getenv('OS_TENANT_name') or \
-                             _config.get('client', 'tentant_name'))),
+                             _config.get('client', 'tenant_name'))),
             # -----------------------------------------------------------------
             (['-e', '--endpoint'], \
                 dict(action='store', help='Giraffe service endpoint (domain:port)', \
@@ -332,17 +332,11 @@ class GiraffeClient(foundation.CementApp):
                     obj.__dict__.update(dict((k, v) \
                                              for (k, v) in record.iteritems() \
                                              if k in ['id', 'name']))
-                    # obj.id, obj.name = \
-                    #     record['id'], record['name']
                 elif cls is Meter:
                     obj.__dict__.update(dict((k, v) \
                                              for (k, v) in record.iteritems() \
                                              if k in ['id', 'name', 'description', \
                                                       'unit_name', 'data_type']))
-                    # obj.id, obj.name, obj.description, \
-                    # obj.unit_name, obj.data_type = \
-                    #     record['id'], record['name'], record['description'], \
-                    #     record['unit_name'], record['data_type']
                 elif cls is MeterRecord:
                     obj.id, obj.host_id, obj.resource_id, \
                     obj.project_id, obj.user_id, obj.meter_id, \

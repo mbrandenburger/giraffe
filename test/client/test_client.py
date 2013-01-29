@@ -39,7 +39,7 @@ class ClientTestCases(unittest.TestCase):
         latest_meter_record = self.app.get_host_meter_records( \
                                   host='uncinus', \
                                   meter="loadavg_15m", \
-                                  params=['latest=1'])
+                                  params={'latest': 1})
         self.assertTrue(latest_meter_record)
 
 

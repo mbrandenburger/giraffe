@@ -1,4 +1,4 @@
-__author__ = 'marcus'
+__author__ = 'marcus, fbahr'
 
 import threading
 import time
@@ -98,11 +98,11 @@ class Agent(object):
         self.publisher.add_meter_record('virmem_usage', params[3], 0)
 
     def _callback_uptime(self, params):
-        self.publisher.add_meter_record('uptime', params, 0)
+        self.publisher.add_meter_record('host.uptime', params, 0)
 
     def _callback_network_io(self, params):
-        self.publisher.add_meter_record('network_io_tx', params[0], 0)
-        self.publisher.add_meter_record('network_io_rx', params[1], 0)
+        self.publisher.add_meter_record('host.network.io.outgoing.bytes', params[0], 0)
+        self.publisher.add_meter_record('host.network.io.incoming.bytes', params[1], 0)
 
 
     # CB METHODS FOR INSTANCE METERS ------------------------------------------
@@ -116,7 +116,7 @@ class Agent(object):
         # self.publisher.add_meter_record('inst_virmem_usage', params[3], 0)
 
     def _callback_inst_uptime(self, params):
-        self.publisher.add_meter_record('inst_uptime', params, 0)
+        self.publisher.add_meter_record('inst.uptime', params, 0)
 
     def _callback_inst_disk_io(self, params):
         zipped_params = zip(*params)

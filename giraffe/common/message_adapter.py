@@ -1,8 +1,6 @@
-
-
-from giraffe.common import BulkMessage_pb2
-from giraffe.common.config import Config
 from giraffe.common.BulkMessage_pb2 import BulkMessage
+from giraffe.common.config import Config
+
 
 from datetime import datetime
 
@@ -19,10 +17,10 @@ class MessageAdapter(object):
         if isinstance(adaptee, BulkMessage):
             self.__dict__['_adaptee'] = adaptee
         elif isinstance(adaptee, str):
-            self.__dict__['_adaptee'] = BulkMessage_pb2.BulkMessage()
+            self.__dict__['_adaptee'] = BulkMessage()
             self.deserialize_from_str(adaptee)
         else:
-            self.__dict__['_adaptee'] = BulkMessage_pb2.BulkMessage()
+            self.__dict__['_adaptee'] = BulkMessage()
 
     def __getattr__(self, name):
         if hasattr(self._adaptee, name):
@@ -42,7 +40,7 @@ class MessageAdapter(object):
         return len(self._adaptee.host_records) + len(
             self._adaptee.instance_records)
 
-    def add_host_record(self, timestamp, meter_type, value, duration):
+    def add_host_record(self, timestamp, meter_name, value, duration):
         """
         Adds a host record to the underlying adaptee object.
         The host_id has to be set by accessing the attribute directly, i.e.
@@ -53,24 +51,24 @@ class MessageAdapter(object):
 
         host_record = self._adaptee.host_records.add()
         host_record.timestamp = timestamp
-        host_record.type = meter_type
+        host_record.meter_name = meter_name
         host_record.value = str(value)
         host_record.duration = duration
 
     def add_inst_record(self, project_id, user_id, instance_id, timestamp, \
-                              meter_type, value, duration):
+                              meter_name, value, duration):
         """
         Adds an instance record to the underlying adaptee object.
         """
         if self._adaptee.instance_records is None:
             self._adaptee.instance_records = []
 
-        instance_record = self._adaptee.instance_records.add()
+        instance_record = self._adaptee.inst_records.add()
         instance_record.project_id = project_id
         instance_record.user_id = user_id
         instance_record.instance_id = instance_id
         instance_record.timestamp = timestamp
-        instance_record.type = meter_type
+        instance_record.meter_name = meter_name
         instance_record.value = str(value)
         instance_record.duration = duration
 

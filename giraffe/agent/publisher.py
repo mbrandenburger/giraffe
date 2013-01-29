@@ -52,26 +52,26 @@ class AgentPublisher(threading.Thread):
         message.signature = _SIGNATURE
         return message
 
-    def add_meter_record(self, meter_type, meter_value, meter_duration):
+    def add_meter_record(self, meter_name, meter_value, meter_duration):
         """
         Add new meter record to meter message
         Params: meter type [as string], value(s), and duration [in seconds]
         """
-        # @[fbahr]: Instead of passing meter_type as a string, either meter
+        # @[fbahr]: Instead of passing meter_name as a string, either meter
         #           or typed meter values should be returned.
-        logger.debug("Add meter record: %s=%s" % (meter_type, meter_value))
+        logger.debug("Add meter record: %s=%s" % (meter_name, meter_value))
 
         if not self.lock.locked():
             self.lock.acquire()
             try:
-                if meter_type.startswith("inst"):
+                if meter_name.startswith("inst"):
                     #@[fbahr]: Gathering information about project & user id
                     #          ...how/where?
                     for record in meter_value:
                         self.message.add_inst_record(
                             timestamp=record[1],
-                            meter_type=meter_type,
-                            value=meter_value,
+                            meter_name=meter_name,
+                            value=record[2],
                             duration=meter_duration,
                             project_id=None,
                             instance_id=record[0],
@@ -79,7 +79,7 @@ class AgentPublisher(threading.Thread):
                 else:
                     self.message.add_host_record(
                         self._timestamp_now(),
-                        meter_type,
+                        meter_name,
                         meter_value,
                         meter_duration)
             finally:

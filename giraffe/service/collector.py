@@ -82,7 +82,7 @@ class Collector(threading.Thread):
         # insert all host records
         for r in message.host_records:
             if r.type not in meter_dict:
-                logger.debug('WARNING: unknown meter_type "%s"' % r.type)
+                logger.debug('WARNING: unknown meter_name "%s"' % r.type)
                 continue
             try:
                 record = MeterRecord(meter_id=meter_dict[r.type].id,

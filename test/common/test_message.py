@@ -1,6 +1,6 @@
-__author__ = 'marcus'
+__author__ = 'marcus, fbahr'
 
-from giraffe.common import Message_pb2
+from giraffe.common.BulkMessage_pb2 import BulkMessage, HostRecord, InstRecord
 
 import unittest
 
@@ -10,33 +10,37 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def test_shuffle(self):
 
-        hostMsg = Message_pb2.MeterHostMessage()
-        hostMsg.hostID = "MacBook"
+        msg1 = BulkMessage()
+        msg1.host_name = "uncinus"
+        msg1.signature = ""
 
-        record1 = hostMsg.meters.add()
-        record1.type = "CPU_AVG"
-        record1.value = "1.54"
-        record1.duration = 60
+        host_record_1 = msg1.host_records.add()
+        host_record_1.meter_name = "CPU_AVG"
+        host_record_1.value = "1.54"
+        host_record_1.duration = 60
+        host_record_1.timestamp = "1"
 
-        record2 = hostMsg.meters.add()
-        record2.type = "CPU_AVG"
-        record2.value = "1.84"
-        record2.duration = 300
+        host_record_2 = msg1.host_records.add()
+        host_record_2.meter_name = "CPU_AVG"
+        host_record_2.value = "1.84"
+        host_record_2.duration = 300
+        host_record_2.timestamp = "2"
 
-        record3 = hostMsg.meters.add()
-        record3.type = "CPU_AVG"
-        record3.value = "1.24"
-        record3.duration = 1500
+        host_record_3 = msg1.host_records.add()
+        host_record_3.meter_name = "CPU_AVG"
+        host_record_3.value = "1.24"
+        host_record_3.duration = 1500
+        host_record_3.timestamp = "3"
 
-        ser_string = hostMsg.SerializeToString()
+        ser_string = msg1.SerializeToString()
 
-        eineHostMsg = Message_pb2.MeterHostMessage()
-        eineHostMsg.ParseFromString(ser_string)
+        msg2 = BulkMessage()
+        msg2.ParseFromString(ser_string)
 
-        self.assertEqual(eineHostMsg.hostID, "MacBook")
+        self.assertEqual(msg2.host_name, "uncinus")
 
-        for einRecord in eineHostMsg.meters:
-            print einRecord
+        for rec in msg2.host_records:
+            print rec
 
 
 if __name__ == '__main__':

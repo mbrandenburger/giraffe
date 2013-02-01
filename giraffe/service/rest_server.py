@@ -1,23 +1,24 @@
 import logging
 import keystone.middleware.auth_token as auth_token
-from functools import wraps
 from flask import Flask, Response, request
+# from functools import wraps
 
 logger = logging.getLogger("service.rest_server")
 
-#def start(rest_api, host, port, user=None, password=None):
-#    return Rest_Server(rest_api=rest_api,
-#                       host=host,
-#                       port=port,
-#                       username=user,
-#                       password=password)
+# def start(rest_api, host, port, user=None, password=None):
+#     return Rest_Server(rest_api=rest_api,
+#                        host=host,
+#                        port=port,
+#                        username=user,
+#                        password=password)
+
 
 def start(conf):
     return Rest_Server(conf)
 
 
 class Rest_Server():
-    
+
     def __init__(self, conf):
         self.app = Flask(__name__)
         self.app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -136,7 +137,7 @@ class Rest_Server():
 
         # this line starts the flask server
         self.app.run(host=conf.get('host'), port=conf.get('port'))
-        # end of __init__
+    # end of __init__
 
 # -----------------------------------------------------------------------------
 

@@ -16,8 +16,7 @@ class ClientTestCases(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if ClientTestCases.python_version >= 270:
-            cls.app = GiraffeClient()
+        cls.app = GiraffeClient()
 
     def setUp(self):
         if ClientTestCases.python_version < 270:

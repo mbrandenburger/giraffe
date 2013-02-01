@@ -98,11 +98,16 @@ class AgentPublisher(threading.Thread):
                 if self.message.len() > 0:
                     # flush message
                     self.producer.send(
-                        self.exchange, self.routing_key,
-                        self.message.serialize_to_str())
+                            self.exchange, \
+                            self.routing_key, \
+                            self.message.serialize_to_str())
 
                     # build new message
                     self.message = self._build_message()
+
+            # except Exception as e:
+            #     logger.exception(e)
+
             finally:
                 self.lock.release()
 

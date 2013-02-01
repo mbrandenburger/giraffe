@@ -36,11 +36,11 @@ class AgentPublisher(threading.Thread):
         self.producer = BasicProducer(self.connector, self.exchange)
         self.message = self._build_message()
 
-    def _timestamp_now(self):
+    def _timestamp_now(self, datetime_now=datetime.now()):
         """
         Returns current system time as formatted string "%Y-%m-%d %H:%M:%S"
         """
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return datetime_now.strftime("%Y-%m-%d %H:%M:%S")
 
     def _build_message(self):
         """
@@ -69,13 +69,13 @@ class AgentPublisher(threading.Thread):
                     #          ...how/where?
                     for record in meter_value:
                         self.message.add_inst_record(
-                            timestamp=record[1],
+                            timestamp=self._timestamp_now(record[1]),
                             meter_name=meter_name,
                             value=record[2],
                             duration=meter_duration,
-                            project_id=None,
+                            project_id="",
                             inst_id=record[0],
-                            user_id=None)
+                            user_id=str(''))
                 else:
                     self.message.add_host_record(
                         self._timestamp_now(),

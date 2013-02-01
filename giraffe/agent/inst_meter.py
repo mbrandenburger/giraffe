@@ -1,6 +1,18 @@
 __author__ = 'marcus, fbahr'
 
 """
+In giraffe (as known from ceilometer), three type of meters are defined:
+
+----------  -------------------------------------------------------------------
+Type        Definition
+----------  -------------------------------------------------------------------
+Cumulative  Increasing over time (instance hours)
+Gauge       Discrete items (floating IPs, image uploads) 
+            and fluctuating values (disk I/O)
+Delta       Changing over time (bandwidth)
+----------  -------------------------------------------------------------------
+
+
 -------------------------------------------------------------------------------
 Implemented meters
 -------------------------------------------------------------------------------
@@ -16,6 +28,101 @@ Implemented meters
 ? Inst_ ...         [meter for swift (object storage) operations]
 ?       ...
 
+
+
+==============
+
+
+
+
+
+
+Here are the meter types by components that are currently implemented:
+
+Compute (Nova)
+==============
+
+========================  ==========  =======  ========  =======================================================
+Name                      Type        Volume   Resource  Note
+========================  ==========  =======  ========  =======================================================
+instance                  Gauge             1  inst ID   Duration of instance
+instance:<type>           Gauge             1  inst ID   Duration of instance <type> (openstack types)
+memory                    Gauge            MB  inst ID   Volume of RAM in MB
+cpu                       Cumulative       ns  inst ID   CPU time used
+vcpus                     Gauge          vcpu  inst ID   Number of VCPUs
+disk.root.size            Gauge            GB  inst ID   Size of root disk in GB
+disk.ephemeral.size       Gauge            GB  inst ID   Size of ephemeral disk in GB
+
+
+inst.disk.io.requests     Cumulative  request  inst ID   Number of disk io requests
+inst.disk.io.bytes             Cumulative    bytes  inst ID   Volume of disk io in bytes
+
+network.incoming.bytes    Cumulative    bytes  iface ID  number of incoming bytes on the network
+network.outgoing.bytes    Cumulative    bytes  iface ID  number of outgoing bytes on the network
+network.incoming.packets  Cumulative  packets  iface ID  number of incoming packets
+network.outgoing.packets  Cumulative  packets  iface ID  number of outgoing packets
+========================  ==========  =======  ========  =======================================================
+
+Network (Quantum)
+=================
+
+========================  ==========  =======  ========  =======================================================
+Name                      Type        Volume   Resource  Note
+========================  ==========  =======  ========  =======================================================
+network                   Gauge             1  netw ID   Duration of network
+network.create            Delta       request  netw ID   Creation requests for this network
+network.update            Delta       request  netw ID   Update requests for this network
+subnet                    Gauge             1  subnt ID  Duration of subnet
+subnet.create             Delta       request  subnt ID  Creation requests for this subnet
+subnet.update             Delta       request  subnt ID  Update requests for this subnet
+port                      Gauge             1  port ID   Duration of port
+port.create               Delta       request  port ID   Creation requests for this port
+port.update               Delta       request  port ID   Update requests for this port
+router                    Gauge             1  rtr ID    Duration of router
+router.create             Delta       request  rtr ID    Creation requests for this router
+router.update             Delta       request  rtr ID    Update requests for this router
+ip.floating               Gauge             1  ip ID     Duration of floating ip
+ip.floating.create        Delta             1  ip ID     Creation requests for this floating ip
+ip.floating.update        Delta             1  ip ID     Update requests for this floating ip
+========================  ==========  =======  ========  =======================================================
+
+Image (Glance)
+==============
+
+========================  ==========  =======  ========  =======================================================
+Name                      Type        Volume   Resource  Note
+========================  ==========  =======  ========  =======================================================
+image                     Gauge             1  image ID  Image polling -> it (still) exists
+image.size                Gauge         bytes  image ID  Uploaded image size
+image.update              Delta          reqs  image ID  Number of update on the image
+image.upload              Delta          reqs  image ID  Number of upload of the image
+image.delete              Delta          reqs  image ID  Number of delete on the image
+image.download            Delta         bytes  image ID  Image is downloaded
+image.serve               Delta         bytes  image ID  Image is served out
+========================  ==========  =======  ========  =======================================================
+
+Volume (Cinder)
+===============
+
+========================  ==========  =======  ========  =======================================================
+Name                      Type        Volume   Resource  Note
+========================  ==========  =======  ========  =======================================================
+volume                    Gauge             1  vol ID    Duration of volune
+volume.size               Gauge            GB  vol ID    Size of volume
+========================  ==========  =======  ========  =======================================================
+
+Naming convention
+=================
+If you plan on adding meters, please follow the convention bellow:
+
+1. Always use '.' as separator and go from least to most discriminent word.
+   For example, do not use ephemeral_disk_size but disk.ephemeral.size
+
+2. When a part of the name is a variable, it should always be at the end and start with a ':'.
+   For example do not use <type>.image but image:<type>, where type is your variable name.
+
+
+
 -------------------------------------------------------------------------------
 3rd-party modules/dependencies
 -------------------------------------------------------------------------------
@@ -25,6 +132,7 @@ libvirt
 
 import sys
 import time
+from datetime import datetime
 import subprocess
 import logging
 from xml.etree import ElementTree as ETree
@@ -39,10 +147,15 @@ import libvirt
 from giraffe.common.task import PeriodicMeterTask
 
 
-logger = logging.getLogger("service.collector.inst_meters")
+logger = logging.getLogger("agent.inst_meters")
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch = logging.StreamHandler()
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 
-def get_instance_ids(connection, pids=True):
+def get_inst_ids(connection, pids=True):
     """
     Returns a dict of (uuid: (pid, instance-name)) elements for instances
     running on a certain host
@@ -99,7 +212,11 @@ def get_instance_ids(connection, pids=True):
 
 
 def timestamp(offset=0.0):
-    return float('%1.2f' % (time.time() - offset))
+    # return float('%1.2f' % (time.time() - offset))
+    if offset == 0.0:
+        return datetime.now()
+    else:
+        return datetime.fromtimestamp(time.time() - offset)
 
 
 class PeriodicInstMeterTask(PeriodicMeterTask):
@@ -126,7 +243,7 @@ class Inst_UUIDs(PeriodicInstMeterTask):
         uuids = []
 
         try:
-            uuids = get_instance_ids(self.conn, pids=False).keys()
+            uuids = get_inst_ids(self.conn, pids=False).keys()
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
@@ -136,7 +253,7 @@ class Inst_UUIDs(PeriodicInstMeterTask):
 
 
 class Inst_CPU_Usage(PeriodicInstMeterTask):
-    #@[fbahr]: Leverage/reuse get_instance_ids()?
+    #@[fbahr]: Leverage/reuse get_inst_ids()?
 
     def __init__(self, callback, period):
         super(Inst_CPU_Usage, self).__init__(callback, period)
@@ -212,7 +329,7 @@ class Inst_PHYMEM_Usage(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = get_instance_ids(self.conn)
+            inst_ids = get_inst_ids(self.conn)
             # list of (uuid, timestamp, phymem [in bytes], phymem usage [in
             # pct of total]) tuples
             phymem = [(uuid,
@@ -248,7 +365,7 @@ class Inst_VIRMEM_Usage(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = get_instance_ids(self.conn)
+            inst_ids = get_inst_ids(self.conn)
             # list of (uuid, timestamp, virmem [in bytes], virmem usage [in
             # pct of total]) tuples
             virmem = [(uuid,
@@ -276,7 +393,7 @@ class Inst_UPTIME(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = get_instance_ids(self.conn)
+            inst_ids = get_inst_ids(self.conn)
             # list of (uuid, timestamp, uptime) tuples
             uptimes = [(uuid,
                         timestamp(),
@@ -308,14 +425,15 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
 
     def meter(self):
         """
-        Returns a list of (UUID, timestamp, bytes_read, bytes_written) tuples,
-        one for each instance running on a specific host
+        Returns a list of (UUID, timestamp, read_rquests, bytes_read, 
+        write_requests, bytes_written) tuples, one for each instance 
+        running on a specific host
         """
         inst_ios = []
 
         try:
             # # dict of (uuid: (pid, instance-name)) elements
-            # inst_ids = get_instance_ids(self.conn)
+            # inst_ids = get_inst_ids(self.conn)
             # # list of (uuid, uptime) tuples
             # inst_ios = [(uuid,
             #             timestamp(),
@@ -342,13 +460,13 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
 
                 s = [sum(stat) for stat in zip(*block_stats)]
 
-                inst_ios.append((descr[0],
+                inst_ios.append((descr[0],  # uuid
                                  timestamp(),
-                                 s[0],   # r_requests
-                                 s[1],   # r_bytes
-                                 s[2],   # w_requests
-                                 s[3]))  # w_bytes
-                #                s[4]))  # errors
+                                 s[0],      # r_requests
+                                 s[1],      # r_bytes
+                                 s[2],      # w_requests
+                                 s[3]))     # w_bytes
+                #                s[4]))     # errors
 
         except:
             # Warning! Fails silently...

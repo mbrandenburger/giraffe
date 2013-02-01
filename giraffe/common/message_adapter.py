@@ -38,7 +38,7 @@ class MessageAdapter(object):
 
     def len(self):
         return len(self._adaptee.host_records) + len(
-            self._adaptee.instance_records)
+            self._adaptee.inst_records)
 
     def add_host_record(self, timestamp, meter_name, value, duration):
         """
@@ -55,22 +55,22 @@ class MessageAdapter(object):
         host_record.value = str(value)
         host_record.duration = duration
 
-    def add_inst_record(self, project_id, user_id, instance_id, timestamp, \
+    def add_inst_record(self, project_id, user_id, inst_id, timestamp, \
                               meter_name, value, duration):
         """
         Adds an instance record to the underlying adaptee object.
         """
-        if self._adaptee.instance_records is None:
-            self._adaptee.instance_records = []
+        if self._adaptee.inst_records is None:
+            self._adaptee.inst_records = []
 
-        instance_record = self._adaptee.inst_records.add()
-        instance_record.project_id = project_id
-        instance_record.user_id = user_id
-        instance_record.instance_id = instance_id
-        instance_record.timestamp = timestamp
-        instance_record.meter_name = meter_name
-        instance_record.value = str(value)
-        instance_record.duration = duration
+        inst_record = self._adaptee.inst_records.add()
+        inst_record.project_id = project_id
+        inst_record.user_id = user_id
+        inst_record.inst_id = inst_id
+        inst_record.timestamp = timestamp
+        inst_record.meter_name = meter_name
+        inst_record.value = str(value)
+        inst_record.duration = duration
 
     def serialize_to_str(self):
         """

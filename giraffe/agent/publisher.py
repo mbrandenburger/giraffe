@@ -1,3 +1,6 @@
+from giraffe.common.crypto import createSignature
+from giraffe.common.envelope_adapter import EnvelopeAdapter
+
 __author__ = 'marcus'
 
 import threading
@@ -17,12 +20,11 @@ _RABBIT_QUEUE = config.get("rabbit", "queue")
 _RABBIT_EXCHANGE = config.get("rabbit", "exchange")
 _RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
 _FLUSH_DURATION = config.getint("agent", "duration")
-_HOSTNAME = config.get("agent", "hostname") # ...considered harmful.
-_SIGNATURE = "TODO"
+_HOSTNAME = config.get("agent", "hostname")  # ...considered harmful.
+_SHARED_SECRET = config.get("agent", "shared_secret")
 
 
 class AgentPublisher(threading.Thread):
-
     def __init__(self, agent):
         threading.Thread.__init__(self)
         self.agent = agent
@@ -49,7 +51,7 @@ class AgentPublisher(threading.Thread):
         """
         message = MessageAdapter()
         message.host_name = _HOSTNAME
-        message.signature = _SIGNATURE
+        #        message.signature = _SIGNATURE
         return message
 
     def add_meter_record(self, meter_name, meter_value, meter_duration):
@@ -85,7 +87,6 @@ class AgentPublisher(threading.Thread):
             finally:
                 self.lock.release()
 
-
     def flush(self):
         """
         Sends current state of agents message to the broker.
@@ -97,10 +98,7 @@ class AgentPublisher(threading.Thread):
             try:
                 if self.message.len() > 0:
                     # flush message
-                    self.producer.send(
-                            self.exchange, \
-                            self.routing_key, \
-                            self.message.serialize_to_str())
+                    self._send(self.message)
 
                     # build new message
                     self.message = self._build_message()
@@ -110,6 +108,19 @@ class AgentPublisher(threading.Thread):
 
             finally:
                 self.lock.release()
+
+    def _send(self, message):
+        """
+        Create message signature and send envelop to broker
+        """
+        envelope = EnvelopeAdapter()
+        envelope.message = message
+        envelope.signature = createSignature(message, _SHARED_SECRET)
+
+        self.producer.send(
+            self.exchange,
+            self.routing_key,
+            self.message.serialize_to_str())
 
     def run(self):
         while self.stopRequest is False:

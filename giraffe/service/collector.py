@@ -1,8 +1,10 @@
 import logging
 import threading
 from datetime import datetime
+from giraffe.common.crypto import validateSignature
 
 from giraffe.common.message_adapter import MessageAdapter
+from giraffe.common.envelope_adapter import EnvelopeAdapter
 from giraffe.common.config import Config
 from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
 from giraffe.service import db
@@ -16,6 +18,8 @@ _RABBIT_HOST = config.get("rabbit", "host")
 _RABBIT_QUEUE = config.get("rabbit", "queue")
 _RABBIT_EXCHANGE = config.get("rabbit", "exchange")
 _RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
+
+_SHARED_SECRET = config.get("service", "shared_secret")
 
 
 class Collector(threading.Thread):
@@ -58,8 +62,17 @@ class Collector(threading.Thread):
         return datetime_obj.strftime("%Y-%m-%d %H:%M:%S")
 
     def _collector_callback(self, params):
-        message = MessageAdapter()
-        message.deserialize_from_str(params)
+
+        envelope = EnvelopeAdapter()
+        envelope.deserialize_from_str(params)
+
+        message = envelope.message
+        # validate signature
+        if not validateSignature(message, _SHARED_SECRET, envelope.signature):
+            return
+
+#        message = MessageAdapter()
+#        message.deserialize_from_str(params)
 
         self.db.session_open()
 

@@ -16,5 +16,13 @@ def encryptHash(secret, hash):
     return AES.new(secret, AES.MODE_ECB).encrypt(hash)
 
 
-def decryptHash(secret, ciphertext):
-    return AES.new(secret, AES.MODE_ECB).decrypt(ciphertext)
+def decryptHash(secret, cipher):
+    return AES.new(secret, AES.MODE_ECB).decrypt(cipher)
+
+
+def createSignature(message, secret):
+    return encryptHash(secret, createHash(message))
+
+
+def validateSignature(message, secret, signature):
+    return createHash(message) == decryptHash(secret, signature)

@@ -328,8 +328,8 @@ class MeterRecord(Base):
                       doc='duration of measurement in seconds')
     timestamp = Column('meter_timestamp', TIMESTAMP(), nullable=False,
                         default='CURRENT_TIMESTAMP')
-    signature = Column('message_signature', VARCHAR(40),
-                        nullable=True, default=None)
+#    signature = Column('message_signature', VARCHAR(40),
+#                        nullable=True, default=None)
 
     def __repr__(self):
         return "MeterRecord(%s, %d, '%s', '%s', %s)" % (self.id,

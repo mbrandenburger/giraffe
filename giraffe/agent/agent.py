@@ -78,24 +78,23 @@ class Agent(object):
             Inst_UPTIME(self._callback_inst_uptime, _METER_DURATION)
         )
 
-        # meter instance disk I/O 
+        # meter instance disk I/O
         self.tasks.append(
             Inst_DISK_IO(self._callback_inst_disk_io, _METER_DURATION)
         )
 
-
     # CB METHODS FOR HOST METERS ----------------------------------------------
 
     def _callback_cpu_avg(self, params):
-        self.publisher.add_meter_record('loadavg_1m', params[0], 60)
-        self.publisher.add_meter_record('loadavg_5m', params[1], 300)
-        self.publisher.add_meter_record('loadavg_15m', params[2], 1500)
+        self.publisher.add_meter_record('host.loadavg_1m', params[0], 60)
+        self.publisher.add_meter_record('host.loadavg_5m', params[1], 300)
+        self.publisher.add_meter_record('host.loadavg_15m', params[2], 1500)
 
     def _callback_phy_mem(self, params):
-        self.publisher.add_meter_record('phymem_usage', params[3], 0)
+        self.publisher.add_meter_record('host.phymem_usage', params[3], 0)
 
     def _callback_vir_mem(self, params):
-        self.publisher.add_meter_record('virmem_usage', params[3], 0)
+        self.publisher.add_meter_record('host.virmem_usage', params[3], 0)
 
     def _callback_uptime(self, params):
         self.publisher.add_meter_record('host.uptime', params, 0)
@@ -104,15 +103,14 @@ class Agent(object):
         self.publisher.add_meter_record('host.network.io.outgoing.bytes', params[0], 0)
         self.publisher.add_meter_record('host.network.io.incoming.bytes', params[1], 0)
 
-
     # CB METHODS FOR INSTANCE METERS ------------------------------------------
 
     def _callback_inst_phy_mem(self, params):
-        self.publisher.add_meter_record('inst_phymem_usage', params, 0)
+        self.publisher.add_meter_record('inst.phymem_usage', params, 0)
         # self.publisher.add_meter_record('inst_phymem_usage', params[3], 0)
 
     def _callback_inst_vir_mem(self, params):
-        self.publisher.add_meter_record('inst_virmem_usage', params, 0)
+        self.publisher.add_meter_record('inst.virmem_usage', params, 0)
         # self.publisher.add_meter_record('inst_virmem_usage', params[3], 0)
 
     def _callback_inst_uptime(self, params):
@@ -123,21 +121,24 @@ class Agent(object):
         descriptors = zipped_params[0:2]  # uuids and timestamps
         self.publisher.add_meter_record(
                             'inst.disk.io.read.requests',
-                            zip(*(descriptors + [zip(*zipped_params)[0]])),
+                            # zip(*(descriptors + [zip(*zipped_params)[0]])),
+                            zip(*(descriptors + [zipped_params[2]])),
                             0)
         self.publisher.add_meter_record(
                             'inst.disk.io.read.bytes',
-                            zip(*(descriptors + [zip(*zipped_params)[1]])),
+                            # zip(*(descriptors + [zip(*zipped_params)[1]])),
+                            zip(*(descriptors + [zipped_params[3]])),
                             0)
         self.publisher.add_meter_record(
                             'inst.disk.io.write.requests',
-                            zip(*(descriptors + [zip(*zipped_params)[2]])),
+                            # zip(*(descriptors + [zip(*zipped_params)[2]])),
+                            zip(*(descriptors + [zipped_params[4]])),
                             0)
         self.publisher.add_meter_record(
                             'inst.disk.io.write.bytes',
-                            zip(*(descriptors + [zip(*zipped_params)[3]])),
+                            # zip(*(descriptors + [zip(*zipped_params)[3]])),
+                            zip(*(descriptors + [zipped_params[5]])),
                             0)
-
 
     # -------------------------------------------------------------------------
 

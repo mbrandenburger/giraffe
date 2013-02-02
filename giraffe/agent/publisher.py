@@ -73,9 +73,9 @@ class AgentPublisher(threading.Thread):
                             meter_name=meter_name,
                             value=record[2],
                             duration=meter_duration,
-                            project_id="",
+                            project_id='',
                             inst_id=record[0],
-                            user_id=str(''))
+                            user_id='')
                 else:
                     self.message.add_host_record(
                         self._timestamp_now(),

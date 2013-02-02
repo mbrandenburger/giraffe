@@ -211,14 +211,6 @@ def get_inst_ids(connection, pids=True):
     return ids
 
 
-def timestamp(offset=0.0):
-    # return float('%1.2f' % (time.time() - offset))
-    if offset == 0.0:
-        return datetime.now()
-    else:
-        return datetime.fromtimestamp(time.time() - offset)
-
-
 class PeriodicInstMeterTask(PeriodicMeterTask):
     def __init__(self, callback, period):
         super(PeriodicInstMeterTask, self).__init__(callback, period)
@@ -291,7 +283,7 @@ class Inst_CPU_Usage(PeriodicInstMeterTask):
                 infos = domain.info()
                 num_cpus, cpu_time = infos[3], infos[4]
 
-                self.utilization_map[uuid] = (cpu_time, timestamp())
+                self.utilization_map[uuid] = (cpu_time, datetime.now())
 
                 cpu_util = 0.0
                 if prev_cpu_times:
@@ -333,7 +325,7 @@ class Inst_PHYMEM_Usage(PeriodicInstMeterTask):
             # list of (uuid, timestamp, phymem [in bytes], phymem usage [in
             # pct of total]) tuples
             phymem = [(uuid,
-                       timestamp(),
+                       datetime.now(),
                        process.get_memory_info().rss,
                        process.get_memory_percent())
                        # ^= float(process.get_memory_info().rss)
@@ -369,7 +361,7 @@ class Inst_VIRMEM_Usage(PeriodicInstMeterTask):
             # list of (uuid, timestamp, virmem [in bytes], virmem usage [in
             # pct of total]) tuples
             virmem = [(uuid,
-                       timestamp(),
+                       datetime.now(),
                        mem_info.vms,
                        float(mem_info.vms) / self.psutil_smem.total * 100)
                       for (uuid, mem_info) \
@@ -396,8 +388,8 @@ class Inst_UPTIME(PeriodicInstMeterTask):
             inst_ids = get_inst_ids(self.conn)
             # list of (uuid, timestamp, uptime) tuples
             uptimes = [(uuid,
-                        timestamp(),
-                        timestamp(offset=process.create_time))
+                        datetime.now(),
+                        time.time() - process.create_time)
                        for (uuid, process) \
                            in [(k, psutil.Process(v[0])) \
                                for k, v in inst_ids.iteritems()]]
@@ -436,7 +428,7 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
             # inst_ids = get_inst_ids(self.conn)
             # # list of (uuid, uptime) tuples
             # inst_ios = [(uuid,
-            #             timestamp(),
+            #             datetime.now(),
             #             io_counter.read_bytes,
             #             io_counter.write_bytes)
             #            for (uuid, io_counter) \
@@ -461,7 +453,7 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
                 s = [sum(stat) for stat in zip(*block_stats)]
 
                 inst_ios.append((descr[0],  # uuid
-                                 timestamp(),
+                                 datetime.now(),
                                  s[0],      # r_requests
                                  s[1],      # r_bytes
                                  s[2],      # w_requests

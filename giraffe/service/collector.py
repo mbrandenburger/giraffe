@@ -58,7 +58,6 @@ class Collector(threading.Thread):
         return datetime_obj.strftime("%Y-%m-%d %H:%M:%S")
 
     def _collector_callback(self, params):
-
         message = MessageAdapter()
         message.deserialize_from_str(params)
 
@@ -79,56 +78,58 @@ class Collector(threading.Thread):
         else:
             host = hosts[0]
 
-        # insert all host records
-        for r in message.host_records:
-            if r.type not in meter_dict:
-                logger.debug('WARNING: unknown meter_name "%s"' % r.type)
-                continue
-            try:
-                record = MeterRecord(meter_id=meter_dict[r.type].id,
-                                     host_id=host.id,
-                                     user_id=None,
-                                     resource_id=None,
-                                     project_id=None,
-                                     value=r.value,
-                                     duration=r.duration,
-                                     timestamp=r.timestamp,
-                                     signature=message.signature)
-                self.db.save(record)
-                logger.debug("Message from %s: %s" % (host.name, record))
-                # update host activity
-                record_timestamp = self._str_to_datetime(r.timestamp)
-                if record_timestamp > host.activity:
-                    host.activity = record_timestamp
-            except Exception as e:
-                logger.debug('WARNING: failed to insert host record %s' %
-                             record)
-                print e
+        try:
+            # insert all host records
+            for r in message.host_records:
+                if r.meter_name not in meter_dict:
+                    logger.debug('WARNING: unknown meter_name "%s"' %
+                                 r.meter_name)
+                    continue
+                try:
+                    record = MeterRecord(meter_id=meter_dict[r.meter_name].id,
+                                         host_id=host.id,
+                                         user_id=None,
+                                         resource_id=None,
+                                         project_id=None,
+                                         value=r.value,
+                                         duration=r.duration,
+                                         timestamp=r.timestamp,
+                                         signature=message.signature)
+                    self.db.save(record)
+                    logger.debug("Message from %s: %s" % (host.name, record))
+                    # update host activity
+                    record_timestamp = self._str_to_datetime(r.timestamp)
+                    if not host.activity or record_timestamp > host.activity:
+                        host.activity = record_timestamp
+                except Exception as e:
+                    logger.exception(e)
 
-        # insert all instance records
-        for r in message.instance_records:
-            if r.type not in meter_dict:
-                logger.debug('WARNING: unknown meter_type "%s"' % r.type)
-                continue
-            try:
-                record = MeterRecord(meter_id=meter_dict[r.type].id,
-                                     host_id=host.id,
-                                     user_id=r.user_id,
-                                     resource_id=r.resource_id,
-                                     project_id=r.project_id,
-                                     value=r.value,
-                                     duration=r.duration,
-                                     timestamp=r.timestamp,
-                                     signature=message.signature)
-                self.db.save(record)
-                logger.debug("Message from %s: %s" % (host.name, record))
-                # update host activity
-                record_timestamp = self._str_to_datetime(r.timestamp)
-                if record_timestamp > host.activity:
-                    host.activity = record_timestamp
-            except Exception:
-                logger.debug('WARNING: failed to insert instance record %s' %
-                             record)
+            # insert all instance records
+            for r in message.inst_records:
+                if r.meter_name not in meter_dict:
+                    logger.debug('WARNING: unknown meter_name "%s"' %
+                                 r.meter_name)
+                    continue
+                try:
+                    record = MeterRecord(meter_id=meter_dict[r.meter_name].id,
+                                         host_id=host.id,
+                                         user_id=r.user_id,
+                                         resource_id=r.inst_id,
+                                         project_id=r.project_id,
+                                         value=r.value,
+                                         duration=r.duration,
+                                         timestamp=r.timestamp,
+                                         signature=message.signature)
+                    self.db.save(record)
+                    logger.debug("Message from %s: %s" % (host.name, record))
+                    # update host activity
+                    record_timestamp = self._str_to_datetime(r.timestamp)
+                    if not host.activity or record_timestamp > host.activity:
+                        host.activity = record_timestamp
+                except Exception as e:
+                    logger.exception(e)
 
-        self.db.commit()
-        self.db.session_close()
+            self.db.commit()
+            self.db.session_close()
+        except Exception as e:
+            logger.exception(e)

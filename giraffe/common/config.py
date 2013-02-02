@@ -3,6 +3,7 @@ __author__ = 'marcus'
 import os
 import ConfigParser
 
+
 class Config(object):
 
     def __init__(self, path="giraffe.cfg"):
@@ -17,4 +18,3 @@ class Config(object):
 
     def getint(self, section, item):
         return self.config.getint(section, item)
-

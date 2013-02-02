@@ -1,7 +1,11 @@
 package GiraffeMetering;
 
-message BulkMessage {
+message Envelop {
     required string signature = 1;
+    required BulkMessage message = 2;
+}
+
+message BulkMessage {
     required string host_name = 2;
     repeated HostRecord host_records = 3;
     repeated InstRecord inst_records = 4;
@@ -15,7 +19,6 @@ message InstRecord {
     required string meter_name = 5;
     required string value = 6;
     required int32 duration = 7;
-    optional string meter_type = 8;
 }
 
 message HostRecord {
@@ -23,5 +26,4 @@ message HostRecord {
     required string meter_name = 2;
     required string value = 3;
     required int32 duration = 4;
-    optional string meter_type = 5;
 }

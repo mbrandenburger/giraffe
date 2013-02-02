@@ -12,13 +12,13 @@ class MessageAdapter(object):
     adapter.adaptee_attribute.
     """
 
-    def __init__(self, adaptee=None):
+    def __init__(self, adaptee=None):  # @[fbahr]: r/dataStr/adaptee/
         # need to use self.__dict__ to avoid infinite recursion in __getattr__
         if isinstance(adaptee, BulkMessage):
             self.__dict__['_adaptee'] = adaptee
         elif isinstance(adaptee, str):
             self.__dict__['_adaptee'] = BulkMessage()
-            self.deserialize_from_str(adaptee)
+            self.deserialize_from_str(adaptee)  # @[fbahr]: r/dataStr/adaptee/
         else:
             self.__dict__['_adaptee'] = BulkMessage()
 

@@ -121,19 +121,23 @@ class Agent(object):
         descriptors = zipped_params[0:2]  # uuids and timestamps
         self.publisher.add_meter_record(
                             'inst.disk.io.read.requests',
-                            zip(*(descriptors + [zip(*zipped_params)[0]])),
+                            # zip(*(descriptors + [zip(*zipped_params)[0]])),
+                            zip(*(descriptors + [zipped_params[2]])),
                             0)
         self.publisher.add_meter_record(
                             'inst.disk.io.read.bytes',
-                            zip(*(descriptors + [zip(*zipped_params)[1]])),
+                            # zip(*(descriptors + [zip(*zipped_params)[1]])),
+                            zip(*(descriptors + [zipped_params[3]])),
                             0)
         self.publisher.add_meter_record(
                             'inst.disk.io.write.requests',
-                            zip(*(descriptors + [zip(*zipped_params)[2]])),
+                            # zip(*(descriptors + [zip(*zipped_params)[2]])),
+                            zip(*(descriptors + [zipped_params[4]])),
                             0)
         self.publisher.add_meter_record(
                             'inst.disk.io.write.bytes',
-                            zip(*(descriptors + [zip(*zipped_params)[3]])),
+                            # zip(*(descriptors + [zip(*zipped_params)[3]])),
+                            zip(*(descriptors + [zipped_params[5]])),
                             0)
 
     # -------------------------------------------------------------------------

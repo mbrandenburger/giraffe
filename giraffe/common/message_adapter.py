@@ -1,8 +1,4 @@
-from giraffe.common.BulkMessage_pb2 import BulkMessage
-from giraffe.common.config import Config
-
-
-from datetime import datetime
+from giraffe.common.Message_pb2 import BulkMessage
 
 
 class MessageAdapter(object):
@@ -55,8 +51,8 @@ class MessageAdapter(object):
         host_record.value = str(value)
         host_record.duration = duration
 
-    def add_inst_record(self, project_id, user_id, inst_id, timestamp, \
-                              meter_name, value, duration):
+    def add_inst_record(self, project_id, user_id, inst_id, timestamp,
+                        meter_name, value, duration):
         """
         Adds an instance record to the underlying adaptee object.
         """

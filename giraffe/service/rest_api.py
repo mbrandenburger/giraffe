@@ -44,8 +44,9 @@ class Rest_API(threading.Thread):
             rest_api=self,
             host=_config.get('flask', 'host'),
             port=_config.getint('flask', 'port'),
-            user=_config.get('flask', 'user'),
-            password=_config.get('flask', 'pass'))
+#            user=_config.get('flask', 'user'),
+#            password=_config.get('flask', 'pass')
+        )
 
         self.server = srv.start(conf)
 #        self.server = srv.start(self, host=_config.get('flask', 'host'),

@@ -1,5 +1,5 @@
 from giraffe.common.Message_pb2 import BulkMessage
-
+from google.protobuf.text_format import MessageToString
 
 class MessageAdapter(object):
     """
@@ -79,3 +79,7 @@ class MessageAdapter(object):
         Deserializes data from a string into attributes of the adaptee object.
         """
         self._adaptee.ParseFromString(dataStr)
+
+    def __str__(self):
+        return MessageToString(self._adaptee)
+

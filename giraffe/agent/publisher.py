@@ -36,7 +36,7 @@ class AgentPublisher(threading.Thread):
         self.exchange = _RABBIT_EXCHANGE
         self.routing_key = _RABBIT_ROUTING_KEY
         self.producer = BasicProducer(self.connector, self.exchange)
-        self.message = self._build_message()
+        self.envelope = self._build_message()
 
     def _timestamp_now(self, datetime_now=datetime.now()):
         """
@@ -49,10 +49,11 @@ class AgentPublisher(threading.Thread):
         Returns a new MessageAdapter object with hostname and signature
         :rtype : MessageAdapter
         """
-        message = MessageAdapter()
-        message.host_name = _HOSTNAME
+        envelope = EnvelopeAdapter()
+
+        envelope.message.host_name = _HOSTNAME
         #        message.signature = _SIGNATURE
-        return message
+        return envelope
 
     def add_meter_record(self, meter_name, meter_value, meter_duration):
         """
@@ -70,7 +71,7 @@ class AgentPublisher(threading.Thread):
                     #@[fbahr]: Gathering information about project & user id
                     #          ...how/where?
                     for record in meter_value:
-                        self.message.add_inst_record(
+                        self.envelope.add_inst_record(
                             timestamp=self._timestamp_now(record[1]),
                             meter_name=meter_name,
                             value=record[2],
@@ -79,7 +80,7 @@ class AgentPublisher(threading.Thread):
                             inst_id=record[0],
                             user_id='')
                 else:
-                    self.message.add_host_record(
+                    self.envelope.add_host_record(
                         self._timestamp_now(),
                         meter_name,
                         meter_value,
@@ -96,12 +97,12 @@ class AgentPublisher(threading.Thread):
         if not self.lock.locked():
             self.lock.acquire()
             try:
-                if self.message.len() > 0:
+                if self.envelope.len() > 0:
                     # flush message
-                    self._send(self.message)
+                    self._send(self.envelope)
 
                     # build new message
-                    self.message = self._build_message()
+                    self.envelope = self._build_message()
 
             # except Exception as e:
             #     logger.exception(e)
@@ -109,18 +110,20 @@ class AgentPublisher(threading.Thread):
             finally:
                 self.lock.release()
 
-    def _send(self, message):
+    def _send(self, envelope):
         """
         Create message signature and send envelop to broker
         """
-        envelope = EnvelopeAdapter()
-        envelope.message = message
-        envelope.signature = createSignature(message, _SHARED_SECRET)
+        messageAdapter = MessageAdapter(envelope.message)
+
+
+        sig = createSignature(str(messageAdapter), _SHARED_SECRET)
+        envelope.signature = sig
 
         self.producer.send(
             self.exchange,
             self.routing_key,
-            self.message.serialize_to_str())
+            envelope.serialize_to_str())
 
     def run(self):
         while self.stopRequest is False:

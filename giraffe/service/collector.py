@@ -66,9 +66,9 @@ class Collector(threading.Thread):
         envelope = EnvelopeAdapter()
         envelope.deserialize_from_str(params)
 
-        message = envelope.message
+        message = MessageAdapter(envelope.message)
         # validate signature
-        if not validateSignature(message, _SHARED_SECRET, envelope.signature):
+        if not validateSignature(str(message), _SHARED_SECRET, envelope.signature):
             return
 
 #        message = MessageAdapter()
@@ -106,8 +106,7 @@ class Collector(threading.Thread):
                                          project_id=None,
                                          value=r.value,
                                          duration=r.duration,
-                                         timestamp=r.timestamp,
-                                         signature=message.signature)
+                                         timestamp=r.timestamp)
                     self.db.save(record)
                     logger.debug("Message from %s: %s" % (host.name, record))
                     # update host activity
@@ -131,8 +130,7 @@ class Collector(threading.Thread):
                                          project_id=r.project_id,
                                          value=r.value,
                                          duration=r.duration,
-                                         timestamp=r.timestamp,
-                                         signature=message.signature)
+                                         timestamp=r.timestamp)
                     self.db.save(record)
                     logger.debug("Message from %s: %s" % (host.name, record))
                     # update host activity

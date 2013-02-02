@@ -11,27 +11,27 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='Message.proto',
   package='GiraffeMetering',
-  serialized_pb='\n\rMessage.proto\x12\x0fGiraffeMetering\"K\n\x07\x45nvelop\x12\x11\n\tsignature\x18\x01 \x02(\t\x12-\n\x07message\x18\x02 \x02(\x0b\x32\x1c.GiraffeMetering.BulkMessage\"\x86\x01\n\x0b\x42ulkMessage\x12\x11\n\thost_name\x18\x02 \x02(\t\x12\x31\n\x0chost_records\x18\x03 \x03(\x0b\x32\x1b.GiraffeMetering.HostRecord\x12\x31\n\x0cinst_records\x18\x04 \x03(\x0b\x32\x1b.GiraffeMetering.InstRecord\"\x8a\x01\n\nInstRecord\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x12\n\nproject_id\x18\x02 \x02(\t\x12\x0f\n\x07inst_id\x18\x03 \x02(\t\x12\x11\n\ttimestamp\x18\x04 \x02(\t\x12\x12\n\nmeter_name\x18\x05 \x02(\t\x12\r\n\x05value\x18\x06 \x02(\t\x12\x10\n\x08\x64uration\x18\x07 \x02(\x05\"T\n\nHostRecord\x12\x11\n\ttimestamp\x18\x01 \x02(\t\x12\x12\n\nmeter_name\x18\x02 \x02(\t\x12\r\n\x05value\x18\x03 \x02(\t\x12\x10\n\x08\x64uration\x18\x04 \x02(\x05')
+  serialized_pb='\n\rMessage.proto\x12\x0fGiraffeMetering\"L\n\x08\x45nvelope\x12\x11\n\tsignature\x18\x01 \x02(\t\x12-\n\x07message\x18\x02 \x02(\x0b\x32\x1c.GiraffeMetering.BulkMessage\"\x86\x01\n\x0b\x42ulkMessage\x12\x11\n\thost_name\x18\x02 \x02(\t\x12\x31\n\x0chost_records\x18\x03 \x03(\x0b\x32\x1b.GiraffeMetering.HostRecord\x12\x31\n\x0cinst_records\x18\x04 \x03(\x0b\x32\x1b.GiraffeMetering.InstRecord\"\x8a\x01\n\nInstRecord\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x12\n\nproject_id\x18\x02 \x02(\t\x12\x0f\n\x07inst_id\x18\x03 \x02(\t\x12\x11\n\ttimestamp\x18\x04 \x02(\t\x12\x12\n\nmeter_name\x18\x05 \x02(\t\x12\r\n\x05value\x18\x06 \x02(\t\x12\x10\n\x08\x64uration\x18\x07 \x02(\x05\"T\n\nHostRecord\x12\x11\n\ttimestamp\x18\x01 \x02(\t\x12\x12\n\nmeter_name\x18\x02 \x02(\t\x12\r\n\x05value\x18\x03 \x02(\t\x12\x10\n\x08\x64uration\x18\x04 \x02(\x05')
 
 
 
 
-_ENVELOP = descriptor.Descriptor(
-  name='Envelop',
-  full_name='GiraffeMetering.Envelop',
+_ENVELOPE = descriptor.Descriptor(
+  name='Envelope',
+  full_name='GiraffeMetering.Envelope',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
-      name='signature', full_name='GiraffeMetering.Envelop.signature', index=0,
+      name='signature', full_name='GiraffeMetering.Envelope.signature', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='message', full_name='GiraffeMetering.Envelop.message', index=1,
+      name='message', full_name='GiraffeMetering.Envelope.message', index=1,
       number=2, type=11, cpp_type=10, label=2,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -47,7 +47,7 @@ _ENVELOP = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=34,
-  serialized_end=109,
+  serialized_end=110,
 )
 
 
@@ -88,8 +88,8 @@ _BULKMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=112,
-  serialized_end=246,
+  serialized_start=113,
+  serialized_end=247,
 )
 
 
@@ -158,8 +158,8 @@ _INSTRECORD = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=249,
-  serialized_end=387,
+  serialized_start=250,
+  serialized_end=388,
 )
 
 
@@ -207,23 +207,23 @@ _HOSTRECORD = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=389,
-  serialized_end=473,
+  serialized_start=390,
+  serialized_end=474,
 )
 
-_ENVELOP.fields_by_name['message'].message_type = _BULKMESSAGE
+_ENVELOPE.fields_by_name['message'].message_type = _BULKMESSAGE
 _BULKMESSAGE.fields_by_name['host_records'].message_type = _HOSTRECORD
 _BULKMESSAGE.fields_by_name['inst_records'].message_type = _INSTRECORD
-DESCRIPTOR.message_types_by_name['Envelop'] = _ENVELOP
+DESCRIPTOR.message_types_by_name['Envelope'] = _ENVELOPE
 DESCRIPTOR.message_types_by_name['BulkMessage'] = _BULKMESSAGE
 DESCRIPTOR.message_types_by_name['InstRecord'] = _INSTRECORD
 DESCRIPTOR.message_types_by_name['HostRecord'] = _HOSTRECORD
 
-class Envelop(message.Message):
+class Envelope(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _ENVELOP
+  DESCRIPTOR = _ENVELOPE
   
-  # @@protoc_insertion_point(class_scope:GiraffeMetering.Envelop)
+  # @@protoc_insertion_point(class_scope:GiraffeMetering.Envelope)
 
 class BulkMessage(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType

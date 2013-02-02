@@ -1,8 +1,6 @@
-import giraffe.common.Message_pb2.Envelope as Envelope
-
 __author__ = 'marcus'
 
-from giraffe.common.BulkMessage_pb2 import Envelop
+from giraffe.common.Message_pb2 import Envelope
 
 class EnvelopeAdapter(object):
 

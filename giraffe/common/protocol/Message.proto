@@ -1,6 +1,6 @@
 package GiraffeMetering;
 
-message Envelop {
+message Envelope {
     required string signature = 1;
     required BulkMessage message = 2;
 }

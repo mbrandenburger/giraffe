@@ -1,11 +1,16 @@
 {% extends 'giraffe_dashboard/base.html' %}
 {% load i18n %}
-{% block title %}{% trans "Hosts!" %}{% endblock %}
+
+{% block title %}{% trans "Host Detail "%}{% endblock %}
 
 {% block page_header %}
-  {% include "horizon/common/_page_header.html" with title=_("Hosts!") %}
+  {% include "horizon/common/_page_header.html" with title="Host Detail" %}
 {% endblock page_header %}
 
 {% block giraffe_dashboard_main %}
-    <h2><b>{{host.name}}</b> {{host.id}}</h2>
+<div class="row-fluid">
+  <div class="span12">
+  {{ tab_group.render }}
+  </div>
+</div>
 {% endblock %}

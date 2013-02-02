@@ -1,0 +1,37 @@
+{% load i18n sizeformat %}
+
+<h3>{% trans "Host Overview" %}</h3>
+
+<div class="info row-fluid">
+  <h4>{% trans "Info" %}</h4>
+  <hr class="header_rule">
+  <dl>
+    <dt>{% trans "Name" %}</dt>
+    <dd>{{ host.name|default:"None" }}</dd>
+    <dt>{% trans "ID" %}</dt>
+    <dd>{{ host.id|default:"None" }}</dd>
+    <dt>{% trans "Latest Activity" %}</dt>
+    <dd>{{ host.acticity|default:"Unknown" }}</dd>
+    <dt>{% trans "Public" %}</dt>
+    <dd>{{ image.is_public }}</dd>
+    <dt>{% trans "Checksum" %}</dt>
+    <dd>{{ image.checksum }}</dd>
+    <dt>{% trans "Created" %}</dt>
+    <dd>{{ image.created_at|default:"Unknown" }}</dd>
+    <dt>{% trans "Updated" %}</dt>
+    <dd>{{ image.updated_app|default:"Never updated" }}</dd>
+  </dl>
+</div>
+
+<div class="specs row-fluid">
+  <h4>{% trans "Data" %}</h4>
+  <hr class="header_rule">
+  <dl>
+    <dt>{% trans "Size" %}</dt>
+    <dd>{{ host.size|filesizeformat }}</dd>
+    <dt>{% trans "Container Format" %}</dt>
+    <dd>{{ host.container_format|default:"None"|upper }}</dd>
+    <dt>{% trans "Disk Format" %}</dt>
+    <dd>{{ host.disk_format|default:"None"|upper }}</dd>
+  </dl>
+</div>

@@ -1,4 +1,4 @@
-__author__ = 'marcus'
+__author__ = 'marcus, fbahr'
 
 import os
 import psutil
@@ -32,7 +32,7 @@ class Host_PHYMEM_Usage(PeriodicMeterTask):
         mem = psutil.virtual_memory()
         return [mem.total, mem.used, mem.free, mem.percent]
         # ^ return _nt_sysmeminfo(mem.total, mem.used, mem.free, mem.percent)
-        #   -> usage(total=..L, used=1..L, free=..L, percent=x.y)
+        #          -> usage(total=..L, used=1..L, free=..L, percent=x.y)
 
 
 class Host_VIRMEM_Usage(PeriodicMeterTask):
@@ -44,7 +44,7 @@ class Host_VIRMEM_Usage(PeriodicMeterTask):
         """
         # psutil.virtmem_usage() deprecated in psutil v0.6.0
         return psutil.swap_memory()
-        # -> swap(total=..L, used=..L, free=..L, percent=x.y, sin=.., sout=..)
+        #      -> swap(total=..L, used=..L, free=..L, percent=x.y, sin=.., sout=..)
 
 
 class Host_UPTIME(PeriodicMeterTask):

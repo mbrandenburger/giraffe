@@ -13,62 +13,38 @@ Delta       Changing over time (bandwidth)
 ----------  -------------------------------------------------------------------
 
 
--------------------------------------------------------------------------------
-Implemented meters
--------------------------------------------------------------------------------
-+ [Inst_UUIDs]
-- Inst_CPU_Usage    (raises NotImplementedError)
-+ Inst_PHYMEM_Usage
-+ Inst_VIRMEM_Usage
-+ Inst_UPTIME
-- Inst_NETWORK_IO   (raises NotImplementedError)
-+ Inst_DISK_IO
-
-? Inst_ ...         [meter for cinder (block storage) operations]
-? Inst_ ...         [meter for swift (object storage) operations]
-?       ...
-
-
-
-==============
-
-
-
-
-
-
-Here are the meter types by components that are currently implemented:
+Meters (by components) that are currently implemented:
 
 Compute (Nova)
-==============
+---------------------------  ----------  --------  --------  ----------------------
+Name                         Type        Volume    Resource  Note
+---------------------------  ----------  --------  --------  ----------------------
+inst.uptime                  Gauge    <seconds!>   inst ID   Duration of instance
+inst.memory.physical         Gauge      <bytes!>   inst ID   Volume of RAM in <bytes!>
+inst.memory.virtual          Gauge      <bytes!>   inst ID   Volume of RAM in <bytes!>
+inst.cpu.time                Cumulative       ms   inst ID   CPU time used
+inst.cpu.time.ratio          Gauge       percent   inst ID   CPU time used in relation to real time elapsed
+inst.cpu.percent             Gauge       percent   inst ID   ...
+* vcpus                        Gauge          cpus   inst ID   Number of VCPUs
+* disk.root.size               Gauge            GB   inst ID   Size of root disk in GB
+* disk.ephemeral.size          Gauge            GB   inst ID   Size of ephemeral disk in GB
+- inst.disk.io.requests        Cumulative  requests  inst ID   Number of disk io requests
+inst.disk.io.read.requests   Cumulative  requests  inst ID   Number of disk I/O read requests
+inst.disk.io.write.requests  Cumulative  requests  inst ID   Number of disk I/O write requests
+- inst.disk.io.bytes         Cumulative    bytes     inst ID   Volume of disk io in bytes
+inst.disk.io.read.bytes      Cumulative  bytes     inst ID   Volume of disk I/O read requests
+inst.disk.io.write.bytes     Cumulative  bytes     inst ID   Volum of disk I/O write requests
+network.incoming.bytes    Cumulative    bytes  <inst ID!>   number of incoming bytes on the network
+network.outgoing.bytes    Cumulative    bytes  <inst ID!>   number of outgoing bytes on the network
+* network.incoming.packets  Cumulative  packets  iface ID   number of incoming packets
+* network.outgoing.packets  Cumulative  packets  iface ID  face ID  number of outgoing packets
+------------------------  ----------  -------  --------  ----------------------
 
-========================  ==========  =======  ========  =======================================================
+
+Network (Quantum) [NOT IMPLEMENTED]
+------------------------  ----------  -------  -------- ---------------------------------------
 Name                      Type        Volume   Resource  Note
-========================  ==========  =======  ========  =======================================================
-instance                  Gauge             1  inst ID   Duration of instance
-instance:<type>           Gauge             1  inst ID   Duration of instance <type> (openstack types)
-memory                    Gauge            MB  inst ID   Volume of RAM in MB
-cpu                       Cumulative       ns  inst ID   CPU time used
-vcpus                     Gauge          vcpu  inst ID   Number of VCPUs
-disk.root.size            Gauge            GB  inst ID   Size of root disk in GB
-disk.ephemeral.size       Gauge            GB  inst ID   Size of ephemeral disk in GB
-
-
-inst.disk.io.requests     Cumulative  request  inst ID   Number of disk io requests
-inst.disk.io.bytes             Cumulative    bytes  inst ID   Volume of disk io in bytes
-
-network.incoming.bytes    Cumulative    bytes  iface ID  number of incoming bytes on the network
-network.outgoing.bytes    Cumulative    bytes  iface ID  number of outgoing bytes on the network
-network.incoming.packets  Cumulative  packets  iface ID  number of incoming packets
-network.outgoing.packets  Cumulative  packets  iface ID  number of outgoing packets
-========================  ==========  =======  ========  =======================================================
-
-Network (Quantum)
-=================
-
-========================  ==========  =======  ========  =======================================================
-Name                      Type        Volume   Resource  Note
-========================  ==========  =======  ========  =======================================================
+------------------------  ----------  -------  -------- ---------------------------------------
 network                   Gauge             1  netw ID   Duration of network
 network.create            Delta       request  netw ID   Creation requests for this network
 network.update            Delta       request  netw ID   Update requests for this network
@@ -84,14 +60,13 @@ router.update             Delta       request  rtr ID    Update requests for thi
 ip.floating               Gauge             1  ip ID     Duration of floating ip
 ip.floating.create        Delta             1  ip ID     Creation requests for this floating ip
 ip.floating.update        Delta             1  ip ID     Update requests for this floating ip
-========================  ==========  =======  ========  =======================================================
+------------------------  ----------  -------  -------- ---------------------------------------
 
-Image (Glance)
-==============
 
-========================  ==========  =======  ========  =======================================================
+Image (Glance) [NOT IMPLEMENTED]
+------------------------  ----------  -------  -------- -----------------------------------
 Name                      Type        Volume   Resource  Note
-========================  ==========  =======  ========  =======================================================
+------------------------  ----------  -------  -------- -----------------------------------
 image                     Gauge             1  image ID  Image polling -> it (still) exists
 image.size                Gauge         bytes  image ID  Uploaded image size
 image.update              Delta          reqs  image ID  Number of update on the image
@@ -99,28 +74,28 @@ image.upload              Delta          reqs  image ID  Number of upload of the
 image.delete              Delta          reqs  image ID  Number of delete on the image
 image.download            Delta         bytes  image ID  Image is downloaded
 image.serve               Delta         bytes  image ID  Image is served out
-========================  ==========  =======  ========  =======================================================
+------------------------  ----------  -------  -------- -----------------------------------
 
-Volume (Cinder)
-===============
 
-========================  ==========  =======  ========  =======================================================
+Volume (Cinder) [NOT IMPLEMENTED]
+------------------------  ----------  -------  -------- -------------------
 Name                      Type        Volume   Resource  Note
-========================  ==========  =======  ========  =======================================================
+------------------------  ----------  -------  -------- -------------------
 volume                    Gauge             1  vol ID    Duration of volune
 volume.size               Gauge            GB  vol ID    Size of volume
-========================  ==========  =======  ========  =======================================================
+------------------------  ----------  -------  -------- -------------------
+
 
 Naming convention
-=================
+-----------------
 If you plan on adding meters, please follow the convention bellow:
 
 1. Always use '.' as separator and go from least to most discriminent word.
    For example, do not use ephemeral_disk_size but disk.ephemeral.size
 
-2. When a part of the name is a variable, it should always be at the end and start with a ':'.
-   For example do not use <type>.image but image:<type>, where type is your variable name.
-
+2. When a part of the name is a variable, it should always be at the end and
+   start with a ':'. For example do not use <type>.image but image:<type>, 
+   where type is your variable name.
 
 
 -------------------------------------------------------------------------------
@@ -128,6 +103,7 @@ If you plan on adding meters, please follow the convention bellow:
 -------------------------------------------------------------------------------
 psutil
 libvirt
+-------------------------------------------------------------------------------
 """
 
 import sys
@@ -158,9 +134,9 @@ logger.addHandler(ch)
 def get_inst_ids(connection, pids=True):
     """
     Returns a dict of (uuid: (pid, instance-name)) elements for instances
-    running on a certain host
+    running on a certain host.
     """
-    #@[fbahr] To do: Lookups for UUIDs and PIDs are considered harmful,
+    #@[fbahr] To do: Lookups for UUIDs and PIDs are considered "harmful",
     #         so: figure out a way to perform these only whenever
     #         really neccessary
     ids = {}
@@ -208,7 +184,8 @@ def get_inst_ids(connection, pids=True):
         # Warning! Fails silently...
         pass
 
-    return ids
+    finally:
+        return ids
 
 
 class PeriodicInstMeterTask(PeriodicMeterTask):
@@ -223,99 +200,154 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
 
 class Inst_UUIDs(PeriodicInstMeterTask):
     #@[fbahr]: Actually, this is rather a host meter... for the time being,
-    #          left as an instance metering task [since: subclassing 
+    #          left as an instance metering task [since subclassing 
     #          PeriodicInstMeterTask]
     #          Hence, rather than a list of UUIDs, a record (UNAME,
     #          timestamp,  list of UUIDs) should be returned
 
     def meter(self):
         """
-        Returns a list of instance UUIDs
+        Returns a list of (UUID, timestamp, domain-state) tuples, one for each
+        instance running on a specific host.
         """
         uuids = []
 
         try:
-            uuids = get_inst_ids(self.conn, pids=False).keys()
+            domains = [self.conn.lookupByID(domain_id) \
+                       for domain_id in self.conn.listDomainsID()]
+
+            time = datetime.now()
+
+            uuids = [[d.UUIDString(), time, d.info()[0]] for d in domains]
+
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
-        return uuids
+        finally:
+            return uuids
 
 
-class Inst_CPU_Usage(PeriodicInstMeterTask):
-    #@[fbahr]: Leverage/reuse get_inst_ids()?
+class Inst_UPTIME(PeriodicInstMeterTask):
+    def meter(self):
+        """
+        Returns a list of (UUID, timestamp, uptime [in seconds]) tuples, one
+        for each instance running on a specific host.
+        """
+        uptimes = []
+
+        try:
+            # dict of (uuid: (pid, instance-name)) elements
+            inst_ids = get_inst_ids(self.conn)
+            # list of (uuid, timestamp, uptime) tuples
+            uptimes = [(uuid,
+                        datetime.now(),
+                        time.time() - process.create_time)
+                       for (uuid, process) \
+                           in [(k, psutil.Process(v[0])) \
+                               for k, v in inst_ids.iteritems()]]
+
+        except:
+            # Warning! Fails silently...
+            logger.exception('Connection to hypervisor failed; reset.')
+            self.conn = libvirt.openReadOnly(None)
+
+        finally:
+            return uptimes
+
+
+class Inst_CPU(PeriodicInstMeterTask):
 
     def __init__(self, callback, period):
-        super(Inst_CPU_Usage, self).__init__(callback, period)
-        self.utilization_map = {}
+        super(Inst_CPU, self).__init__(callback, period)
+        self.util_map = {}
 
     def meter(self):
         """
-        Returns a list of CPU utilization for every instance running on a
-        specific host
+        Returns a list of (UUID, timestamp, cpu-time, cpu-time-ratio,
+        cpu-percent) tuples, one for each instance running on a specific host.
         """
-        raise NotImplementedError()
+        cpu_utils = []
 
+        #@[fbahr]:
+        #  - What about /proc/<pid>/stat?
+        # ...
         try:
-            #@[fbahr]: 
-            #  - What about /proc/<pid>/stat?
-            #  - psutil.process.get_memory_percent() and %CPU as reported by
-            #    virt-top differ significantly
-
-            domains = [self.conn.lookupByID(domain_id)
+            domains = [self.conn.lookupByID(domain_id) \
                        for domain_id in self.conn.listDomainsID()]
+
+            # clean-up:
+            if not len(self.util_map) == len(domains):
+                util_map_keys = self.util_map.keys()
+                inst_ids = get_inst_ids(self.conn, pids=True)
+                for uuid in util_map_keys:
+                    if not uuid in inst_ids.iterkeys():
+                        del self.util_map[uuid]
 
             for domain in domains:
                 uuid = domain.UUIDString()
+                prev_cpu_util = self.util_map.get(uuid)
 
-                prev_cpu_times = self.utilization_map.get(uuid)
-            #-  self.utilization_map[uuid] = (cpu_info['cpu_time'],
-            #-                                time.time())
-
-            #   pid = get_instance_pid(uuid)
-            #   process = psutil.Process(pid)
-            #   load_avg = process.get_cpu_percent(interval=1.0)
-
-            #-  cpu_info = self.conn.get_info({'name': domain.name()})
-            #-  num_cpus, cpu_time = cpu_info['num_cpu'], cpu_info['cpu_time']
                 infos = domain.info()
-                num_cpus, cpu_time = infos[3], infos[4]
+                # ^ [0] state: one of the state values (virDomainState)
+                #   [1] maxMemory: the maximum memory used by the domain
+                #   [2] memory: the current amount of memory used by the domain
+                #   [3] nbVirtCPU: the number of virtual CPU
+                #   [4] cpuTime: the time used by the domain in nanoseconds
+                num_vcpus, cpu_time = infos[3], infos[4]
 
-                self.utilization_map[uuid] = (cpu_time, datetime.now())
+                if not prev_cpu_util:
+                    process = psutil.Process(inst_ids[uuid][0])
+                    process.get_cpu_percent()
+                else:
+                    process = prev_cpu_util[2]
+
+                self.util_map[uuid] = (datetime.now(), cpu_time, process)
 
                 cpu_util = 0.0
-                if prev_cpu_times:
-                    prev_cpu = prev_cpu_times[0]
-                    prev_timestamp = prev_cpu_times[1]
+                if prev_cpu_util:
+                    prev_timestamp, prev_cpu_time, _ = prev_cpu_util
 
-                    delta = self.utilization_map[uuid][1] - prev_timestamp
-                    elapsed = (delta.seconds * (10**6) + delta.microseconds) * 1000
+                    elapsed_real_time = (self.util_map[uuid][0] - prev_timestamp) \
+                                            .total_seconds() \
+                                            * (10 ** 9)
+                    cores_fraction = 100.0 / num_vcpus  # in percent
 
-                    cores_fraction = 1.0 / num_cpus
+                    #@[fbahr]: Warning: Account for cpu_time being reset when
+                    #          the instance is restarted
+                    cpu_time_used = cpu_time - (prev_cpu_time \
+                                                if prev_cpu_time <= cpu_time \
+                                                else 0)
 
-                # account for cpu_time being reset when the instance is restarted
-            time_used = (cpu_time - prev_cpu
-                         if prev_cpu <= cpu_time else
-                         cpu_time)
-            cpu_util = 100 * cores_fraction * time_used / elapsed
-            return cpu_util
-        except Exception as e:
-            logger.exception("%s" % e)
+                    cpu_util = cores_fraction * cpu_time_used / elapsed_real_time
+
+                cpu_utils.append((uuid,
+                                  datetime.now(),
+                                  cpu_time,
+                                  cpu_util,
+                                  process.get_cpu_percent()))
+
+        except:
+            # Warning! Fails silently...
+            logger.exception('Connection to hypervisor failed; reset.')
+            self.conn = libvirt.openReadOnly(None)
+
+        finally:
+            return cpu_utils
 
 
-class Inst_PHYMEM_Usage(PeriodicInstMeterTask):
-    #@[fbahr]: Join with Inst_VIRMEM_Usage?
+class Inst_PHYMEM(PeriodicInstMeterTask):
+    #@[fbahr]: Join with Inst_VIRMEM?
 
     def __init__(self, callback, period):
-        super(Inst_PHYMEM_Usage, self).__init__(callback, period)
+        super(Inst_PHYMEM, self).__init__(callback, period)
         # self.psutil_vmem = psutil.virtual_memory()
 
     def meter(self):
         """
         Returns a list of (UUID, timestamp, phymem-attr) tuples, one for each
-        instance running on a specific host
+        instance running on a specific host.
         """
         phymem = []
 
@@ -333,25 +365,27 @@ class Inst_PHYMEM_Usage(PeriodicInstMeterTask):
                       for (uuid, process) \
                           in [(k, psutil.Process(v[0])) \
                               for k, v in inst_ids.iteritems()]]
+
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
-        return phymem
+        finally:
+            return phymem
 
 
-class Inst_VIRMEM_Usage(PeriodicInstMeterTask):
-    #@[fbahr]: Join with Inst_PHYMEM_Usage?
+class Inst_VIRMEM(PeriodicInstMeterTask):
+    #@[fbahr]: Join with Inst_PHYMEM?
 
     def __init__(self, callback, period):
-        super(Inst_VIRMEM_Usage, self).__init__(callback, period)
+        super(Inst_VIRMEM, self).__init__(callback, period)
         self.psutil_smem = psutil.swap_memory()
 
     def meter(self):
         """
         Returns a list of (UUID, timestamp, virmem-attr) tuples, one for each
-        instance running on a specific host
+        instance running on a specific host.
         """
         virmem = []
 
@@ -367,45 +401,21 @@ class Inst_VIRMEM_Usage(PeriodicInstMeterTask):
                       for (uuid, mem_info) \
                           in [(k, psutil.Process(v[0]).get_memory_info()) \
                               for k, v in inst_ids.iteritems()]]
+
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
-        return virmem
-
-
-class Inst_UPTIME(PeriodicInstMeterTask):
-    def meter(self):
-        """
-        Returns a list of (UUID, timestamp, uptime [in seconds]) tuples, one
-        for each instance running on a specific host
-        """
-        uptimes = []
-
-        try:
-            # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = get_inst_ids(self.conn)
-            # list of (uuid, timestamp, uptime) tuples
-            uptimes = [(uuid,
-                        datetime.now(),
-                        time.time() - process.create_time)
-                       for (uuid, process) \
-                           in [(k, psutil.Process(v[0])) \
-                               for k, v in inst_ids.iteritems()]]
-        except:
-            # Warning! Fails silently...
-            logger.exception('Connection to hypervisor failed; reset.')
-            self.conn = libvirt.openReadOnly(None)
-
-        return uptimes
+        finally:
+            return virmem
 
 
 class Inst_NETWORK_IO(PeriodicInstMeterTask):
     def meter(self):
         """
         Returns a list of IDs and corresponding network I/O (in bytes) for all
-        instances running on a specific host
+        instances running on a specific host.
         """
         return NotImplementedError()
 
@@ -417,25 +427,15 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
 
     def meter(self):
         """
-        Returns a list of (UUID, timestamp, read_rquests, bytes_read, 
-        write_requests, bytes_written) tuples, one for each instance 
-        running on a specific host
+        Returns a list of (UUID, timestamp, read_rquests, bytes_read,
+        write_requests, bytes_written) tuples, one for each instance
+        running on a specific host.
         """
         inst_ios = []
 
+        #@[fbahr] Alternative implementation:
+        #         psutil.Process(pid).get_io_counters().[read|write]_bytes
         try:
-            # # dict of (uuid: (pid, instance-name)) elements
-            # inst_ids = get_inst_ids(self.conn)
-            # # list of (uuid, uptime) tuples
-            # inst_ios = [(uuid,
-            #             datetime.now(),
-            #             io_counter.read_bytes,
-            #             io_counter.write_bytes)
-            #            for (uuid, io_counter) \
-            #                in [(k, psutil.Process(v[0]).get_io_counters()) \
-            #                    for k, v in inst_ids.iteritems()]]
-
-            # ^ alternative implementation ------------------------------------
             domains = [self.conn.lookupByID(dom_id) \
                        for dom_id in self.conn.listDomainsID()]
 
@@ -465,4 +465,5 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
             logger.exception('Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(None)
 
-        return inst_ios
+        finally:
+            return inst_ios

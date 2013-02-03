@@ -6,9 +6,9 @@ import logging
 from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRMEM_Usage, \
                                      Host_PHYMEM_Usage, Host_UPTIME, \
                                      Host_NETWORK_IO
-from giraffe.agent.inst_meter import Inst_CPU_Usage, Inst_VIRMEM_Usage, \
-                                     Inst_PHYMEM_Usage, Inst_UPTIME, \
-                                     Inst_DISK_IO, Inst_NETWORK_IO
+from giraffe.agent.inst_meter import Inst_CPU, Inst_VIRMEM, Inst_PHYMEM, \
+                                     Inst_UPTIME, Inst_DISK_IO, \
+                                     Inst_NETWORK_IO
 from giraffe.agent import publisher
 from giraffe.common.config import Config
 
@@ -63,14 +63,19 @@ class Agent(object):
 
         # INSTANCE METERS -----------------------------------------------------
 
+        # meter instance cpu utilization
+        self.tasks.append(
+            Inst_CPU(self._callback_inst_cpu, _METER_DURATION)
+        )
+
         # meter instance phy memory
         self.tasks.append(
-            Inst_PHYMEM_Usage(self._callback_inst_phy_mem, _METER_DURATION)
+            Inst_PHYMEM(self._callback_inst_phy_mem, _METER_DURATION)
         )
 
         # meter instance vir memory
         self.tasks.append(
-            Inst_VIRMEM_Usage(self._callback_inst_vir_mem, _METER_DURATION)
+            Inst_VIRMEM(self._callback_inst_vir_mem, _METER_DURATION)
         )
 
         # meter instance uptime
@@ -105,13 +110,27 @@ class Agent(object):
 
     # CB METHODS FOR INSTANCE METERS ------------------------------------------
 
+    def _callback_inst_cpu(self, params):
+        zipped_params = zip(*params)
+        descriptors = zipped_params[0:2]  # uuids and timestamps
+        self.publisher.add_meter_record(
+                            'inst.cpu.time',
+                            zip(*(descriptors + [zipped_params[2]])),
+                            0)
+        self.publisher.add_meter_record(
+                            'inst.cpu.time.ratio',
+                            zip(*(descriptors + [zipped_params[3]])),
+                            0)
+        self.publisher.add_meter_record(
+                            'inst.cpu.percent',
+                            zip(*(descriptors + [zipped_params[4]])),
+                            0)
+
     def _callback_inst_phy_mem(self, params):
-        self.publisher.add_meter_record('inst.phymem_usage', params, 0)
-        # self.publisher.add_meter_record('inst_phymem_usage', params[3], 0)
+        self.publisher.add_meter_record('inst.memory.physical', params, 0)
 
     def _callback_inst_vir_mem(self, params):
-        self.publisher.add_meter_record('inst.virmem_usage', params, 0)
-        # self.publisher.add_meter_record('inst_virmem_usage', params[3], 0)
+        self.publisher.add_meter_record('inst.memory.virtual', params, 0)
 
     def _callback_inst_uptime(self, params):
         self.publisher.add_meter_record('inst.uptime', params, 0)

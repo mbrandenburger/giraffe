@@ -48,11 +48,12 @@ class Rest_API(object):
             self.server = Rest_Server(conf)
             self.server.start()
 
+        except KeyboardInterrupt:
+            _logger.info("Ctrl-c received!")
         except:
-            _logger.exception("Error: unable to start rest api")
-
+            _logger.exception("Error: Unable to start API service")
         finally:
-            _logger.info("Exiting Service")
+            _logger.info("Shutdown API service")
 
     def _query_params(self, query_string):
         """

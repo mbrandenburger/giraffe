@@ -9,7 +9,7 @@ from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
 from giraffe.service import db
 from giraffe.service.db import Host, Meter, MeterRecord
 
-logger = logging.getLogger("service.collector")
+_logger = logging.getLogger("service.collector")
 
 config = Config("giraffe.cfg")
 
@@ -40,19 +40,20 @@ class Collector(object):
     def launch(self):
         try:
             self.start_collecting()
+        except KeyboardInterrupt:
+            _logger.info("Ctrl-c received!")
         except:
-            logger.exception("Error: unable to start collector service")
-
+            _logger.exception("Error: Unable to start collector service")
         finally:
             self.stop_collecting()
-            logger.info("Exiting Service")
+            _logger.info("Shutdown collector service")
 
     def start_collecting(self):
-        logger.debug("Start collecting from rabbit")
+        _logger.debug("Start collecting from broker")
         self.consumer.consume()
 
     def stop_collecting(self):
-        logger.debug("Stop collecting from rabbit")
+        _logger.debug("Stop collecting from broker")
         self.consumer.stop_consuming()
 
     def _str_to_datetime(self, timestamp_str):
@@ -70,9 +71,6 @@ class Collector(object):
         if not validateSignature(str(message), _SHARED_SECRET,
                                  envelope.signature):
             return
-
-        #        message = MessageAdapter()
-        #        message.deserialize_from_str(params)
 
         self.db.session_open()
 
@@ -95,7 +93,7 @@ class Collector(object):
             # insert all host records
             for r in message.host_records:
                 if r.meter_name not in meter_dict:
-                    logger.debug('WARNING: unknown meter_name "%s"' %
+                    _logger.debug('WARNING: unknown meter_name "%s"' %
                                  r.meter_name)
                     continue
                 try:
@@ -108,18 +106,18 @@ class Collector(object):
                                          duration=r.duration,
                                          timestamp=r.timestamp)
                     self.db.save(record)
-                    logger.debug("Message from %s: %s" % (host.name, record))
+                    _logger.debug("Message from %s: %s" % (host.name, record))
                     # update host activity
                     record_timestamp = self._str_to_datetime(r.timestamp)
                     if not host.activity or record_timestamp > host.activity:
                         host.activity = record_timestamp
                 except Exception as e:
-                    logger.exception(e)
+                    _logger.exception(e)
 
             # insert all instance records
             for r in message.inst_records:
                 if r.meter_name not in meter_dict:
-                    logger.debug('WARNING: unknown meter_name "%s"' %
+                    _logger.debug('WARNING: unknown meter_name "%s"' %
                                  r.meter_name)
                     continue
                 try:
@@ -132,15 +130,15 @@ class Collector(object):
                                          duration=r.duration,
                                          timestamp=r.timestamp)
                     self.db.save(record)
-                    logger.debug("Message from %s: %s" % (host.name, record))
+                    _logger.debug("Message from %s: %s" % (host.name, record))
                     # update host activity
                     record_timestamp = self._str_to_datetime(r.timestamp)
                     if not host.activity or record_timestamp > host.activity:
                         host.activity = record_timestamp
                 except Exception as e:
-                    logger.exception(e)
+                    _logger.exception(e)
 
             self.db.commit()
             self.db.session_close()
         except Exception as e:
-            logger.exception(e)
+            _logger.exception(e)

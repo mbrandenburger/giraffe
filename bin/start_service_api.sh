@@ -20,9 +20,8 @@ possible_topdir = os.path.normpath(
 if os.path.exists(os.path.join(possible_topdir, "giraffe", "__init__.py")):
     sys.path.append(possible_topdir)
 
-from giraffe.service import service
+from giraffe.service.rest_api import Rest_API
 
-@DeprecationWarning
 if __name__ == '__main__':
     logger = logging.getLogger("service")
     logger.setLevel(logging.DEBUG)
@@ -30,7 +29,7 @@ if __name__ == '__main__':
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     ch = logging.StreamHandler()
-    fh = logging.FileHandler("service.log")
+    fh = logging.FileHandler("service_api.log")
 
     ch.setFormatter(formatter)
     fh.setFormatter(formatter)
@@ -38,10 +37,10 @@ if __name__ == '__main__':
     logger.addHandler(ch)
     logger.addHandler(fh)
 
-    logger.info("Starting Giraffe Service")
+    logger.info("Starting Giraffe Service API")
 
     try:
-        service = service.Service()
+        service = Rest_API()
         service.launch()
     except (Exception, SystemExit):
         logger.exception(('Failed to load %s') % 'Service')

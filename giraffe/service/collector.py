@@ -1,5 +1,4 @@
 import logging
-import threading
 from datetime import datetime
 from giraffe.common.crypto import validateSignature
 
@@ -22,10 +21,8 @@ _RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
 _SHARED_SECRET = config.get("service", "shared_secret")
 
 
-class Collector(threading.Thread):
-
+class Collector(object):
     def __init__(self):
-        threading.Thread.__init__(self)
         self.connector = Connector(_RABBIT_HOST)
         self.queue = _RABBIT_QUEUE
         self.exchange = _RABBIT_EXCHANGE
@@ -40,12 +37,15 @@ class Collector(threading.Thread):
                                                    config.get('db', 'host'),
                                                    config.get('db', 'schema')))
 
-    def run(self):
-        self.start_collecting()
+    def launch(self):
+        try:
+            self.start_collecting()
+        except:
+            logger.exception("Error: unable to start collector service")
 
-    def stop(self):
-        self.stop_collecting()
-        self._Thread__stop()
+        finally:
+            self.stop_collecting()
+            logger.info("Exiting Service")
 
     def start_collecting(self):
         logger.debug("Start collecting from rabbit")
@@ -62,17 +62,17 @@ class Collector(threading.Thread):
         return datetime_obj.strftime("%Y-%m-%d %H:%M:%S")
 
     def _collector_callback(self, params):
-
         envelope = EnvelopeAdapter()
         envelope.deserialize_from_str(params)
 
         message = MessageAdapter(envelope.message)
         # validate signature
-        if not validateSignature(str(message), _SHARED_SECRET, envelope.signature):
+        if not validateSignature(str(message), _SHARED_SECRET,
+                                 envelope.signature):
             return
 
-#        message = MessageAdapter()
-#        message.deserialize_from_str(params)
+        #        message = MessageAdapter()
+        #        message.deserialize_from_str(params)
 
         self.db.session_open()
 

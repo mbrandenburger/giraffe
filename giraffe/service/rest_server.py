@@ -1,38 +1,24 @@
 import logging
 import keystone.middleware.auth_token as auth_token
 from flask import Flask, Response, request
-# from functools import wraps
 
-logger = logging.getLogger("service.rest_server")
-
-# def start(rest_api, host, port, user=None, password=None):
-#     return Rest_Server(rest_api=rest_api,
-#                        host=host,
-#                        port=port,
-#                        username=user,
-#                        password=password)
-
-
-def start(conf):
-    return Rest_Server(conf)
-
+_logger = logging.getLogger("service.rest_server")
 
 class Rest_Server():
+
+    def start(self):
+        self.app.run(self.host, self.port)
 
     def __init__(self, conf):
         self.app = Flask(__name__)
         self.app.config['PROPAGATE_EXCEPTIONS'] = True
         self.rest_api = conf.get('rest_api')
+        self.host = conf.get('host')
+        self.port = conf.get('port')
 
         self.request = None
         self.app.wsgi_app = auth_token.AuthProtocol(self.app.wsgi_app, conf)
 
-# -----------------------------------------------------------------------------
-
-#       def requires_auth(f):
-#           return self.__requires_auth(f)
-
-# -----------------------------------------------------------------------------
 
         @self.app.route('/')
         def root():
@@ -81,7 +67,7 @@ class Rest_Server():
         @self.app.route('/meters/')
         #requires_auth
         def meters():
-            logger.info('/meters')
+            _logger.info('/meters')
             result = self.rest_api.route_meters(request.query_string)
             if result is None:
                 return Response(response='meters not available', status=404)
@@ -134,30 +120,3 @@ class Rest_Server():
                 return Response(response='instance or meter not available',
                                 status=404)
             return str(result)
-
-        # this line starts the flask server
-        self.app.run(host=conf.get('host'), port=conf.get('port'))
-    # end of __init__
-
-# -----------------------------------------------------------------------------
-
-#   def __requires_auth(self, f):
-#       def __check_auth(username, password):
-#           """
-#           checks whether a username/password combination is valid
-#           """
-#           return (username == self.username and
-#                   password == self.password)
-#
-#       @wraps(f)
-#       def decorated(*args, **kwargs):
-#           auth = request.authorization
-#           if not (auth and __check_auth(auth.username, auth.password)):
-#               """
-#               sends a 401 response that enables basic auth
-#               """
-#               return Response({'message': 'Unauthorized'}, 401,
-#                               {'WWW-Authenticate':
-#                                'Basic realm="REST API Login"'})
-#           return f(*args, **kwargs)
-#       return decorated

@@ -1,8 +1,7 @@
 import json
 import logging
-import threading
 import re
-import giraffe.service.rest_server as srv
+from giraffe.service.rest_server import Rest_Server
 from giraffe.common.config import Config
 import giraffe.service.db as db
 from giraffe.service.db import Host, Meter, MeterRecord
@@ -13,8 +12,7 @@ _logger = logging.getLogger("service.collector")
 _config = Config("giraffe.cfg")
 
 
-class Rest_API(threading.Thread):
-
+class Rest_API(object):
     def __init__(self):
         self.PARAM_START_TIME = 'start_time'
         self.PARAM_END_TIME = 'end_time'
@@ -22,40 +20,39 @@ class Rest_API(threading.Thread):
         self.PARAM_CHART = 'chart'
         self.PARAM_LATEST = 'latest'
         self.RESULT_LIMIT = 2500
-        self.__pattern_timestamp = re.compile(
-                '^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
-        self.db = db.connect('%s://%s:%s@%s/%s' % (
-                                    _config.get('db', 'vendor'),
-                                    _config.get('db', 'user'),
-                                    _config.get('db', 'pass'),
-                                    _config.get('db', 'host'),
-                                    _config.get('db', 'schema')))
         self.server = None
-        threading.Thread.__init__(self)
+        self.db = None
+        self.__pattern_timestamp = re.compile(
+            '^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
 
-    def run(self):
-        conf = dict(log_name='Auth',
-            auth_host=_config.get('service', 'auth_host'),
-            auth_port=_config.getint('service', 'auth_port'),
-            auth_protocol=_config.get('service', 'auth_protocol'),
-            admin_token=_config.get('service', 'admin_token'),
-            delay_auth_decision=_config.getint('service',
-                                               'delay_auth_decision'),
-            rest_api=self,
-            host=_config.get('flask', 'host'),
-            port=_config.getint('flask', 'port'),
-#            user=_config.get('flask', 'user'),
-#            password=_config.get('flask', 'pass')
-        )
+    def launch(self):
+        try:
+            self.db = db.connect('%s://%s:%s@%s/%s' % (
+                _config.get('db', 'vendor'),
+                _config.get('db', 'user'),
+                _config.get('db', 'pass'),
+                _config.get('db', 'host'),
+                _config.get('db', 'schema')))
 
-        self.server = srv.start(conf)
-#        self.server = srv.start(self, host=_config.get('flask', 'host'),
-#                                      port=_config.getint('flask', 'port'),
-#                                      user=_config.get('flask', 'user'),
-#                                      password=_config.get('flask', 'pass'))
+            conf = dict(log_name='Auth',
+                        auth_host=_config.get('service', 'auth_host'),
+                        auth_port=_config.getint('service', 'auth_port'),
+                        auth_protocol=_config.get('service', 'auth_protocol'),
+                        admin_token=_config.get('service', 'admin_token'),
+                        delay_auth_decision=_config.getint('service', 'delay_auth_decision'),
+                        rest_api=self,
+                        host=_config.get('flask', 'host'),
+                        port=_config.getint('flask', 'port'),
+                        )
 
-    def stop(self):
-        self._Thread__stop()
+            self.server = Rest_Server(conf)
+            self.server.start()
+
+        except:
+            _logger.exception("Error: unable to start rest api")
+
+        finally:
+            _logger.info("Exiting Service")
 
     def _query_params(self, query_string):
         """
@@ -211,11 +208,11 @@ class Rest_API(threading.Thread):
         Query params: -
         """
         raise NotImplementedError(
-                  "The route \"hosts/<host_id>\" is not implemented yet")
+            "The route \"hosts/<host_id>\" is not implemented yet")
 
     def route_hosts_hid_meters_mid(self, host_id,
-                                         meter_id,
-                                         query_string=''):
+                                   meter_id,
+                                   query_string=''):
         """
         Route: hosts/<host_id>/meters/<meter_id>
         Returns: List of MeterRecord objects, JSON-formatted
@@ -260,8 +257,8 @@ class Rest_API(threading.Thread):
         return result
 
     def route_projects_pid_meters_mid(self, project_id,
-                                            meter_id,
-                                            query_string=''):
+                                      meter_id,
+                                      query_string=''):
         """
         Route: projects/<project_id>/meters/<meter_id>
         Returns: List of MeterRecord objects, JSON-formatted
@@ -300,8 +297,8 @@ class Rest_API(threading.Thread):
         return result
 
     def route_users_uid_meters_mid(self, user_id,
-                                         meter_id,
-                                         query_string=''):
+                                   meter_id,
+                                   query_string=''):
         """
         Route: users/<user_id>/meters/<meter_id>
         Returns: List of MeterRecord objects, JSON-formatted
@@ -341,8 +338,8 @@ class Rest_API(threading.Thread):
         return result
 
     def route_instances_iid_meters_mid(self, instance_id,
-                                             meter_id,
-                                             query_string=''):
+                                       meter_id,
+                                       query_string=''):
         """
         Route: instances/<instance_id>/meters/<meter_id>
         Returns: List of MeterRecord objects, JSON-formatted

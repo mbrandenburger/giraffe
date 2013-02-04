@@ -8,7 +8,7 @@ from giraffe.service.rest_api import Rest_API
 
 logger = logging.getLogger("service")
 
-
+@DeprecationWarning
 class Service(object):
 
     def __init__(self):

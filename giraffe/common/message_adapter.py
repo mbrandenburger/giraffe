@@ -1,4 +1,4 @@
-from giraffe.common.Message_pb2 import BulkMessage
+from giraffe.common.message import BulkMessage
 from google.protobuf.text_format import MessageToString
 
 class MessageAdapter(object):

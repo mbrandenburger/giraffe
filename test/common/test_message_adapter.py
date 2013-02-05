@@ -3,7 +3,7 @@ import unittest
 
 import sys
 from giraffe.common.message_adapter import MessageAdapter
-from giraffe.common import BulkMessage_pb2
+from giraffe.common.message import BulkMessage
 
 
 class MessageAdapterTestCases(unittest.TestCase):
@@ -52,7 +52,7 @@ class MessageAdapterTestCases(unittest.TestCase):
             self.assertIsNotNone(adapter._adaptee)
 
     def test_init_message(self):
-        msg = BulkMessage_pb2.BulkMessage()
+        msg = BulkMessage()
         adapter = MessageAdapter(msg)
         self.assertEqual(adapter._adaptee, msg)
 

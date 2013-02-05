@@ -1,6 +1,6 @@
 __author__ = 'marcus, fbahr'
 
-from giraffe.common.BulkMessage_pb2 import BulkMessage, HostRecord, InstRecord
+from giraffe.common.message import BulkMessage, HostRecord, InstRecord
 
 import unittest
 

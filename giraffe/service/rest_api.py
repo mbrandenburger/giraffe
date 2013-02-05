@@ -41,8 +41,8 @@ class Rest_API(object):
                         admin_token=_config.get('service', 'admin_token'),
                         delay_auth_decision=_config.getint('service', 'delay_auth_decision'),
                         rest_api=self,
-                        host=_config.get('flask', 'host'),
-                        port=_config.getint('flask', 'port'),
+                        host=_config.get('rest_api', 'host'),
+                        port=_config.getint('rest_api', 'port'),
                         )
 
             self.server = Rest_Server(conf)

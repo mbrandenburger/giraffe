@@ -18,7 +18,7 @@ _RABBIT_QUEUE = config.get("rabbit", "queue")
 _RABBIT_EXCHANGE = config.get("rabbit", "exchange")
 _RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
 
-_SHARED_SECRET = config.get("service", "shared_secret")
+_SHARED_SECRET = config.get("collector", "shared_secret")
 
 
 class Collector(object):

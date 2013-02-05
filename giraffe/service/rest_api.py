@@ -35,11 +35,12 @@ class Rest_API(object):
                 _config.get('db', 'schema')))
 
             conf = dict(log_name='Auth',
-                        auth_host=_config.get('service', 'auth_host'),
-                        auth_port=_config.getint('service', 'auth_port'),
-                        auth_protocol=_config.get('service', 'auth_protocol'),
-                        admin_token=_config.get('service', 'admin_token'),
-                        delay_auth_decision=_config.getint('service', 'delay_auth_decision'),
+                        auth_host=_config.get('rest_api', 'auth_host'),
+                        auth_port=_config.getint('rest_api', 'auth_port'),
+                        auth_protocol=_config.get('rest_api', 'auth_protocol'),
+                        admin_token=_config.get('rest_api', 'admin_token'),
+                        delay_auth_decision=_config.getint('rest_api',
+                                                           'delay_auth_decision'),
                         rest_api=self,
                         host=_config.get('rest_api', 'host'),
                         port=_config.getint('rest_api', 'port'),

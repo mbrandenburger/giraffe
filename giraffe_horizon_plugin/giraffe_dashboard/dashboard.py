@@ -24,6 +24,7 @@ class GiraffePlugin(horizon.Dashboard):
     # without it, the last PanelGroup is not displayed at all!
     panels = (BasePanels, SpecialPanels,)
     default_panel = 'overview'
+    nav = False
 
 
 horizon.register(GiraffePlugin)

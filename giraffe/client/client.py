@@ -27,22 +27,25 @@ Usage:
 
     Additional, optional query parameters and arguments (PARAM, ARG):
         --count
-        --limit LIMIT
-        --order ORDER
         --start TIME
         --end   TIME
+        --min
+        --max
+        --limit LIMIT
+        --order ORDER
+
 
         --chart     ...
-        --json      display output as plain JSON (DEFAULT)
-        --csv       diplay output as CSV
+      [ --jsn       output as plain JSON ] **REMOVED** (but still: DEFAULT)
+        --csv       output as CSV
         --tab       output as table
 
-    Instead of using the CMD interface, one can also query the Giraffe API
-    using a query URL (encoded as REST API URL path):
+    Instead of using the CMD interface - for debugging purposed only -, one can
+    also query the Giraffe API using a query URL (encoded as REST API URL path):
         -q QUERY, --query QUERY
-    [Note: When using this parameter, query args/params - like `--count` -
-           will be ignored; on the other hand, this parameter is overriden
-           by giraffe-client command calls.]
+    [Note: When using this parameter, query args/params - like `--count`,
+           `--min`, or `--max` - will be ignored; on the other hand, this 
+           parameter is overriden by giraffe-client command calls.]
 
     Additional configuration parameters (if not provided, information needs
     to be stored in env. variables or in Giraffe's config file, [client] 
@@ -53,6 +56,11 @@ Usage:
         --tenant_name TENANT_NAME
         -e ENDPOINT, --endpoint ENDPOINT
         -a AUTH_URL, --auth_url AUTH_URL
+
+
+Example:
+    ./start_client.sh host-meter --host uncinus --meter host.loadavg_1m \
+                                 --start 2013-02-07_12-00-00 --csv
 """
 
 __author__  = 'fbahr, marcus'
@@ -128,9 +136,15 @@ class BaseController(controller.CementBaseController):
             (['--end'], \
                 dict(action='store', help='END_TIME', \
                      default=None)),
+            (['--min'], \
+                dict(action='store_true', help='', \
+                     default=None)),
+            (['--max'], \
+                dict(action='store_true', help='', \
+                     default=None)),
             (['--count'], \
                 dict(action='store_true', help='', \
-                     default=False)),
+                     default=None)),
             (['--limit'], \
                 dict(action='store', help='LIMIT', \
                      default=0)),
@@ -188,24 +202,30 @@ class BaseController(controller.CementBaseController):
 
     def _params(self):
         params = {}
-        if self.pargs.count: params['aggregation'] = 'count'
+        # start, end times
         if self.pargs.start: params['start_time'] = self.pargs.start
         if self.pargs.end: params['end_time'] = self.pargs.end
+        # aggregations (using the "pythonic way" to do switches (via dicts),
+        #               combined with some index magic and 'except:'-fallback
+        try:
+            params['aggregation'] \
+                = {0 : 'min', 1 : 'max', 2 : 'count'} \
+                  [[self.pargs.min, self.pargs.max, self.pargs.count] \
+                   .index(True)]
+        except:
+            pass
+        # ...
         if self.pargs.limit: params['limit'] = self.pargs.limit
         if self.pargs.order: params['order'] = self.pargs.order
         return params
 
     def _formatter(self):
-        try:
-            if self.pargs.tab:
-                return TabFormatter
-            elif self.pargs.csv:
-                return CsvFormatter
-            else:
-                return JsonFormatter
-
-        except Exception as e:
-            print e
+        if self.pargs.tab:
+            return TabFormatter
+        elif self.pargs.csv:
+            return CsvFormatter
+        else:  # default:
+            return JsonFormatter
 
     def _display(self, result):
         try:
@@ -224,16 +244,20 @@ class BaseController(controller.CementBaseController):
 
             url = URLBuilder.build(endpoint=self.pargs.endpoint,
                                    path=self.pargs.query)
+
             logger.debug('Query: %s' % url)
 
             #@[fbahr]: dirty hack, getting dict instance from self.pargs
             _kwargs = dict((k,v) for (k,v) in self.pargs._get_kwargs())
             auth_token = AuthProxy.get_token(credentials=_kwargs)
 
-            r = requests.get(url, headers={'X-Auth-Token': auth_token})
+            auth_header = dict([('X-Auth-Token', auth_token)])
+            result = requests.get(url, headers=auth_header)
 
-            logger.debug('HTTP response status code: %s' % r.status_code)
-            r.raise_for_status()
+            logger.debug('HTTP response status code: %s' % result.status_code)
+            result.raise_for_status()
+
+            self._display(result = result.json if result.json else result.text)
 
         except requests.exceptions.HTTPError:
             # @[fbahr]: What if... server down?
@@ -243,7 +267,8 @@ class BaseController(controller.CementBaseController):
             # @fbahr: dirty hack...
             help_text = []
             help_text.append('usage: ' + self._usage_text)
-            help_text.append('Try "[start_]client.py --help" for help on a specific command.\n')
+            help_text.append('Try "client.py [./start_client.sh, resp.]'
+                             '  --help" for help on specific commands.\n')
             print '\n'.join(help_text)
 
     @controller.expose()

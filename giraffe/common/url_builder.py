@@ -10,3 +10,9 @@ class URLBuilder(object):
         if params:
             url += '&'.join(["%s=%s" % (k, str(v)) for k, v in params.iteritems()])
         return url
+
+    @staticmethod
+    def build_path(*path):
+        path = '/'.join([section if section else 'UNDEFINED' \
+                         for section in path])
+        return path

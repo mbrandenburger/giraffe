@@ -32,7 +32,7 @@ if __name__ == '__main__':
     logger.info("Starting Giraffe Client")
 
     # creating a client
-    app = client.GiraffeClient()
+    app = client.GiraffeClientApp()
     
     try:
         # setting up the application

@@ -8,7 +8,8 @@ class URLBuilder(object):
         """
         url = ''.join([protocol, '://', endpoint, path, '?' if params else ''])
         if params:
-            url += '&'.join(["%s=%s" % (k, str(v)) for k, v in params.iteritems()])
+            url += '&'.join(["%s=%s" % (k, str(v)) \
+                                       for k, v in params.iteritems() if v])
         return url
 
     @staticmethod

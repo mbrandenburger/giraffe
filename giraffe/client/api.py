@@ -17,6 +17,7 @@ class GiraffeClient(object):
         #              tenant_name=None, \
         #              tenant_id=None, \
                        **kwargs):
+        self.config = Config('giraffe.cfg')
         self.auth_url = kwargs.get('auth_url',
                                    self.config.get('client', 'auth_url'))
         if not auth_token:
@@ -25,7 +26,7 @@ class GiraffeClient(object):
                                              tenant_name=kwargs.get('tenant_name'),
                                              tenant_id=kwargs.get('tenant_id'),
                                              auth_url=self.auth_url)
-        self.auth_header = dict(('X-Auth-Token', auth_token))
+        self.auth_header = dict([('X-Auth-Token', auth_token)])
         self.protocol = kwargs.get('protocol', 'http')
         host = kwargs.get('host', self.config.get('client', 'host'))
         port = kwargs.get('port', self.config.get('client', 'port'))
@@ -35,9 +36,10 @@ class GiraffeClient(object):
         # ---------------------------------------------------------------------
         class ResultSet(tuple):
             def __new__(cls, first=(), *next):
-                if not isinstance(first, (tuple)) or len(next) > 0:
-                    first = (first, )
-                return tuple.__new__(cls, first + next)
+                if isinstance(first, (list)) and not next:
+                    return tuple.__new__(cls, tuple(first))
+                else:
+                    return tuple.__new__(cls, (first, ) + next)
 
             def _as(self, cls, **kwargs):
                 if not issubclass(cls, (Base, FormattableObject)):
@@ -57,6 +59,7 @@ class GiraffeClient(object):
         return ResultSet(response) \
                    if isinstance(response, (tuple, list, dict)) \
                    else response
+
 
     def get_hosts(self, params=None):
         """

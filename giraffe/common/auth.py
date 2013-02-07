@@ -1,4 +1,4 @@
- from keystoneclient.v2_0 import client as ksclient
+from keystoneclient.v2_0 import client as ksclient
 
 
 class AuthProxy(object):

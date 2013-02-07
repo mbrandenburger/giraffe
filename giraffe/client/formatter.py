@@ -4,28 +4,20 @@ import json
 from datetime import datetime
 # from prettytable import PrettyTable
 
-from giraffe.service.db \
-    import Base, Host, Meter, MeterRecord
-from giraffe.client.formatter \
-    import Text, JsonFormatter, CsvFormatter, HostFormatter, MeterFormatter, \
-           MeterRecordFormatter
+from giraffe.service.db import Base, Host, Meter, MeterRecord
 
 # -----------------------------------------------------------------------------
 
-DEFAULT_FORMATTERS = dict((Host, HostFormatter),
-                          (Meter, MeterFormatter),
-                          (MeterRecord, MeterRecordFormatter),
-                          (Text, JsonFormatter))
-
-
-# -----------------------------------------------------------------------------
-
-#@[fbahr] - TODO: Come up with a better naming scheme; Formatter and 
+#@[fbahr] - TODO: Come up with a better naming scheme; Formatter and
 #                 FormattableObject - but serialize()?
 #                 Also, pretty pointless design decisions - along the overall
 #                 framework (so far).
 
 class Formatter(object):
+    """
+    Abstract base clase.
+    """
+
     @staticmethod
     def serialize(message):
         """
@@ -75,24 +67,21 @@ class CsvFormatter(Formatter):
         if not message:
             return 'Empty result set.'
 
-        if not isinstance(message, (tuple, list, dict)):
-            return str(message)
+        # print message
 
         UNIX_EPOCH = datetime(1970, 1, 1, 0, 0)
-        for dct in list(message):
-            row = []
-            for key, val in dct.iteritems():
-                if key == 'timestamp':
-                    dt = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
-                    delta = UNIX_EPOCH - dt
-                    val = - delta.days * 24 * 3600 + delta.seconds
-                row.append(str(val))
-            str += '\t'.join(row)
+        row = []
+        for key, val in message.iteritems():
+            if key == 'timestamp':
+                dt = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
+                delta = UNIX_EPOCH - dt
+                val = - delta.days * 24 * 3600 + delta.seconds
+            row.append(str(val))
 
-        return str
+        return '\t'.join(row)
 
 
-class TableFormatter(Formatter):
+class TabFormatter(Formatter):
     @staticmethod
     def serialize(message):
         raise NotImplementedError("Warning: not yet implemented.")
@@ -173,3 +162,11 @@ class MeterRecordFormatter(Formatter):
 
         finally:
             return record
+
+
+# -----------------------------------------------------------------------------
+
+DEFAULT_FORMATTERS = dict([(Host, HostFormatter),
+                           (Meter, MeterFormatter),
+                           (MeterRecord, MeterRecordFormatter),
+                           (Text, JsonFormatter)])

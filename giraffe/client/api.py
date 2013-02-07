@@ -5,23 +5,32 @@ import requests  # < requests 0.14.2
 from giraffe.common.config import Config
 from giraffe.common.url_builder import URLBuilder
 from giraffe.common.auth import AuthProxy
-from giraffe.service.db import Host, Meter, MeterRecord
+from giraffe.service.db import Base, Host, Meter, MeterRecord
+from giraffe.client.formatter import *
 
 
 class GiraffeClient(object):
 
-    def __init__(self, **kwargs):
-        #@[fbahr]: Hack, for the time being -----------------------------------
-        self.config = Config('giraffe.cfg')
-        self.auth_url = self.config.get('identity', 'auth_url')
-        self.username = self.config.get('identity', 'user')
-        self.password = self.config.get('identity', 'pass')
-        self.tenant_name = self.config.get('identity', 'tenant_name')
-        self.tenant_id = self.config.get('identity', 'tenant_id')
-        # ---------------------------------------------------------------------
-        self.protocol = 'http'
-        self.endpoint = ':'.join([self.config.get('client', 'host'),
-                                  self.config.get('client', 'port')])
+    def __init__(self, auth_token=None, \
+        #              username=None, \
+        #              password=None, \
+        #              tenant_name=None, \
+        #              tenant_id=None, \
+                       **kwargs):
+        self.auth_url = kwargs.get('auth_url',
+                                   self.config.get('client', 'auth_url'))
+        self.auth_token = auth_token \
+                              if auth_token \
+                              else AuthProxy.get_token( \
+                                       username=kwargs.get('username'),
+                                       password=kwargs.get('password'),
+                                       tenant_name=kwargs.get('tenant_name'),
+                                       tenant_id=kwargs.get('tenant_id'),
+                                       auth_url=self.auth_url)
+        self.protocol = kwargs.get('protocol', 'http')
+        host = kwargs.get('host', self.config.get('client', 'host'))
+        port = kwargs.get('port', self.config.get('client', 'port'))
+        self.endpoint = ':'.join((host, port))
 
     def _get(self, path, params=None):
         # ---------------------------------------------------------------------
@@ -29,46 +38,35 @@ class GiraffeClient(object):
             def __init__(self, records):
                 self._records = records
 
-            @staticmethod
-            def __deserialize(cls, record):
-                obj = cls()
-                if cls is Host:
-                    obj.__dict__.update(
-                        dict((k, v)
-                             for (k, v) in record.iteritems() \
-                             if k in ['id', 'name']))
-                elif cls is Meter:
-                    obj.__dict__.update(
-                        dict((k, v)
-                            for (k, v) in record.iteritems() \
-                            if k in ['id', 'name', 'description', \
-                                     'unit_name', 'data_type']))
-                elif cls is MeterRecord:
-                    obj.id, obj.host_id, obj.resource_id, \
-                    obj.project_id, obj.user_id, obj.meter_id, \
-                    obj.timestamp, obj.value, obj.duration = \
-                        record['id'], record['host_id'], \
-                        record['resource_id'], record['project_id'], \
-                        record['user_id'], int(record['meter_id']), \
-                        record['timestamp'], record['value'], \
-                        record['duration']
-                return obj
+            def _as(self, cls, **kwargs):
+                if not issubclass(cls, (Base, FormattableObject)):
+                    raise TypeError('Expects FormattableObject.')
 
-            def _as(self, cls):
-                return [self.__deserialize(cls, elem) for elem in self._records]
+                if not self._records:
+                    return 'Empty result set.'
+
+                if not isinstance(self._records, (tuple, list, dict)):
+                    return self._records
+
+                self._formatter = kwargs.get('formatter',
+                                             DEFAULT_FORMATTERS.get(cls))
+
+                return tuple(self._formatter.serialize(elem) \
+                             for elem in self._records)
         # end of class _ResultSet ---------------------------------------------
 
         url = URLBuilder.build(self.protocol, self.endpoint, path, params)
 
         #@[marcus,fbahr]: To be moved to GiraffeClient.__init__? --------------
-        auth_token = AuthProxy.get_token(
-                        auth_url=self.auth_url,
-                        username=self.username,
-                        password=self.password,
-                        tenant_name=self.tenant_name)
+        # auth_token = AuthProxy.get_token(auth_url=self.auth_url,
+        #                                  username=self.username,
+        #                                  password=self.password,
+        #                                  tenant_name=self.tenant_name)
         # ---------------------------------------------------------------------
 
-        lst = requests.get(url, headers={'X-Auth-Token': auth_token}).json
+        # @[fbahr]: request.get().json returns...? (1. list of dicts, 2. ?) 
+        lst = requests.get(url, headers={'X-Auth-Token': self.auth_token}).json
+        # @[fbahr] - TODO: exception handling
         return _ResultSet(lst)
 
     def get_hosts(self, params=None):
@@ -87,7 +85,7 @@ class GiraffeClient(object):
         Returns a list of ... objects
         """
         path = '/instances'
-        # ...
+        # return self._get(path, params)._as(Instance)
         raise NotImplementedError()
 
     def get_projects(self, params=None):
@@ -95,7 +93,7 @@ class GiraffeClient(object):
         Returns a list of ... objects
         """
         path = '/projects'
-        # ...
+        # return self._get(path, params)._as(Project)
         raise NotImplementedError()
 
     def get_users(self, params=None):
@@ -103,7 +101,7 @@ class GiraffeClient(object):
         Returns a list of ... objects
         """
         path = '/users'
-        # ...
+        # return self._get(path, params)._as(User)
         raise NotImplementedError()
 
     def get_meters(self, params=None):
@@ -157,7 +155,7 @@ class GiraffeClient(object):
         dicts
         """
         path = '/'.join(['/projects', host, 'meters', meter])
-        # ...
+        # return self._get(path, params)._as(MeterRecord)
         raise NotImplementedError()
 
     def get_user_meter_records(self, host, meter, params=None):
@@ -168,5 +166,5 @@ class GiraffeClient(object):
         dicts
         """
         path = '/'.join(['/users', host, 'meters', meter])
-        # ...
+        # return self._get(path, params)._as(MeterRecord)
         raise NotImplementedError()

@@ -21,6 +21,10 @@ class Rest_API(object):
         self.PARAM_LIMIT = 'limit'
         self.PARAM_ORDER = 'order'
         self.RESULT_LIMIT = 2500
+        self.AGGREGATION_COUNT = 'count'
+        self.AGGREGATION_MAX = 'max'
+        self.AGGREGATION_MIN = 'min'
+        self.AGGREGATION_AVG = 'avg'
         self.server = None
         self.db = None
         self._param_patterns = {self.PARAM_START_TIME:
@@ -110,16 +114,16 @@ class Rest_API(object):
         - avg: returns the average for "column" of all the rows that match the
         args parameters.
         """
-        if aggregation == 'count':
+        if aggregation == self.AGGREGATION_COUNT:
             count = self.db.count(cls, args)
             return int(count) if count else 0
-        elif aggregation == 'max':
+        elif aggregation == self.AGGREGATION_MAX:
             record = self.db.max_row(cls, column, args)
             return record.to_dict() if record else None
-        elif aggregation == 'min':
+        elif aggregation == self.AGGREGATION_MIN:
             record = self.db.min_row(cls, column, args)
             return record.to_dict() if record else None
-        elif aggregation == 'avg':
+        elif aggregation == self.AGGREGATION_AVG:
             avg = self.db.avg(cls, column, args)
             return float(avg) if avg else 0.0
         return None
@@ -141,7 +145,7 @@ class Rest_API(object):
         query = self._query_params(query_string)
         _logger.debug(query)
         self.db.session_open()
-        if query[self.PARAM_AGGREGATION]:
+        if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
             result = self._aggregate(Host, query[self.PARAM_AGGREGATION], {})
             result = json.dumps(result)
         else:
@@ -169,7 +173,7 @@ class Rest_API(object):
 
         # do count aggregation
         # note: this is a work-around until Project objects are available
-        if query[self.PARAM_AGGREGATION] == 'count':
+        if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
             return json.dumps(str(len(values)))
         return json.dumps(values)
 
@@ -191,7 +195,7 @@ class Rest_API(object):
 
         # do count aggregation
         # note: this is a work-around until User objects are available
-        if query[self.PARAM_AGGREGATION] == 'count':
+        if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
             return json.dumps(str(len(values)))
         return json.dumps(values)
 
@@ -213,7 +217,7 @@ class Rest_API(object):
 
         # do count aggregation
         # note: this is a work-around until Instance objects are available
-        if query[self.PARAM_AGGREGATION] == 'count':
+        if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
             return json.dumps(str(len(values)))
         return json.dumps(values)
 
@@ -225,7 +229,7 @@ class Rest_API(object):
         """
         query = self._query_params(query_string)
         self.db.session_open()
-        if query[self.PARAM_AGGREGATION]:
+        if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
             result = self._aggregate(Meter, query[self.PARAM_AGGREGATION], {})
             result = json.dumps(result)
         else:

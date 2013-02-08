@@ -15,7 +15,7 @@ from giraffe.service.db import Base, Host, Meter, MeterRecord
 
 class Formatter(object):
     """
-    Abstract base clase.
+    Abstract base class
     """
 
     @staticmethod
@@ -28,7 +28,7 @@ class Formatter(object):
 
 class FormattableObject(object):
     """
-    Abstract base clase.
+    Abstract base class
     """
 
 #   def get_formatter(self):
@@ -42,6 +42,9 @@ class FormattableObject(object):
 # Text formatters -------------------------------------------------------------
 
 class Text(FormattableObject):
+    """
+    Marker interface
+    """
 #   def __init__(self, formatter=None):
 #       if not(formatter and issubclass(formatter, Formatter)):
 #           raise TypeError('Excepts Formatter class descriptor')
@@ -90,6 +93,9 @@ class TabFormatter(Formatter):
 # Object formatters -----------------------------------------------------------
 
 class __Host(FormattableObject):
+    """
+    Marker interface
+    """
 #   def __init__(self):
 #       self.formatter = HostFormatter
     pass
@@ -113,6 +119,9 @@ class HostFormatter(Formatter):
 
 
 class __Meter(FormattableObject):
+    """
+    Marker interface
+    """
 #   def __init__(self):
 #       self.formatter = MeterFormatter
     pass
@@ -137,6 +146,9 @@ class MeterFormatter(Formatter):
 
 
 class __MeterRecord(FormattableObject):
+    """
+    Marker interface
+    """
 #   def __init__(self):
 #       self.formatter = MeterRecordFormatter
     pass

@@ -16,21 +16,49 @@ class GiraffeClient(object):
         #              password=None, \
         #              tenant_name=None, \
         #              tenant_id=None, \
+        #              protocol=None, \
+        #              endpoint=None, \
+        #              auth_url=None, \
                        **kwargs):
+        """
+        Creates a new GiraffeClient instance:
+        - if auth_token is not None, auth_token is used to authenticate
+          client requests
+        - alternatively, credentials (username, password, tenant_id, etc.)
+          to be used to authenticate client requests can be passed to
+          __init__() via named parameters
+        - right now, also a fallback to giraffe.cfg is implemented (but not
+          to env. variables)
+        """
+
         self.config = Config('giraffe.cfg')
-        self.auth_url = kwargs.get('auth_url',
-                                   self.config.get('client', 'auth_url'))
+
         if not auth_token:
-            auth_token = AuthProxy.get_token(username=kwargs.get('username'),
-                                             password=kwargs.get('password'),
-                                             tenant_name=kwargs.get('tenant_name'),
-                                             tenant_id=kwargs.get('tenant_id'),
-                                             auth_url=self.auth_url)
+            _username = kwargs.get('username',
+                                   self.config.get('client', 'user'))
+            _password = kwargs.get('password',
+                                   self.config.get('client', 'pass'))
+            _tenant_name = kwargs.get('tenant_name',
+                                      self.config.get('client', 'tenant_name'))
+            _tenant_id = kwargs.get('tenant_id',
+                                    self.config.get('client', 'tenant_id'))
+            _auth_url = kwargs.get('auth_url',
+                                   self.config.get('client', 'auth_url'))
+            auth_token = AuthProxy.get_token(username=_username,
+                                             password=_password,
+                                             tenant_name=_tenant_name,
+                                             tenant_id=_tenant_id,
+                                             auth_url=_auth_url)
+
         self.auth_header = dict([('X-Auth-Token', auth_token)])
+        #@[fbahr] - TODO: Exception handling
+
         self.protocol = kwargs.get('protocol', 'http')
-        host = kwargs.get('host', self.config.get('client', 'host'))
-        port = kwargs.get('port', self.config.get('client', 'port'))
-        self.endpoint = ':'.join((host, port))
+        self.endpoint = kwargs.get('endpoint')
+        if not self.endpoint:
+            host = kwargs.get('host', self.config.get('client', 'host'))
+            port = kwargs.get('port', self.config.get('client', 'port'))
+            self.endpoint = ':'.join((host, port))
 
     def _get(self, path, params=None):
         # ---------------------------------------------------------------------
@@ -147,7 +175,7 @@ class GiraffeClient(object):
             { see GiraffeClient::get_host_meter_records }
         dicts
         """
-        path = '/'.join(['/projects', host, 'meters', meter])
+        path = '/'.join(['/projects', proj, 'meters', meter])
         # ...
         raise NotImplementedError()  # ._as(MeterRecord)
 

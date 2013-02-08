@@ -237,6 +237,7 @@ class BaseController(controller.CementBaseController):
     @controller.expose(hide=True)
     def default(self):
         url = None
+        status_code = None
 
         try:
             if not self.pargs.query:
@@ -254,14 +255,16 @@ class BaseController(controller.CementBaseController):
             auth_header = dict([('X-Auth-Token', auth_token)])
             result = requests.get(url, headers=auth_header)
 
-            logger.debug('HTTP response status code: %s' % result.status_code)
+            status_code = result.status_code
+            logger.debug('HTTP response status code: %s' % status_code)
+
             result.raise_for_status()
 
-            self._display(result = result.json if result.json else result.text)
+            self._display(result.json if result.json else result.text)
 
         except requests.exceptions.HTTPError:
             # @[fbahr]: What if... server down?
-            print '\nBad request [HTTP %s]: %s' % (r.status_code, url)
+            print '\nBad request [HTTP %s]: %s' % (status_code, url)
 
         except:
             # @fbahr: dirty hack...

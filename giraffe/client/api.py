@@ -2,6 +2,8 @@ __author__ = 'fbahr'
 
 import requests  # < requests 0.14.2
 
+import json
+
 from giraffe.common.config import Config
 from giraffe.common.url_builder import URLBuilder
 from giraffe.common.auth import AuthProxy
@@ -83,11 +85,18 @@ class GiraffeClient(object):
 
         url = URLBuilder.build(self.protocol, self.endpoint, path, params)
         response = requests.get(url, headers=self.auth_header).json
+
         # @[fbahr] - TODO: exception handling
         return ResultSet(response) \
                    if isinstance(response, (tuple, list, dict)) \
                    else response
 
+    def get_root(self, params=None):
+        """
+        Welcome ...
+        """
+        path = '/'
+        return self._get(path, None)
 
     def get_hosts(self, params=None):
         """

@@ -148,6 +148,55 @@ class Db(object):
         query = self._filter(cls, query, args)
         return query.first()[0]
 
+    def max(self, cls, column, args={}):
+        """
+        Returns the maximum of column "column" of all rows for the given object
+        class.
+        An optional dictionary "args" can be passed to filter rows (see
+        count()).
+        """
+        query = self._session.query(func.max(getattr(cls, column)))
+        query = self._filter(cls, query, args)
+        return query.first()[0]
+
+    def max_row(self, cls, column, args={}):
+        """
+        Same as max(), except that the object with the maximum column value is
+        returned.
+        """
+        result = self.load(cls, args, limit=1, order='desc', order_attr=column)
+        return result[0] if result else None
+
+    def min(self, cls, column, args={}):
+        """
+        Returns the minimum of column "column" of all rows for the given object
+        class.
+        An optional dictionary "args" can be passed to filter rows (see
+        count()).
+        """
+        query = self._session.query(func.min(getattr(cls, column)))
+        query = self._filter(cls, query, args)
+        return query.first()[0]
+
+    def min_row(self, cls, column, args={}):
+        """
+        Same as min(), except that the object with the minimum column value is
+        returned.
+        """
+        result = self.load(cls, args, limit=1, order='asc', order_attr=column)
+        return result[0] if result else None
+
+    def avg(self, cls, column, args={}):
+        """
+        Returns the average of column "column" of all rows for the given object
+        class.
+        An optional dictionary "args" can be passed to filter rows (see
+        count()).
+        """
+        query = self._session.query(func.avg(getattr(cls, column)))
+        query = self._filter(cls, query, args)
+        return query.first()[0]
+
     def delete(self, obj):
         """
         Deletes a single persistent object without committing.
@@ -332,14 +381,10 @@ class MeterRecord(Base):
 #                        nullable=True, default=None)
 
     def __repr__(self):
-        return "MeterRecord(%s, %d, '%s', '%s', %s)" % (self.id,
-                                                        self.meter_id,
-                                                        self.value,
-                                                        self.duration,
-                                                        self.timestamp)
-        # return "MeterRecord(id=%s, meter_id=%d, " \
-        #       "value='%s', duration='%s', timestamp=%s)" % (self.id,
-        #                                                     self.meter_id,
-        #                                                     self.value,
-        #                                                     self.duration,
-        #                                                     self.timestamp)
+        return "MeterRecord(%s, %d, %s, %s, %s)" % (self.id,
+                                                    self.meter_id,
+                                                    str(self.host_id)\
+                                                        if self.host_id
+                                                        else 'None',
+                                                    self.value,
+                                                    self.timestamp)

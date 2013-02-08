@@ -62,6 +62,14 @@ class GiraffeClient(object):
             port = kwargs.get('port', self.config.get('client', 'port'))
             self.endpoint = ':'.join((host, port))
 
+    @property
+    def auth_token(self):
+        return self.auth_header['X-Auth-Token']
+
+    @auth_token.setter
+    def auth_token(self, auth_token):
+        self.auth_header['X-Auth-Token'] = auth_token
+
     def _get(self, path, params=None):
         # ---------------------------------------------------------------------
         class ResultSet(tuple):

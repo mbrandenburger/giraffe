@@ -3,6 +3,7 @@ __author__ = 'fbahr'
 import sys
 sys.path.insert(0, '/home/fbahr')
 import unittest
+import re
 from giraffe.common.config import Config
 from giraffe.client.api import GiraffeClient
 from giraffe.service.db import Host, Meter, MeterRecord
@@ -73,7 +74,7 @@ class ClientTestCases(unittest.TestCase):
         self.assertFalse(isinstance(count, (tuple)))
         self.assertTrue(isinstance(count, (int)))
 
-    def test_min_max_host_meter_record(self):
+    def test_get_min_max_host_meter_record(self):
         min = self.gc.get_host_meter_records( \
                           host='uncinus', \
                           meter="host.loadavg_15m", \
@@ -93,6 +94,58 @@ class ClientTestCases(unittest.TestCase):
         self.assertTrue(isinstance(max, (MeterRecord)))
 
         self.assertTrue(min.value <= max.value)
+
+    def test_get_host_meter_record_time_limits(self):
+        start_time = '2013-02-07_12-00-00'
+        end_time   = '2013-02-07_23-59-59'
+
+        regex = re.compile('^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
+        matches = regex.match(start_time)
+        start_time_repr = '%s-%s-%s %s:%s:%s' % \
+                              (matches.group(1), matches.group(2), \
+                               matches.group(3), matches.group(4), \
+                               matches.group(5), matches.group(6))
+        matches = regex.match(end_time)
+        end_time_repr = '%s-%s-%s %s:%s:%s' % \
+                              (matches.group(1), matches.group(2), \
+                               matches.group(3), matches.group(4), \
+                               matches.group(5), matches.group(6))
+
+        meter_records = self.gc.get_host_meter_records( \
+                                    host='uncinus', \
+                                    meter="host.loadavg_15m", \
+                                    params={'start_time': start_time,
+                                            'end_time': end_time,
+                                            'order': 'asc'})
+                                    # tuple (ResultSet) of dicts
+        self.assertTrue(isinstance(meter_records, (tuple)))
+        meter_records = meter_records._as(MeterRecord)
+        for mr in meter_records:
+            self.assertTrue(isinstance(mr, (MeterRecord)))
+
+        start_asc = meter_records[0]
+        end_asc = meter_records[-1]
+        self.assertTrue(start_time_repr <= start_asc.timestamp)
+        self.assertTrue(end_asc.timestamp <= end_time_repr)
+        self.assertTrue(start_asc.timestamp <= end_asc.timestamp)
+
+        meter_records = self.gc.get_host_meter_records( \
+                                    host='uncinus', \
+                                    meter="host.loadavg_15m", \
+                                    params={'start_time': start_time,
+                                            'end_time': end_time,
+                                            'order': 'desc'})
+                                    # tuple (ResultSet) of dicts
+        self.assertTrue(isinstance(meter_records, (tuple)))
+        meter_records = meter_records._as(MeterRecord)
+        for mr in meter_records:
+            self.assertTrue(isinstance(mr, (MeterRecord)))
+
+        start_desc = meter_records[0]
+        end_desc = meter_records[-1]
+        self.assertEquals(start_asc.timestamp, end_desc.timestamp)
+        self.assertTrue(start_desc.timestamp, end_asc.timestamp)
+        self.assertTrue(start_desc.timestamp >= end_desc.timestamp)
 
 
 if __name__ == '__main__':

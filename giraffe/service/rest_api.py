@@ -134,7 +134,7 @@ class Rest_API(object):
         Returns: Welcome message (string)
         Query params: -
         """
-        return 'Welcome to Giraffe REST API'
+        return json.dumps('Welcome to Giraffe REST API')
 
     def route_hosts(self, query_string=''):
         """

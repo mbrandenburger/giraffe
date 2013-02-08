@@ -67,11 +67,6 @@ class JsonFormatter(Formatter):
 class CsvFormatter(Formatter):
     @staticmethod
     def serialize(message):
-        if not message:
-            return 'Empty result set.'
-
-        # print message
-
         UNIX_EPOCH = datetime(1970, 1, 1, 0, 0)
         row = []
         for key, val in message.iteritems():

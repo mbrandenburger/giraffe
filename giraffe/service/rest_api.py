@@ -100,15 +100,28 @@ class Rest_API(object):
                 continue
         return params
 
-    def _aggregate(self, cls, aggregation, record_args):
+    def _aggregate(self, cls, aggregation, args, column="value"):
         """
         Returns an aggregation of an attribute of the given object class
         according to the 'aggregation' parameter:
-        - count: returns the number of MeterRecord objects that match the given
-        arguments
+        - count: returns the number of rows that match the args parameters.
+        - max: returns the object that contains the maximum value for "column"
+        - min: returns the object that contains the minimum value for "column"
+        - avg: returns the average for "column" of all the rows that match the
+        args parameters.
         """
         if aggregation == 'count':
-            return self.db.count(cls, record_args)
+            count = self.db.count(cls, args)
+            return int(count) if count else 0
+        elif aggregation == 'max':
+            record = self.db.max_row(cls, column, args)
+            return record.to_dict() if record else None
+        elif aggregation == 'min':
+            record = self.db.min_row(cls, column, args)
+            return record.to_dict() if record else None
+        elif aggregation == 'avg':
+            avg = self.db.avg(cls, column, args)
+            return float(avg) if avg else 0.0
         return None
 
     def route_root(self):

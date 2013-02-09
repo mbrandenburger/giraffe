@@ -6,9 +6,9 @@ In giraffe (as known from ceilometer), three type of meters are defined:
 ----------  -------------------------------------------------------------------
 Type        Definition
 ----------  -------------------------------------------------------------------
-Cumulative  Increasing over time (instance hours)
-Gauge       Discrete items (floating IPs, image uploads) 
-            and fluctuating values (disk I/O)
+Cumulative  Increasing over time (e.g., instance hours)
+Gauge       Discrete items (e.g., running instances)
+            and fluctuating values (e.g., disk I/O)
 Delta       Changing over time (bandwidth)
 ----------  -------------------------------------------------------------------
 
@@ -110,7 +110,6 @@ import sys
 import time
 from datetime import datetime
 import subprocess
-import logging
 from xml.etree import ElementTree as ETree
 
 import psutil
@@ -122,13 +121,8 @@ import libvirt
 
 from giraffe.common.task import PeriodicMeterTask
 
-
+import logging
 logger = logging.getLogger("agent.inst_meters")
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch = logging.StreamHandler()
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 
 def get_inst_ids(connection, pids=True):
@@ -205,6 +199,10 @@ class Inst_UUIDs(PeriodicInstMeterTask):
     #          Hence, rather than a list of UUIDs, a record (UNAME,
     #          timestamp,  list of UUIDs) should be returned
 
+    def __init__(self, callback, period):
+        super(Inst_UUIDs, self).__init__(callback, period)
+        self.uuid_map = {}
+
     def meter(self):
         """
         Returns a list of (UUID, timestamp, domain-state) tuples, one for each
@@ -268,27 +266,18 @@ class Inst_CPU(PeriodicInstMeterTask):
         Returns a list of (UUID, timestamp, cpu-time, cpu-time-ratio,
         cpu-percent) tuples, one for each instance running on a specific host.
         """
+        inst_ids = None
         cpu_utils = []
 
-        #@[fbahr]:
+        #@[fbahr] - TODO:
         #  - What about /proc/<pid>/stat?
         # ...
         try:
-            domains = [self.conn.lookupByID(domain_id) \
-                       for domain_id in self.conn.listDomainsID()]
-
-            # clean-up:
-            if not len(self.util_map) == len(domains):
-                util_map_keys = self.util_map.keys()
-                inst_ids = get_inst_ids(self.conn, pids=True)
-                for uuid in util_map_keys:
-                    if not uuid in inst_ids.iterkeys():
-                        del self.util_map[uuid]
+            domains = dict((self.conn.lookupByID(domain_id), None)
+                           for domain_id in self.conn.listDomainsID())
 
             for domain in domains:
                 uuid = domain.UUIDString()
-                prev_cpu_util = self.util_map.get(uuid)
-
                 infos = domain.info()
                 # ^ [0] state: one of the state values (virDomainState)
                 #   [1] maxMemory: the maximum memory used by the domain
@@ -297,9 +286,23 @@ class Inst_CPU(PeriodicInstMeterTask):
                 #   [4] cpuTime: the time used by the domain in nanoseconds
                 num_vcpus, cpu_time = infos[3], infos[4]
 
+                prev_cpu_util = self.util_map.get(uuid)
+
+                # register new instance (if/when required: i.e., inst_ids
+                # is None [get_inst_ids hasn't been called in previous
+                # iterations] *and* prev_cpu_util is None) ...
+                # ^ When prev_cpu_util is None, but inst_ids isn't,
+                #   get_inst_ids has already neen called - and inst_ids
+                #   provides all informations needed for subsequent
+                #   execution(s).
+                if not(prev_cpu_util or inst_ids):
+                    inst_ids = get_inst_ids(self.conn, pids=True)
+
                 if not prev_cpu_util:
                     process = psutil.Process(inst_ids[uuid][0])
-                    process.get_cpu_percent()
+                    process.get_cpu_percent()  # tick 0 [not to be removed!,
+                                               #         unless you really know
+                                               #         what you're doing]
                 else:
                     process = prev_cpu_util[2]
 
@@ -327,6 +330,14 @@ class Inst_CPU(PeriodicInstMeterTask):
                                   cpu_time,
                                   cpu_util,
                                   process.get_cpu_percent()))
+
+            # unregister instances after shutdown (only checked when
+            # get_inst_ids has been called - i.e., "lazy evaluation")
+            if inst_ids:
+                shutdown = [_uuid for _uuid in self.util_map \
+                            if _uuid not in inst_ids]
+                for _uuid in shutdown:
+                    del self.util_map[_uuid]
 
         except:
             # Warning! Fails silently...

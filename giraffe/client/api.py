@@ -15,8 +15,11 @@ Usage:
 
     gc.get_root()
     > "Welcome...
-    gc.get_hosts()
-    > ...
+    hosts = gc.get_hosts()
+    > (list of dicts representing host records)
+    or
+    hosts = gc.get_hosts()._as(Host)
+    > (list of Host objects)
     etc.
 
 Additional remarks:

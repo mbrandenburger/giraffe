@@ -12,7 +12,6 @@ class TestSequenceFunctions(unittest.TestCase):
 
         msg1 = BulkMessage()
         msg1.host_name = "uncinus"
-        msg1.signature = ""
 
         host_record_1 = msg1.host_records.add()
         host_record_1.meter_name = "CPU_AVG"
@@ -34,13 +33,24 @@ class TestSequenceFunctions(unittest.TestCase):
 
         ser_string = msg1.SerializeToString()
 
-        msg2 = BulkMessage()
-        msg2.ParseFromString(ser_string)
+        try:
+            msg2 = BulkMessage()
+            msg2.ParseFromString(ser_string)
 
-        self.assertEqual(msg2.host_name, "uncinus")
+            self.assertEqual(msg2.host_name, "uncinus")
 
-        for rec in msg2.host_records:
-            print rec
+            for rec in msg2.host_records:
+                print rec
+
+        except:
+            self.assertEqual(True, False)
+
+        try:
+            msg3 = BulkMessage()
+            msg3.ParseFromString("muddern")
+            self.assertEqual(True, False)
+        except:
+            self.assertEqual(True, True)
 
 
 if __name__ == '__main__':

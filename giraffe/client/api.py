@@ -1,14 +1,40 @@
 __author__ = 'fbahr'
 
-import requests  # < requests 0.14.2
+"""
+Usage:
+    from giraffe.client.api import GiraffeClient
+    gc = GiraffeClient(<auth_token>)
+    or
+    gc = GiraffeClient()
+    gc.auth_token = <auth_token>
+    or
+    gc = GiraffeClient(username=<username>, password=<password>, ...)
 
-import json
+    ^ Note that up to now, missing params [like endpoint etc.] are collected
+      from giraffe.cfg - maybe it's a good idea to omit this feature, though.
+
+    gc.get_root()
+    > "Welcome...
+    gc.get_hosts()
+    > ...
+    etc.
+
+Additional remarks:
+    In case of connection failures, a requests.exceptions.ConnectionError
+    is raised; in case of bad requests (HTTP 40x codes), a 
+    requests.exceptions.HTTPError.
+"""
+
+import requests  # < requests 0.14.2
 
 from giraffe.common.config import Config
 from giraffe.common.url_builder import URLBuilder
 from giraffe.common.auth import AuthProxy
-from giraffe.service.db import Base, Host, Meter, MeterRecord
-from giraffe.client.formatter import *
+from giraffe.service.db import Base  # .., Host, Meter, MeterRecord
+from giraffe.client.formatter import DEFAULT_FORMATTERS, FormattableObject
+
+import logging
+logger = logging.getLogger("client")
 
 
 class GiraffeClient(object):
@@ -92,12 +118,15 @@ class GiraffeClient(object):
         # end of class _ResultSet ---------------------------------------------
 
         url = URLBuilder.build(self.protocol, self.endpoint, path, params)
-        response = requests.get(url, headers=self.auth_header).json
+        logger.debug('Query: %s' % url)
+        response = requests.get(url, headers=self.auth_header)
+        logger.debug('HTTP response status code: %s' % response.status_code)
+        response.raise_for_status()
 
-        # @[fbahr] - TODO: exception handling
-        return ResultSet(response) \
-                   if isinstance(response, (tuple, list, dict)) \
-                   else response
+        return ResultSet(response.json) \
+                   if isinstance(response.json, (tuple, list, dict)) \
+                   else response.json
+        # ...was:  else response.text
 
     def get_root(self, params=None):
         """
@@ -123,10 +152,9 @@ class GiraffeClient(object):
         dicts
         """
         path = '/instances'
-        # ...
-        raise NotImplementedError()  # ._as(Instance)
+        return self._get(path, params)  # ._as(Instance)
 
-    def get_projects(self, params=None): 
+    def get_projects(self, params=None):
         """
         Returns a tuple (actually, a ResultSet instance) of
             ...

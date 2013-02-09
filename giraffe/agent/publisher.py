@@ -16,9 +16,12 @@ logger = logging.getLogger("agent")
 config = Config("giraffe.cfg")
 
 _RABBIT_HOST = config.get("rabbit", "host")
+_RABBIT_PORT = config.getint("rabbit", "port")
 _RABBIT_QUEUE = config.get("rabbit", "queue")
 _RABBIT_EXCHANGE = config.get("rabbit", "exchange")
 _RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
+_RABBIT_USER = config.get("rabbit", "user")
+_RABBIT_PASS = config.get("rabbit", "pass")
 _FLUSH_DURATION = config.getint("agent", "duration")
 _HOSTNAME = config.get("agent", "hostname")  # ...considered harmful.
 _SHARED_SECRET = config.get("agent", "shared_secret")
@@ -31,7 +34,8 @@ class AgentPublisher(threading.Thread):
         self.flush_duration = _FLUSH_DURATION
         self.stopRequest = False
         self.lock = threading.Lock()
-        self.connector = Connector(_RABBIT_HOST)
+        self.connector = Connector(_RABBIT_USER, _RABBIT_PASS, _RABBIT_HOST,
+                                   _RABBIT_PORT)
         self.queue = _RABBIT_QUEUE
         self.exchange = _RABBIT_EXCHANGE
         self.routing_key = _RABBIT_ROUTING_KEY
@@ -126,6 +130,7 @@ class AgentPublisher(threading.Thread):
             envelope.serialize_to_str())
 
     def run(self):
+        self.connector.connect()
         while self.stopRequest is False:
             time.sleep(self.flush_duration)
             self.flush()

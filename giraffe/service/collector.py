@@ -14,16 +14,20 @@ _logger = logging.getLogger("service.collector")
 config = Config("giraffe.cfg")
 
 _RABBIT_HOST = config.get("rabbit", "host")
+_RABBIT_PORT = config.getint("rabbit", "port")
 _RABBIT_QUEUE = config.get("rabbit", "queue")
 _RABBIT_EXCHANGE = config.get("rabbit", "exchange")
 _RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
+_RABBIT_USER = config.get("rabbit", "user")
+_RABBIT_PASS = config.get("rabbit", "pass")
 
 _SHARED_SECRET = config.get("collector", "shared_secret")
 
 
 class Collector(object):
     def __init__(self):
-        self.connector = Connector(_RABBIT_HOST)
+        self.connector = Connector(_RABBIT_USER, _RABBIT_PASS, _RABBIT_HOST,
+                                   _RABBIT_PORT)
         self.queue = _RABBIT_QUEUE
         self.exchange = _RABBIT_EXCHANGE
         self.routing_key = _RABBIT_ROUTING_KEY
@@ -39,6 +43,7 @@ class Collector(object):
 
     def launch(self):
         try:
+            self.connector.connect()
             self.start_collecting()
         except KeyboardInterrupt:
             _logger.info("Ctrl-c received!")

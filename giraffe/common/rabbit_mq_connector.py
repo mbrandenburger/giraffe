@@ -48,11 +48,12 @@ class BasicConsumer(object):
 
     def consume(self):
         if not self.isConsuming:
-            self.connector.getChannel().basic_consume(self._consumer_call,
+            channel = self.connector.getChannel()
+            channel.basic_consume(self._consumer_call,
                                                  no_ack=True,
                                                  queue=self.queue)
             self.isConsuming = True
-            self.connector.getChannel().start_consuming()
+            channel.start_consuming()
 
     def stop_consuming(self):
         self.connector.getChannel().stop_consuming()

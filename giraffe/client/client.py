@@ -45,11 +45,11 @@ Usage:
     also query the Giraffe API using a query URL (encoded as REST API URL path):
         -q QUERY, --query QUERY
     [Note: When using this parameter, query args/params - like `--count`,
-           `--min`, or `--max` - will be ignored; on the other hand, this 
+           `--min`, or `--max` - will be ignored; on the other hand, this
            parameter is overriden by giraffe-client command calls.]
 
     Additional configuration parameters (if not provided, information needs
-    to be stored in env. variables or in Giraffe's config file, [client] 
+    to be stored in env. variables or in Giraffe's config file, [client]
     section.)
         -u USERNAME, --username USERNAME
         -p PASSWORD, --password PASSWORD
@@ -72,13 +72,14 @@ __date__    = '2013-02-07'
 from cement.core import foundation, controller  # < cement 2.0.2
 import requests                                 # < requests 0.14.2
 import os
+import inspect
 # import matplotlib.pyplot as plt
 # import matplotlib.dates as mdates
 # import matplotlib.cbook as cbook
 from giraffe.client.api import GiraffeClient
-from giraffe.client.formatter import * 
+from giraffe.client.formatter import Text, \
+                                     JsonFormatter, CsvFormatter, TabFormatter
 from giraffe.common.config import Config
-from giraffe.common.url_builder import URLBuilder
 from giraffe.common.auth import AuthProxy
 
 import logging
@@ -93,20 +94,19 @@ class BaseController(controller.CementBaseController):
 #   def __init__(self, *args, **kwargs):
 #       super(BaseController, self).__init__(args, kwargs)
 
-
     class Meta:
         """
         Model that acts as a container for the controller's meta-data.
         """
 
-        label       = 'base'
+        label = 'base'
         description = 'Command-line interface to the Giraffe API.'
 
-        _config     = Config('giraffe.cfg')
+        _config = Config('giraffe.cfg')
 
         # command line arguments
         # ! Warning: os.getenv over config.get, i.e., environment variables
-        #            override params defined in giraffe.cfg 
+        #            override params defined in giraffe.cfg
         arguments = [
             # -----------------------------------------------------------------
             (['--host'], \
@@ -200,9 +200,13 @@ class BaseController(controller.CementBaseController):
 
 
     def _client(self):
-        _kwargs = dict((k,v) for (k,v) in self.pargs._get_kwargs())
-        auth_token = AuthProxy.get_token(credentials=_kwargs)
-        return GiraffeClient(auth_token)
+        #@[fbahr]: `dirty` hack, getting dict instance from self.pargs
+        _kwargs = dict((k, v) for (k, v) in self.pargs._get_kwargs())
+        return GiraffeClient(auth_token=AuthProxy.get_token(credentials=_kwargs))
+
+    def _exec_context(self):
+        outerframe = inspect.getouterframes(inspect.currentframe())[-1]
+        return os.path.basename(outerframe[1])
 
     def _params(self):
         params = {}
@@ -237,100 +241,112 @@ class BaseController(controller.CementBaseController):
             items = result._as(Text, formatter=self._formatter())
             print '\n', '\n'.join(items), '\n'
         except:
+            # type(result) is unicode
             print '\n', result, '\n'
+
+    def _except(self, exc):
+        if isinstance(exc, (requests.exceptions.HTTPError)):
+            print '%s:' % self._exec_context(), 'Bad request: %s' % exc
+
+        elif isinstance(exc, (requests.exceptions.ConnectionError)):
+            print '%s:' % self._exec_context(), exc
+
+        else:
+            print '\n'.join(['usage: %s' % self._usage_text, \
+            #                '%s' % exc, \
+                             'Try "%s --help" for help on ' \
+                             'specific commands.' % self._exec_context()])
 
     @controller.expose(hide=True)
     def default(self):
-        url = None
-        status_code = None
-
         try:
             if not self.pargs.query:
-                raise Exception('Query parameter missing.')
-
-            url = URLBuilder.build(endpoint=self.pargs.endpoint,
-                                   path=self.pargs.query)
-
-            logger.debug('Query: %s' % url)
-
-            #@[fbahr]: dirty hack, getting dict instance from self.pargs
-            _kwargs = dict((k,v) for (k,v) in self.pargs._get_kwargs())
-            auth_token = AuthProxy.get_token(credentials=_kwargs)
-
-            auth_header = dict([('X-Auth-Token', auth_token)])
-            result = requests.get(url, headers=auth_header)
-
-            status_code = result.status_code
-            logger.debug('HTTP response status code: %s' % status_code)
-
-            result.raise_for_status()
-
-            self._display(result.json if result.json else result.text)
-
-        except requests.exceptions.HTTPError:
-            # @[fbahr]: What if... server down?
-            print '\nBad request [HTTP %s]: %s' % (status_code, url)
-
-        except:
-            # @fbahr: dirty hack...
-            help_text = []
-            help_text.append('usage: ' + self._usage_text)
-            help_text.append('Try "client.py [./start_client.sh, resp.]'
-                             '  --help" for help on specific commands.\n')
-            print '\n'.join(help_text)
+                raise Exception()
+            #   ^     Exception('error: query [-q/--query ...] not specified')
+            result = self._client()._get(self.pargs.query)
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose()
     def hosts(self):
-        result = self._client().get_hosts(self._params())
-        self._display(result)
+        try:
+            result = self._client().get_hosts(self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose()
     def instances(self):
-        result = self._client().get_instances(self._params())
-        self._display(result)
+        try:
+            result = self._client().get_instances(self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose()
     def projects(self):
-        result = self._client().get_projects(self._params())
-        self._display(result)
+        try:
+            result = self._client().get_projects(self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose()
     def users(self):
-        result = self._client().get_users(self._params())
-        self._display(result)
+        try:
+            result = self._client().get_users(self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose()
     def meters(self):
-        result = self._client().get_meters(self._params())
-        self._display(result)
+        try:
+            result = self._client().get_meters(self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose()
     def host_meter(self):
-        result = self._client().get_host_meter_records( \
-                                    self.pargs.host, self.pargs.meter, \
-                                    self._params())
-        self._display(result)
+        try:
+            result = self._client().get_host_meter_records( \
+                                        self.pargs.host, self.pargs.meter, \
+                                        self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose(aliases=['instance-meter'])
     def inst_meter(self):
-        result = self._client().get_inst_meter_records( \
-                                    self.pargs.instance, self.pargs.meter, \
-                                    self._params())
-        self._display(result)
+        try:
+            result = self._client().get_inst_meter_records( \
+                                        self.pargs.instance, self.pargs.meter, \
+                                        self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose(aliases=['project-meter'])
     def proj_meter(self):
-        result = self._client().get_proj_meter_records( \
-                                    self.pargs.project, self.pargs.meter, \
-                                    self._params())
-        self._display(result)
+        try:
+            result = self._client().get_proj_meter_records( \
+                                        self.pargs.project, self.pargs.meter, \
+                                        self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
     @controller.expose()
     def user_meter(self):
-        result = self._client().get_user_meter_records( \
-                                    self.pargs.user, self.pargs.meter, \
-                                    self._params())
-        self._display(result)
+        try:
+            result = self._client().get_user_meter_records( \
+                                        self.pargs.user, self.pargs.meter, \
+                                        self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
 
 
 class GiraffeClientApp(foundation.CementApp):

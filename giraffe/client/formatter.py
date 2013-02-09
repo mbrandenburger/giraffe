@@ -1,7 +1,6 @@
 __author__ = 'fbahr'
 
 import json
-from datetime import datetime
 # from prettytable import PrettyTable
 
 from giraffe.service.db import Base, Host, Meter, MeterRecord
@@ -67,16 +66,21 @@ class JsonFormatter(Formatter):
 class CsvFormatter(Formatter):
     @staticmethod
     def serialize(message):
-        UNIX_EPOCH = datetime(1970, 1, 1, 0, 0)
-        row = []
-        for key, val in message.iteritems():
-            if key == 'timestamp':
-                dt = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
-                delta = UNIX_EPOCH - dt
-                val = - delta.days * 24 * 3600 + delta.seconds
-            row.append(str(val))
+        if isinstance(message, (dict)):
+        #   UNIX_EPOCH = datetime(1970, 1, 1, 0, 0)
+        #   for key, val in message.iteritems():
+        #       if key == 'timestamp':
+        #           dt = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
+        #           delta = UNIX_EPOCH - dt
+        #           val = - delta.days * 24 * 3600 + delta.seconds
+        #       row.append(val)
+            return '\t'.join(message.values())
 
-        return '\t'.join(row)
+        elif isinstance(message, (tuple, list)):
+            return '\t'.join(message)
+
+        else:
+            return message
 
 
 class TabFormatter(Formatter):

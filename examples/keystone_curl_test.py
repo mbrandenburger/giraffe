@@ -2,7 +2,7 @@ __author__ = 'marcus'
 
 import requests
 import simplejson as json
-import keystoneclient.middleware.auth_token as auth
+import keystone.middleware.auth_token as auth
 
 
 USERNAME = ''
@@ -17,8 +17,8 @@ auth_url = 'http://cloud2.ibr.cs.tu-bs.de:35357/v2.0/tokens'
 auth_header = {'Content-type': 'application/json'}
 auth_data = {'auth':
                  {'passwordCredentials':
-                      {'username': USERNAME,
-                       'password': PASSWORD}
+                      {'username': 'fbahr',     #@USERNAME
+                       'password': 'Umaibee8'}  #@PASSWORD
                  }
             }
 r = requests.post(url=auth_url, data=json.dumps(auth_data, indent=4),
@@ -42,7 +42,7 @@ print json.dumps(r.json, indent=4)
 auth_url = 'http://cloud2.ibr.cs.tu-bs.de:35357/v2.0/tokens'
 auth_header = {'Content-type': 'application/json'}
 auth_data = {'auth':
-                 {'tenantName': TENANT,
+                 {'tenantName': 'users',
                   'token': {'id': unscoped_token}
                  }
             }
@@ -57,7 +57,7 @@ token = str(parsed_data['access']['token']['id'])
     check token
 """
 auth_url = 'http://cloud2.ibr.cs.tu-bs.de:35357/v2.0/tokens/' + token
-auth_header = {'X-Auth-Token': ADMIN_TOKEN}
+auth_header = {'X-Auth-Token': 'admin'}
 r = requests.get(url=auth_url, headers=auth_header)
 print r.text
 print json.dumps(r.json, indent=4)

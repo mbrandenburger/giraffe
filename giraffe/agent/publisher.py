@@ -42,10 +42,12 @@ class AgentPublisher(threading.Thread):
         self.producer = BasicProducer(self.connector, self.exchange)
         self.envelope = self._build_message()
 
-    def _timestamp_now(self, datetime_now=datetime.now()):
+    def _timestamp_now(self, datetime_now=None):
         """
         Returns current system time as formatted string "%Y-%m-%d %H:%M:%S"
         """
+        if not datetime_now:
+            datetime_now = datetime.now()
         return datetime_now.strftime("%Y-%m-%d %H:%M:%S")
 
     def _build_message(self):

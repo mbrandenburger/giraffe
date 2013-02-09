@@ -94,56 +94,55 @@ class Collector(object):
         else:
             host = hosts[0]
 
+        # insert all host records
+        for r in message.host_records:
+            if r.meter_name not in meter_dict:
+                _logger.warning('Unknown meter_name "%s"' % r.meter_name)
+                continue
+            try:
+                record = MeterRecord(meter_id=meter_dict[r.meter_name].id,
+                                     host_id=host.id,
+                                     user_id=None,
+                                     resource_id=None,
+                                     project_id=None,
+                                     value=r.value,
+                                     duration=r.duration,
+                                     timestamp=r.timestamp)
+                self.db.save(record)
+                _logger.debug("New %s" % record)
+                # update host activity
+                record_timestamp = self._str_to_datetime(r.timestamp)
+                if not host.activity or record_timestamp > host.activity:
+                    host.activity = record_timestamp
+            except Exception as e:
+                _logger.exception(e)
+
+        # insert all instance records
+        for r in message.inst_records:
+            if r.meter_name not in meter_dict:
+                _logger.warning('Unknown meter_name "%s"' % r.meter_name)
+                continue
+            try:
+                record = MeterRecord(meter_id=meter_dict[r.meter_name].id,
+                                     host_id=host.id,
+                                     user_id=r.user_id,
+                                     resource_id=r.inst_id,
+                                     project_id=r.project_id,
+                                     value=r.value,
+                                     duration=r.duration,
+                                     timestamp=r.timestamp)
+                self.db.save(record)
+                _logger.debug("New %s" % record)
+                # update host activity
+                record_timestamp = self._str_to_datetime(r.timestamp)
+                if not host.activity or record_timestamp > host.activity:
+                    host.activity = record_timestamp
+            except Exception as e:
+                _logger.exception(e)
+
         try:
-            # insert all host records
-            for r in message.host_records:
-                if r.meter_name not in meter_dict:
-                    _logger.debug('WARNING: unknown meter_name "%s"' %
-                                 r.meter_name)
-                    continue
-                try:
-                    record = MeterRecord(meter_id=meter_dict[r.meter_name].id,
-                                         host_id=host.id,
-                                         user_id=None,
-                                         resource_id=None,
-                                         project_id=None,
-                                         value=r.value,
-                                         duration=r.duration,
-                                         timestamp=r.timestamp)
-                    self.db.save(record)
-                    _logger.debug("Message from %s: %s" % (host.name, record))
-                    # update host activity
-                    record_timestamp = self._str_to_datetime(r.timestamp)
-                    if not host.activity or record_timestamp > host.activity:
-                        host.activity = record_timestamp
-                except Exception as e:
-                    _logger.exception(e)
-
-            # insert all instance records
-            for r in message.inst_records:
-                if r.meter_name not in meter_dict:
-                    _logger.debug('WARNING: unknown meter_name "%s"' %
-                                 r.meter_name)
-                    continue
-                try:
-                    record = MeterRecord(meter_id=meter_dict[r.meter_name].id,
-                                         host_id=host.id,
-                                         user_id=r.user_id,
-                                         resource_id=r.inst_id,
-                                         project_id=r.project_id,
-                                         value=r.value,
-                                         duration=r.duration,
-                                         timestamp=r.timestamp)
-                    self.db.save(record)
-                    _logger.debug("Message from %s: %s" % (host.name, record))
-                    # update host activity
-                    record_timestamp = self._str_to_datetime(r.timestamp)
-                    if not host.activity or record_timestamp > host.activity:
-                        host.activity = record_timestamp
-                except Exception as e:
-                    _logger.exception(e)
-
             self.db.commit()
-            self.db.session_close()
         except Exception as e:
+            self.db.rollback()
             _logger.exception(e)
+        self.db.session_close()

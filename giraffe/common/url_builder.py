@@ -1,7 +1,7 @@
 class URLBuilder(object):
 
     @staticmethod
-    def build(protocol='http', endpoint, path, params=None):
+    def build(protocol='http', endpoint='127.0.0.1', path='/', params=None):
         """
         Aux function to build a URL (string) from protocol, endpoint, path,
         and parameters.

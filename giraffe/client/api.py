@@ -1,12 +1,43 @@
 __author__ = 'fbahr'
 
+"""
+Usage:
+    from giraffe.client.api import GiraffeClient
+    gc = GiraffeClient(<auth_token>)
+    or
+    gc = GiraffeClient()
+    gc.auth_token = <auth_token>
+    or
+    gc = GiraffeClient(username=<username>, password=<password>, ...)
+
+    ^ Note that up to now, missing params [like endpoint etc.] are collected
+      from giraffe.cfg - maybe it's a good idea to omit this feature, though.
+
+    gc.get_root()
+    > "Welcome...
+    hosts = gc.get_hosts()
+    > (list of dicts representing host records)
+    or
+    hosts = gc.get_hosts()._as(Host)
+    > (list of Host objects)
+    etc.
+
+Additional remarks:
+    In case of connection failures, a requests.exceptions.ConnectionError
+    is raised; in case of bad requests (HTTP 40x codes), a 
+    requests.exceptions.HTTPError.
+"""
+
 import requests  # < requests 0.14.2
 
 from giraffe.common.config import Config
 from giraffe.common.url_builder import URLBuilder
 from giraffe.common.auth import AuthProxy
-from giraffe.service.db import Base, Host, Meter, MeterRecord
-from giraffe.client.formatter import *
+from giraffe.service.db import Base  # .., Host, Meter, MeterRecord
+from giraffe.client.formatter import DEFAULT_FORMATTERS, FormattableObject
+
+import logging
+logger = logging.getLogger("client")
 
 
 class GiraffeClient(object):
@@ -16,28 +47,66 @@ class GiraffeClient(object):
         #              password=None, \
         #              tenant_name=None, \
         #              tenant_id=None, \
+        #              protocol=None, \
+        #              endpoint=None, \
+        #              auth_url=None, \
                        **kwargs):
-        self.auth_url = kwargs.get('auth_url',
-                                   self.config.get('client', 'auth_url'))
+        """
+        Creates a new GiraffeClient instance:
+        - if auth_token is not None, auth_token is used to authenticate
+          client requests
+        - alternatively, credentials (username, password, tenant_id, etc.)
+          to be used to authenticate client requests can be passed to
+          __init__() via named parameters
+        - right now, also a fallback to giraffe.cfg is implemented (but not
+          to env. variables)
+        """
+
+        self.config = Config('giraffe.cfg')
+
         if not auth_token:
-            auth_token = AuthProxy.get_token(username=kwargs.get('username'),
-                                             password=kwargs.get('password'),
-                                             tenant_name=kwargs.get('tenant_name'),
-                                             tenant_id=kwargs.get('tenant_id'),
-                                             auth_url=self.auth_url)
-        self.auth_header = dict(('X-Auth-Token', auth_token))
+            _username = kwargs.get('username',
+                                   self.config.get('client', 'user'))
+            _password = kwargs.get('password',
+                                   self.config.get('client', 'pass'))
+            _tenant_name = kwargs.get('tenant_name',
+                                      self.config.get('client', 'tenant_name'))
+            _tenant_id = kwargs.get('tenant_id',
+                                    self.config.get('client', 'tenant_id'))
+            _auth_url = kwargs.get('auth_url',
+                                   self.config.get('client', 'auth_url'))
+            auth_token = AuthProxy.get_token(username=_username,
+                                             password=_password,
+                                             tenant_name=_tenant_name,
+                                             tenant_id=_tenant_id,
+                                             auth_url=_auth_url)
+
+        self.auth_header = dict([('X-Auth-Token', auth_token)])
+        #@[fbahr] - TODO: Exception handling
+
         self.protocol = kwargs.get('protocol', 'http')
-        host = kwargs.get('host', self.config.get('client', 'host'))
-        port = kwargs.get('port', self.config.get('client', 'port'))
-        self.endpoint = ':'.join((host, port))
+        self.endpoint = kwargs.get('endpoint')
+        if not self.endpoint:
+            host = kwargs.get('host', self.config.get('client', 'host'))
+            port = kwargs.get('port', self.config.get('client', 'port'))
+            self.endpoint = ':'.join((host, port))
+
+    @property
+    def auth_token(self):
+        return self.auth_header['X-Auth-Token']
+
+    @auth_token.setter
+    def auth_token(self, auth_token):
+        self.auth_header['X-Auth-Token'] = auth_token
 
     def _get(self, path, params=None):
         # ---------------------------------------------------------------------
         class ResultSet(tuple):
             def __new__(cls, first=(), *next):
-                if not isinstance(first, (tuple)) or len(next) > 0:
-                    first = (first, )
-                return tuple.__new__(cls, first + next)
+                if isinstance(first, (list)) and not next:
+                    return tuple.__new__(cls, tuple(first))
+                else:
+                    return tuple.__new__(cls, (first, ) + next)
 
             def _as(self, cls, **kwargs):
                 if not issubclass(cls, (Base, FormattableObject)):
@@ -52,11 +121,22 @@ class GiraffeClient(object):
         # end of class _ResultSet ---------------------------------------------
 
         url = URLBuilder.build(self.protocol, self.endpoint, path, params)
-        response = requests.get(url, headers=self.auth_header).json
-        # @[fbahr] - TODO: exception handling
-        return ResultSet(response) \
-                   if isinstance(response, (tuple, list, dict)) \
-                   else response
+        logger.debug('Query: %s' % url)
+        response = requests.get(url, headers=self.auth_header)
+        logger.debug('HTTP response status code: %s' % response.status_code)
+        response.raise_for_status()
+
+        return ResultSet(response.json) \
+                   if isinstance(response.json, (tuple, list, dict)) \
+                   else response.json
+        # ...was:  else response.text
+
+    def get_root(self, params=None):
+        """
+        Welcome ...
+        """
+        path = '/'
+        return self._get(path, None)
 
     def get_hosts(self, params=None):
         """
@@ -75,10 +155,9 @@ class GiraffeClient(object):
         dicts
         """
         path = '/instances'
-        # ...
-        raise NotImplementedError()  # ._as(Instance)
+        return self._get(path, params)  # ._as(Instance)
 
-    def get_projects(self, params=None): 
+    def get_projects(self, params=None):
         """
         Returns a tuple (actually, a ResultSet instance) of
             ...
@@ -144,7 +223,7 @@ class GiraffeClient(object):
             { see GiraffeClient::get_host_meter_records }
         dicts
         """
-        path = '/'.join(['/projects', host, 'meters', meter])
+        path = '/'.join(['/projects', proj, 'meters', meter])
         # ...
         raise NotImplementedError()  # ._as(MeterRecord)
 

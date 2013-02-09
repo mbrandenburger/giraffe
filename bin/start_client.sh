@@ -29,7 +29,7 @@ if __name__ == '__main__':
     logger.addHandler(ch)
     logger.addHandler(fh)
 
-    logger.info("Starting Giraffe Client")
+    logger.debug("Starting Giraffe Client")
 
     # creating a client
     app = client.GiraffeClientApp()
@@ -38,8 +38,8 @@ if __name__ == '__main__':
         # setting up the application
         app.setup()
         app.run()
-    except Exception:
-        logger.exception(('Failed to load %s') % 'Client')
+    except Exception:  # (.., SystemExit)
+        logger.debug(('Failed to load %s') % 'Client')
     finally:
         # closing the application
         app.close()

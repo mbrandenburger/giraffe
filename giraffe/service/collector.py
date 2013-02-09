@@ -69,7 +69,12 @@ class Collector(object):
 
     def _collector_callback(self, params):
         envelope = EnvelopeAdapter()
-        envelope.deserialize_from_str(params)
+
+        # check whether incorrectly formatted message
+        try:
+            envelope.deserialize_from_str(params)
+        except:
+            return
 
         message = MessageAdapter(envelope.message)
         # validate signature

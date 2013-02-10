@@ -13,13 +13,15 @@ Usage:
         projects
         users
 
+        show-host
+
         host-meter
         inst-meter (alias: instance-meter)
         proj-meter (alias: project-meter)
         user-meter
 
     Required parameters (PARAM) [in combination with certain commands]:
-        --host HOST          (required with 'host-meter')
+        --host HOST          (required with 'show-host' and 'host-meter')
         --instance INSTANCE  (required with 'inst-meter')
         --project PROJECT    (required with 'proj-meter')
         --user USER          (required with 'user-meter')
@@ -92,7 +94,7 @@ class BaseController(controller.CementBaseController):
     """
 
 #   def __init__(self, *args, **kwargs):
-#       super(BaseController, self).__init__(args, kwargs)
+#       super(BaseController, self).__init__(*args, **kwargs)
 
     class Meta:
         """
@@ -264,6 +266,7 @@ class BaseController(controller.CementBaseController):
                 raise Exception()
             #   ^     Exception('error: query [-q/--query ...] not specified')
             result = self._client()._get(self.pargs.query)
+            logger.debug('COOL? > %s' % str(result))
             self._display(result)
         except Exception as e:
             self._except(e)
@@ -272,6 +275,14 @@ class BaseController(controller.CementBaseController):
     def hosts(self):
         try:
             result = self._client().get_hosts(self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
+
+    @controller.expose()
+    def show_host(self):
+        try:
+            result = self._client().get_host(self.pargs.host, self._params())
             self._display(result)
         except Exception as e:
             self._except(e)
@@ -355,7 +366,7 @@ class GiraffeClientApp(foundation.CementApp):
         base_controller = BaseController()
 
     def __init__(self, **kwargs):
-        super(GiraffeClientApp, self).__init__(kwargs)
+        super(GiraffeClientApp, self).__init__(**kwargs)
 
 
 def main():

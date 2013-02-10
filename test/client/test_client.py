@@ -58,27 +58,36 @@ class ClientTestCases(unittest.TestCase):
         meter_records = self.gc.get_inst_meter_records( \
                                     inst=uuid,
                                     meter="inst.uptime")
-                                    # tuple (ResultSet) of dicts
+                                    # ^ tuple (ResultSet) of dicts
         self.assertTrue(meter_records)
         self.assertTrue(isinstance(meter_records, (tuple)))
 
         meter_records = meter_records._as(MeterRecord)
-                                    # tuple of MeterRecord objects
+                                    # ^ tuple of MeterRecord objects
         self.assertTrue(meter_records)
         for mr in meter_records:
             self.assertEqual(mr.resource_id, uuid)
             self.assertTrue(isinstance(mr, (MeterRecord)))
 
+    def test_avg_inst_meter_records(self):
+        uuid = 'd2b24038-9dee-45d3-876f-d736ddd02d84'
+
+        avg = self.gc.get_inst_meter_records( \
+                          inst=uuid, \
+                          meter="inst.uptime", \
+                          params={'aggregation': 'avg'}) # float
+        self.assertTrue(isinstance(avg, (float)))
+
     def test_get_host_meter_records(self):
         meter_records = self.gc.get_host_meter_records( \
                                     host='uncinus',
                                     meter="host.loadavg_15m")
-                                    # tuple (ResultSet) of dicts
+                                    # ^ tuple (ResultSet) of dicts
         self.assertTrue(meter_records)
         self.assertTrue(isinstance(meter_records, (tuple)))
 
         meter_records = meter_records._as(MeterRecord)
-                                    # tuple of MeterRecord objects
+                                    # ^ tuple of MeterRecord objects
         self.assertTrue(meter_records)
         for mr in meter_records:
             self.assertTrue(isinstance(mr, (MeterRecord)))
@@ -96,7 +105,7 @@ class ClientTestCases(unittest.TestCase):
                             host='uncinus', \
                             meter="host.loadavg_15m", \
                             params={'aggregation': 'count'})
-                            # int
+                            # ^ int
         self.assertFalse(isinstance(count, (tuple)))
         self.assertTrue(isinstance(count, (int)))
 
@@ -108,7 +117,7 @@ class ClientTestCases(unittest.TestCase):
                             host='uncinus', \
                             meter="host.loadavg_15m", \
                             params={'aggregation': 'count'})
-                            # int
+                            # ^ int
         self.assertFalse(isinstance(count, (tuple)))
         self.assertTrue(isinstance(count, (int)))
 
@@ -120,7 +129,7 @@ class ClientTestCases(unittest.TestCase):
                             params={'start_time': start_time, \
                                     'end_time': end_time, \
                                     'aggregation': 'count'})
-                                    # int
+                                    # ^ int
         self.assertFalse(isinstance(count, (tuple)))
         self.assertTrue(isinstance(count, (int)))
 
@@ -130,7 +139,8 @@ class ClientTestCases(unittest.TestCase):
         _min = self.gc.get_host_meter_records( \
                            host='uncinus', \
                            meter="host.loadavg_15m", \
-                           params={'aggregation': 'min'})  # tuple (ResultSet) of dicts
+                           params={'aggregation': 'min'}) \
+                           # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(_min, (tuple)))
         self.assertTrue(len(_min) == 1)
         _min = _min._as(MeterRecord)[0]  # MeterRecord object
@@ -139,7 +149,8 @@ class ClientTestCases(unittest.TestCase):
         _max = self.gc.get_host_meter_records( \
                           host='uncinus', \
                           meter="host.loadavg_15m", \
-                          params={'aggregation': 'max'})  # tuple (ResultSet) of dicts
+                          params={'aggregation': 'max'}) \
+                          # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(_max, (tuple)))
         self.assertTrue(len(_max) == 1)
         _max = _max._as(MeterRecord)[0]  # MeterRecord object
@@ -169,7 +180,7 @@ class ClientTestCases(unittest.TestCase):
                                     params={'start_time': start_time, \
                                             'end_time': end_time, \
                                             'order': 'asc'})
-                                    # tuple (ResultSet) of dicts
+                                    # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(meter_records, (tuple)))
         meter_records = meter_records._as(MeterRecord)
         for mr in meter_records:
@@ -187,7 +198,7 @@ class ClientTestCases(unittest.TestCase):
                                     params={'start_time': start_time, \
                                             'end_time': end_time, \
                                             'order': 'desc'})
-                                    # tuple (ResultSet) of dicts
+                                    # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(meter_records, (tuple)))
         meter_records = meter_records._as(MeterRecord)
         for mr in meter_records:
@@ -235,7 +246,6 @@ class ClientTestCases(unittest.TestCase):
                               params={'aggregation': 'max'}) # tuple (ResultSet) of dicts
         self.assertTrue(len(abs_max) == 1)
         abs_max = abs_max._as(MeterRecord)[0]  # MeterRecord object
-        # print abs_max.value, abs_max
 
         for _, endtime in end_time.iteritems():
             rel_max = self.gc.get_host_meter_records( \
@@ -243,12 +253,11 @@ class ClientTestCases(unittest.TestCase):
                                   meter="host.loadavg_15m", \
                                   params={'start_time': start_time, \
                                           'end_time': endtime, \
-                                          'aggregation': 'max'})  # tuple (ResultSet) of dicts
+                                          'aggregation': 'max'}) \
+                                  # ^ tuple (ResultSet) of dicts
             if isinstance(rel_max, (tuple)):
                 self.assertTrue(len(rel_max) == 1)
                 rel_max = rel_max._as(MeterRecord)[0]  # MeterRecord object
-                # print rel_max.value, rel_max
-                # print abs_max.value, '>=', rel_max.value
                 self.assertGreaterEqual(abs_max.value, rel_max.value)
             else:
                 self.assertIsNone(rel_max)

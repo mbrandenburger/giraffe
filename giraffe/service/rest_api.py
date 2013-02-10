@@ -241,13 +241,20 @@ class Rest_API(object):
 
     def route_hosts_hid(self, host_id, query_string):
         """
+        Returns the Host object where the host_id matches. The host_id can be
+        the ID (int) or the NAME (string).
+
         Route: hosts/<host_id>
         Returns: Host object, JSON-formatted
         Query params: -
         """
         #query = self._query_params(query_string)
+        try:
+            args = {'id': int(host_id)}
+        except ValueError:
+            args = {'name': host_id}
         self.db.session_open()
-        host = self.db.load(Host, args={'id': host_id}, limit=1)
+        host = self.db.load(Host, args=args, limit=1)
         self.db.session_close()
         return host[0].to_dict() if host else None
 

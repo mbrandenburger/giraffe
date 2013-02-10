@@ -237,7 +237,7 @@ class Rest_API(object):
                                   order=query[self.PARAM_ORDER])
             result = json.dumps([meter.to_dict() for meter in meters])
         self.db.session_close()
-        return str(result)
+        return result
 
     def route_hosts_hid(self, host_id, query_string):
         """
@@ -256,7 +256,7 @@ class Rest_API(object):
         self.db.session_open()
         host = self.db.load(Host, args=args, limit=1)
         self.db.session_close()
-        return host[0].to_dict() if host else None
+        return json.dumps(host[0].to_dict()) if host else None
 
     def route_hosts_hid_meters_mid(self, host_id,
                                    meter_id,

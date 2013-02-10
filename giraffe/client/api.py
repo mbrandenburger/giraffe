@@ -24,7 +24,7 @@ Usage:
 
 Additional remarks:
     In case of connection failures, a requests.exceptions.ConnectionError
-    is raised; in case of bad requests (HTTP 40x codes), a 
+    is raised; in case of bad requests (HTTP 40x codes), a
     requests.exceptions.HTTPError.
 """
 
@@ -109,6 +109,11 @@ class GiraffeClient(object):
                     return tuple.__new__(cls, (first, ) + next)
 
             def _as(self, cls, **kwargs):
+                """
+                Returns a tuple of cls-serialized representations of
+                ResultSet elements; cls is supposed to be a db.Base or
+                formatter.FormattableObject subclass.
+                """
                 if not issubclass(cls, (Base, FormattableObject)):
                     raise TypeError('Expects FormattableObject.')
 

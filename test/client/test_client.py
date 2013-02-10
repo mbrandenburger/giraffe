@@ -42,6 +42,18 @@ class ClientTestCases(unittest.TestCase):
         for h in hosts:
             self.assertTrue(isinstance(h, (Host)))
 
+    def test_get_host_by_id(self):
+        # _host_id = 'uncinus'
+        _host_id = '600'
+
+        host = self.gc.get_host(host_id=_host_id)
+        self.assertIsNotNone(host)
+        self.assertTrue(isinstance(host, (tuple)))
+
+        host = host._as(Host)  # Host object
+        self.assertTrue(host)
+        self.assertTrue(isinstance(host[0], (Host)))
+
     def test_get_meters(self):
         meters = self.gc.get_meters()  # tuple (ResultSet) of dicts
         self.assertTrue(meters)

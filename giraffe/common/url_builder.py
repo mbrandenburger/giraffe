@@ -12,8 +12,8 @@ class URLBuilder(object):
                                        for k, v in params.iteritems() if v])
         return url
 
-    @staticmethod
-    def build_path(*path):
-        path = '/'.join([section if section else 'UNDEFINED' \
-                         for section in path])
-        return path
+    # @staticmethod
+    # def build_path(**path):
+    #    path = '/'.join([section if section else 'UNDEFINED' \
+    #                     for section in path])
+    #    return path

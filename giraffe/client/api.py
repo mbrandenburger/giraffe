@@ -38,6 +38,11 @@ from giraffe.client.formatter import DEFAULT_FORMATTERS, FormattableObject
 
 import logging
 logger = logging.getLogger("client")
+# logger.setLevel(logging.DEBUG)
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# ch = logging.StreamHandler()
+# ch.setFormatter(formatter)
+# logger.addHandler(ch)
 
 
 class GiraffeClient(object):
@@ -151,6 +156,15 @@ class GiraffeClient(object):
         dicts
         """
         path = '/hosts'
+        return self._get(path, params)  # ._as(Host)
+
+    def get_host(self, host_id, params=None):
+        """
+        WARNING: get_host - like every other API method - returns a _tuple_
+          (ResultSet), despite containing only a single element; the same
+          applies to ResultSet::_as().
+        """
+        path = '/'.join(['/hosts', host_id])
         return self._get(path, params)  # ._as(Host)
 
     def get_instances(self, params=None):

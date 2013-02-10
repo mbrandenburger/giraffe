@@ -8,7 +8,7 @@ from giraffe.service.db import Host, Meter, MeterRecord
 from giraffe.service.db import MIN_TIMESTAMP, MAX_TIMESTAMP
 
 
-_logger = logging.getLogger("service.collector")
+_logger = logging.getLogger("service.rest_api")
 _config = Config("giraffe.cfg")
 
 
@@ -239,14 +239,17 @@ class Rest_API(object):
         self.db.session_close()
         return str(result)
 
-    def route_hosts_hid(self):
+    def route_hosts_hid(self, host_id, query_string):
         """
         Route: hosts/<host_id>
-        Returns: List of MeterRecord objects, JSON-formatted
+        Returns: Host object, JSON-formatted
         Query params: -
         """
-        raise NotImplementedError(
-            "The route \"hosts/<host_id>\" is not implemented yet")
+        #query = self._query_params(query_string)
+        self.db.session_open()
+        host = self.db.load(Host, args={'id': host_id}, limit=1)
+        self.db.session_close()
+        return host[0].to_dict() if host else None
 
     def route_hosts_hid_meters_mid(self, host_id,
                                    meter_id,

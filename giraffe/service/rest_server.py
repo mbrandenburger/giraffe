@@ -4,6 +4,7 @@ from flask import Flask, Response, request
 
 _logger = logging.getLogger("service.rest_server")
 
+
 class Rest_Server():
 
     def start(self):
@@ -19,7 +20,6 @@ class Rest_Server():
         self.request = None
         self.app.wsgi_app = auth_token.AuthProtocol(self.app.wsgi_app, conf)
 
-
         @self.app.route('/')
         def root():
             result = self.rest_api.route_root()
@@ -34,6 +34,16 @@ class Rest_Server():
             result = self.rest_api.route_hosts(request.query_string)
             if result is None:
                 return Response(response='hosts not available', status=404)
+            return str(result)
+
+        @self.app.route('/hosts/<host_id>')
+        @self.app.route('/hosts/<host_id>/')
+        #requires_auth
+        def hosts_hid(host_id):
+            result = self.rest_api.route_hosts_hid(host_id,
+                                                   request.query_string)
+            if result is None:
+                return Response(response='host not available', status=404)
             return str(result)
 
         @self.app.route('/projects')

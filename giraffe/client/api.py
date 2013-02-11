@@ -18,7 +18,7 @@ Usage:
     hosts = gc.get_hosts()
     > (list of dicts representing host records)
     or
-    hosts = gc.get_hosts()._as(Host)
+    hosts = gc.get_hosts().as_(Host)
     > (list of Host objects)
     etc.
 
@@ -113,7 +113,7 @@ class GiraffeClient(object):
                 else:
                     return tuple.__new__(cls, (first, ) + next)
 
-            def _as(self, cls, **kwargs):
+            def as_(self, cls, **kwargs):
                 """
                 Returns a tuple of cls-serialized representations of
                 ResultSet elements; cls is supposed to be a db.Base or
@@ -156,16 +156,16 @@ class GiraffeClient(object):
         dicts
         """
         path = '/hosts'
-        return self._get(path, params)  # ._as(Host)
+        return self._get(path, params)  # .as_(Host)
 
     def get_host(self, host_id, params=None):
         """
         WARNING: get_host - like every other API method - returns a _tuple_
           (ResultSet), despite containing only a single element; the same
-          applies to ResultSet::_as().
+          applies to ResultSet::as_().
         """
         path = '/'.join(['/hosts', host_id])
-        return self._get(path, params)  # ._as(Host)
+        return self._get(path, params)  # .as_(Host)
 
     def get_instances(self, params=None):
         """
@@ -174,7 +174,7 @@ class GiraffeClient(object):
         dicts
         """
         path = '/instances'
-        return self._get(path, params)  # ._as(Instance)
+        return self._get(path, params)  # .as_(Instance)
 
     def get_projects(self, params=None):
         """
@@ -184,7 +184,7 @@ class GiraffeClient(object):
         """
         path = '/projects'
         # ...
-        raise NotImplementedError()  # ._as(Project)
+        raise NotImplementedError()  # .as_(Project)
 
     def get_users(self, params=None):
         """
@@ -194,7 +194,7 @@ class GiraffeClient(object):
         """
         path = '/users'
         # ...
-        raise NotImplementedError()  # ._as(User)
+        raise NotImplementedError()  # .as_(User)
 
     def get_meters(self, params=None):
         """
@@ -207,7 +207,7 @@ class GiraffeClient(object):
         dicts
         """
         path = '/meters'
-        return self._get(path, params)  # ._as(Meter)
+        return self._get(path, params)  # .as_(Meter)
 
     def get_host_meter_records(self, host, meter, params=None):
         """
@@ -225,7 +225,7 @@ class GiraffeClient(object):
         dicts
         """
         path = '/'.join(['/hosts', host, 'meters', meter])
-        return self._get(path, params)  # ._as(MeterRecord)
+        return self._get(path, params)  # .as_(MeterRecord)
 
     def get_inst_meter_records(self, inst, meter, params=None):
         """
@@ -234,7 +234,7 @@ class GiraffeClient(object):
         dicts
         """
         path = '/'.join(['/instances', inst, 'meters', meter])
-        return self._get(path, params)  # ._as(MeterRecord)
+        return self._get(path, params)  # .as_(MeterRecord)
 
     def get_proj_meter_records(self, proj, meter, params=None):
         """
@@ -244,7 +244,7 @@ class GiraffeClient(object):
         """
         path = '/'.join(['/projects', proj, 'meters', meter])
         # ...
-        raise NotImplementedError()  # ._as(MeterRecord)
+        raise NotImplementedError()  # .as_(MeterRecord)
 
     def get_user_meter_records(self, user, meter, params=None):
         """
@@ -254,4 +254,4 @@ class GiraffeClient(object):
         """
         path = '/'.join(['/users', user, 'meters', meter])
         # ...
-        raise NotImplementedError()  # ._as(MeterRecord)
+        raise NotImplementedError()  # .as_(MeterRecord)

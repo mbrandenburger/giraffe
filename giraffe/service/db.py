@@ -61,6 +61,8 @@ from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
 
 MIN_TIMESTAMP = '0000-01-01 00:00:00'
 MAX_TIMESTAMP = '2999-12-31 23:59:59'
+ORDER_ASC = 'asc'
+ORDER_DESC = 'desc'
 
 
 def connect(connectStr):
@@ -125,12 +127,13 @@ class Db(object):
         query = self._query(cls, args, limit, order, order_attr)
         return query.all()
 
-    def distinct_values(self, cls, column, order=None):
+    def distinct_values(self, cls, column, args={}, order=None):
         """
         Returns a list of distinct values for the given object class and
         column.
         """
         query = self._session.query(getattr(cls, column))
+        query = self._filter(cls, query, args)
         query = self._order(cls, query, order, column)
         values = query.distinct().all()
         return [tupl[0] for tupl in values]
@@ -232,34 +235,23 @@ class Db(object):
     def _filter(self, cls, query, args):
         """
         Applies filters to the given query object and returns it again.
-        Columns can be tested for equality only, except for
-        MeterRecord.timestamp, which can be tested for an interval if a tuple
-        is given as value.
+        The following filters are applied:
+        - test for equality (==): for single values
+        - between (col <= X and col >= X): tuples of length two
+        - in (col in (a, b, c, ..): list of any length
         """
-        if cls == MeterRecord:
-            filter_args = {}
-            start_time = None
-            end_time = None
-            for key in args:
-                if key.lower() == 'timestamp':
-                    if type(args[key]) in (list, tuple):
-                        start_time = args[key][0]
-                        end_time = args[key][1]
-                        continue
-                if args[key] is not None:
-                    filter_args[key] = args[key]
-
-            # no start and end time
-            if start_time is None and end_time is None:
-                query = query.filter_by(**filter_args)
-            # start and end time
-            elif start_time is not None and end_time is not None:
-                query = query.filter_by(**filter_args).\
-                            filter(and_(MeterRecord.timestamp >= start_time,
-                                   MeterRecord.timestamp <= end_time))
-            return query
-        else:
-            return query.filter_by(**args)
+        for key in args:
+            # between: tuple of size 2
+            if type(args[key]) == tuple and len(args[key]):
+                query = query.filter(and_(getattr(cls, key) >= args[key][0],
+                                          getattr(cls, key) <= args[key][1]))
+            # in: list of any size
+            elif type(args[key]) == list:
+                query = query.filter(getattr(cls, key).in_(args[key]))
+            # equality: everything else
+            else:
+                query = query.filter(getattr(cls, key) == args[key])
+        return query
 
     def _order(self, cls, query, order, order_attr):
         """
@@ -343,7 +335,7 @@ class Host(Base):
                       'mysql_charset': 'utf8'}
 
     id = Column(INTEGER(5, unsigned=True), primary_key=True)
-    name = Column('host_name', VARCHAR(20), nullable=False,
+    name = Column('host_name', VARCHAR(40), nullable=False,
                   doc='distinctive name of the physical machine, e.g. uncinus')
     activity = Column('activity', TIMESTAMP(), nullable=True, default=None)
     records = relationship('MeterRecord', backref='host')

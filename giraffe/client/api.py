@@ -63,23 +63,25 @@ class GiraffeClient(object):
         - alternatively, credentials (username, password, tenant_id, etc.)
           to be used to authenticate client requests can be passed to
           __init__() via named parameters
-        - right now, also a fallback to giraffe.cfg is implemented (but not
-          to env. variables)
         """
 
+        # [DELETED]
+        # - right now, also a fallback to giraffe.cfg is implemented (but not
+        #   to env. variables)
         self.config = Config('giraffe.cfg')
 
         if not auth_token:
-            _username = kwargs.get('username',
-                                   self.config.get('client', 'user'))
-            _password = kwargs.get('password',
-                                   self.config.get('client', 'pass'))
-            _tenant_name = kwargs.get('tenant_name',
-                                      self.config.get('client', 'tenant_name'))
-            _tenant_id = kwargs.get('tenant_id',
-                                    self.config.get('client', 'tenant_id'))
-            _auth_url = kwargs.get('auth_url',
+            _username = kwargs.get('username')
+            #                      , self.config.get('client', 'user'))
+            _password = kwargs.get('password')
+            #                      , self.config.get('client', 'pass'))
+            _tenant_name = kwargs.get('tenant_name')
+            #                         , self.config.get('client', 'tenant_name'))
+            _tenant_id = kwargs.get('tenant_id')
+            #                       , self.config.get('client', 'tenant_id'))
+            _auth_url = kwargs.get('auth_url', \
                                    self.config.get('client', 'auth_url'))
+
             auth_token = AuthProxy.get_token(username=_username,
                                              password=_password,
                                              tenant_name=_tenant_name,

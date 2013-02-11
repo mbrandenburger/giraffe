@@ -1,6 +1,7 @@
 __author__ = 'fbahr'
 
 import sys
+sys.path.insert(0, '/home/fbahr')
 import unittest
 import re
 from giraffe.common.config import Config
@@ -14,11 +15,23 @@ class ClientTestCases(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.gc = GiraffeClient()
+        cls.config = Config('../../bin/giraffe.cfg')
+
+        cls.gc = GiraffeClient(username=cls.config.get('agent', 'user'),
+                               password=cls.config.get('agent', 'pass'),
+                               tenant_name=cls.config.get('agent', 'tenant_name'),
+                               tenant_id=cls.config.get('agent', 'tenant_id'),
+                               auth_url=cls.config.get('agent', 'auth_url'))
 
     def setUp(self):
         if ClientTestCases.python_version < 270:
-            self.gc = GiraffeClient()
+            self.config = Config('../../bin/giraffe.cfg')
+
+            self.gc = GiraffeClient(username=self.config.get('agent', 'user'),
+                                    password=self.config.get('agent', 'pass'),
+                                    tenant_name=self.config.get('agent', 'tenant_name'),
+                                    tenant_id=self.config.get('agent', 'tenant_id'),
+                                    auth_url=self.config.get('agent', 'auth_url'))
 
     def test_get_set_auth_token(self):
         auth_token = self.gc.auth_token

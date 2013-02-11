@@ -240,7 +240,7 @@ class BaseController(controller.CementBaseController):
 
     def _display(self, result):
         try:
-            items = result._as(Text, formatter=self._formatter())
+            items = result.as_(Text, formatter=self._formatter())
             print '\n', '\n'.join(items), '\n'
         except:
             # type(result) is unicode

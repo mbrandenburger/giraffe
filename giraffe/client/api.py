@@ -158,55 +158,19 @@ class GiraffeClient(object):
         path = '/hosts'
         return self._get(path, params)  # .as_(Host)
 
-    def get_host(self, host_id, params=None):
+    def get_host(self, host, params=None):
         """
         WARNING: get_host - like every other API method - returns a _tuple_
           (ResultSet), despite containing only a single element; the same
           applies to ResultSet::as_().
         """
-        path = '/'.join(['/hosts', host_id])
+        path = '/'.join(['/hosts', host])
         return self._get(path, params)  # .as_(Host)
 
-    def get_instances(self, params=None):
+    def get_host_meters(self, host, params=None):
         """
-        Returns a tuple (actually, a ResultSet instance) of
-            ...
-        dicts
         """
-        path = '/instances'
-        return self._get(path, params)  # .as_(Instance)
-
-    def get_projects(self, params=None):
-        """
-        Returns a tuple (actually, a ResultSet instance) of
-            ...
-        dicts
-        """
-        path = '/projects'
-        # ...
-        raise NotImplementedError()  # .as_(Project)
-
-    def get_users(self, params=None):
-        """
-        Returns a tuple (actually, a ResultSet instance) of
-            ...
-        dicts
-        """
-        path = '/users'
-        # ...
-        raise NotImplementedError()  # .as_(User)
-
-    def get_meters(self, params=None):
-        """
-        Returns a tuple (actually, a ResultSet instance) of
-            {'id': '<meter_id (int)>',
-             'name': '<meter_name (string)>',
-             'description': '<description>',
-             'unit_name': '[seconds|..]',
-             'data_type': '[float|..]'}
-        dicts
-        """
-        path = '/meters'
+        path = '/'.join(['/hosts', host, 'meters'])
         return self._get(path, params)  # .as_(Meter)
 
     def get_host_meter_records(self, host, meter, params=None):
@@ -224,8 +188,17 @@ class GiraffeClient(object):
              'signature': '...'}
         dicts
         """
-        path = '/'.join(['/hosts', host, 'meters', meter])
+        path = '/'.join(['/hosts', host, 'meters', meter, 'records'])
         return self._get(path, params)  # .as_(MeterRecord)
+
+    def get_instances(self, params=None):
+        """
+        Returns a tuple (actually, a ResultSet instance) of
+            ...
+        dicts
+        """
+        path = '/instances'
+        return self._get(path, params)  # .as_(Instance)
 
     def get_inst_meter_records(self, inst, meter, params=None):
         """
@@ -233,18 +206,53 @@ class GiraffeClient(object):
             { see GiraffeClient::get_host_meter_records }
         dicts
         """
-        path = '/'.join(['/instances', inst, 'meters', meter])
+        path = '/'.join(['/instances', inst, 'meters', meter, 'records'])
         return self._get(path, params)  # .as_(MeterRecord)
+
+    def get_projects(self, params=None):
+        """
+        Returns a tuple (actually, a ResultSet instance) of
+            ...
+        dicts
+        """
+        path = '/projects'
+        return self._get(path, params)
+
+    def get_project(self, proj, params=None):
+        """
+        WARNING: get_host - like every other API method - returns a _tuple_
+          (ResultSet), despite containing only a single element; the same
+          applies to ResultSet::as_().
+        """
+        path = '/'.join(['/projects', proj])
+        return self._get(path, params)
+
+    def get_proj_meters(self, proj, params=None):
+        """
+        Returns a tuple (actually, a ResultSet instance) of
+            ...
+        dicts
+        """
+        path = '/'.join(['/projects', proj, 'meters'])
+        return self._get(path, params)  # .as_(Meter)
 
     def get_proj_meter_records(self, proj, meter, params=None):
         """
         Returns a tuple (actually, a ResultSet instance) of
-            { see GiraffeClient::get_host_meter_records }
+            ...
         dicts
         """
-        path = '/'.join(['/projects', proj, 'meters', meter])
-        # ...
-        raise NotImplementedError()  # .as_(MeterRecord)
+        path = '/'.join(['/projects', proj, 'meters', meter, 'records'])
+        return self._get(path, params)  # .as_(MeterRecord)
+
+    def get_users(self, params=None):
+        """
+        Returns a tuple (actually, a ResultSet instance) of
+            ...
+        dicts
+        """
+        path = '/users'
+        return self._get(path, params)
 
     def get_user_meter_records(self, user, meter, params=None):
         """
@@ -252,6 +260,28 @@ class GiraffeClient(object):
             { see GiraffeClient::get_host_meter_records }
         dicts
         """
-        path = '/'.join(['/users', user, 'meters', meter])
-        # ...
-        raise NotImplementedError()  # .as_(MeterRecord)
+        path = '/'.join(['/users', user, 'meters', meter, 'records'])
+        return self._get(path, params)
+
+    def get_meters(self, params=None):
+        """
+        Returns a tuple (actually, a ResultSet instance) of
+            {'id': '<meter_id (int)>',
+             'name': '<meter_name (string)>',
+             'description': '<description>',
+             'unit_name': '[seconds|..]',
+             'data_type': '[float|..]'}
+        dicts
+        """
+        path = '/meters'
+        return self._get(path, params)  # .as_(Meter)
+
+    def get_meter(self, meter, params=None):
+        """
+        WARNING: get_host - like every other API method - returns a _tuple_
+          (ResultSet), despite containing only a single element; the same
+          applies to ResultSet::as_().
+        """
+        path = '/'.join(['/meters', meter])
+        return self._get(path, params)  # .as_(Meter)
+

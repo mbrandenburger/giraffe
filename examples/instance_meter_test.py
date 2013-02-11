@@ -19,7 +19,7 @@ def getInstancePID(uuid):
         return -1
     return int(output)
 
-conn = libvirt.openReadOnly(None)
+conn = libvirt.openReadOnly('qemu:///system')
 if conn is None:
     print 'Failed to open connection to the hypervisor'
     sys.exit(1)

@@ -43,10 +43,10 @@ class ClientTestCases(unittest.TestCase):
             self.assertTrue(isinstance(h, (Host)))
 
     def test_get_host_by_id(self):
-        # _host_id = 'uncinus'
-        _host_id = '600'
+        # host_id = 'uncinus'
+        host_id = '600'
 
-        host = self.gc.get_host(host_id=_host_id)  # remember: tuple (ResultSet)
+        host = self.gc.get_host(host=host_id)      # remember: tuple (ResultSet)
         self.assertIsNotNone(host)                 #           of dicts
         self.assertTrue(isinstance(host, (tuple)))
 

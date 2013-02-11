@@ -166,13 +166,13 @@ class GiraffeClient(object):
           (ResultSet), despite containing only a single element; the same
           applies to ResultSet::as_().
         """
-        path = '/'.join(['/hosts', host])
+        path = '/'.join(['/hosts', str(host)])
         return self._get(path, params)  # .as_(Host)
 
     def get_host_meters(self, host, params=None):
         """
         """
-        path = '/'.join(['/hosts', host, 'meters'])
+        path = '/'.join(['/hosts', str(host), 'meters'])
         return self._get(path, params)  # .as_(Meter)
 
     def get_host_meter_records(self, host, meter, params=None):
@@ -190,7 +190,7 @@ class GiraffeClient(object):
              'signature': '...'}
         dicts
         """
-        path = '/'.join(['/hosts', host, 'meters', meter, 'records'])
+        path = '/'.join(['/hosts', str(host), 'meters', str(meter), 'records'])
         return self._get(path, params)  # .as_(MeterRecord)
 
     def get_instances(self, params=None):
@@ -208,7 +208,7 @@ class GiraffeClient(object):
             { see GiraffeClient::get_host_meter_records }
         dicts
         """
-        path = '/'.join(['/instances', inst, 'meters', meter, 'records'])
+        path = '/'.join(['/instances', str(inst), 'meters', str(meter), 'records'])
         return self._get(path, params)  # .as_(MeterRecord)
 
     def get_projects(self, params=None):
@@ -226,7 +226,7 @@ class GiraffeClient(object):
           (ResultSet), despite containing only a single element; the same
           applies to ResultSet::as_().
         """
-        path = '/'.join(['/projects', proj])
+        path = '/'.join(['/projects', str(proj)])
         return self._get(path, params)
 
     def get_proj_meters(self, proj, params=None):
@@ -235,7 +235,7 @@ class GiraffeClient(object):
             ...
         dicts
         """
-        path = '/'.join(['/projects', proj, 'meters'])
+        path = '/'.join(['/projects', str(proj), 'meters'])
         return self._get(path, params)  # .as_(Meter)
 
     def get_proj_meter_records(self, proj, meter, params=None):
@@ -244,7 +244,7 @@ class GiraffeClient(object):
             ...
         dicts
         """
-        path = '/'.join(['/projects', proj, 'meters', meter, 'records'])
+        path = '/'.join(['/projects', str(proj), 'meters', str(meter), 'records'])
         return self._get(path, params)  # .as_(MeterRecord)
 
     def get_users(self, params=None):
@@ -262,7 +262,7 @@ class GiraffeClient(object):
             { see GiraffeClient::get_host_meter_records }
         dicts
         """
-        path = '/'.join(['/users', user, 'meters', meter, 'records'])
+        path = '/'.join(['/users', str(user), 'meters', str(meter), 'records'])
         return self._get(path, params)
 
     def get_meters(self, params=None):
@@ -284,6 +284,6 @@ class GiraffeClient(object):
           (ResultSet), despite containing only a single element; the same
           applies to ResultSet::as_().
         """
-        path = '/'.join(['/meters', meter])
+        path = '/'.join(['/meters', str(meter)])
         return self._get(path, params)  # .as_(Meter)
 

@@ -225,7 +225,7 @@ class BaseController(controller.CementBaseController):
             params['aggregation'] \
                 = {0 : 'min', 1 : 'max', 2: 'avg', 3: 'sum', 4 : 'count'} \
                   [[self.pargs.min, self.pargs.max, \
-                    self.pargs.avg, self.pargs.avg, \
+                    self.pargs.avg, self.pargs.sum, \
                     self.pargs.count] \
                    .index(True)]
         except:

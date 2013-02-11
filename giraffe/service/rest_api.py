@@ -5,7 +5,8 @@ from giraffe.service.rest_server import Rest_Server
 from giraffe.common.config import Config
 import giraffe.service.db as db
 from giraffe.service.db import Host, Meter, MeterRecord
-from giraffe.service.db import MIN_TIMESTAMP, MAX_TIMESTAMP
+from giraffe.service.db import MIN_TIMESTAMP, MAX_TIMESTAMP,\
+                               ORDER_ASC, ORDER_DESC
 
 
 _logger = logging.getLogger("service.rest_api")
@@ -35,12 +36,14 @@ class Rest_API(object):
                                                '(\d{2})-(\d{2})-(\d{2})$'),
                                 self.PARAM_AGGREGATION: re.compile('^\w+$'),
                                 self.PARAM_LIMIT: re.compile('^\d+$'),
-                                self.PARAM_ORDER: re.compile('^(asc|desc)$')}
+                                self.PARAM_ORDER: re.compile('^(%s|%s)$' %\
+                                                             (ORDER_ASC,
+                                                              ORDER_DESC))}
         self._param_defaults = {self.PARAM_START_TIME: None,
                                 self.PARAM_END_TIME: None,
                                 self.PARAM_AGGREGATION: None,
                                 self.PARAM_LIMIT: self.RESULT_LIMIT,
-                                self.PARAM_ORDER: 'asc'}
+                                self.PARAM_ORDER: ORDER_ASC}
         self._pattern_timestamp = re.compile(
             '^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
 
@@ -138,6 +141,8 @@ class Rest_API(object):
 
     def route_hosts(self, query_string=''):
         """
+        Returns a list of all available Host objects.
+
         Route: hosts
         Returns: List of Host objects, JSON-formatted
         Query params: aggregation=[count], order
@@ -155,8 +160,120 @@ class Rest_API(object):
         self.db.session_close()
         return result
 
+    def route_hosts_hid(self, host_id, query_string):
+        """
+        Returns the Host object where the host_id matches. The host_id can be
+        the ID (int) or the NAME (string).
+
+        Route: hosts/<host_id>
+        Returns: Host object, JSON-formatted
+        Query params: -
+        """
+        #query = self._query_params(query_string)
+        try:
+            args = {'id': int(host_id)}
+        except ValueError:
+            args = {'name': host_id}
+        self.db.session_open()
+        try:
+            host = self.db.load(Host, args=args, limit=1)[0]
+        except Exception:
+            host = None
+        self.db.session_close()
+        return json.dumps(host.to_dict()) if host else None
+
+    def route_hosts_hid_meters(self, host_id, query_string):
+        """
+        Returns a list of Meter objects for which MeterRecords are available
+        for the given host.
+
+        Route: hosts/<host_id>/meters
+        Returns: List of Meter objects, JSON-formatted
+        Query params: -
+        """
+#        query = self._query_params(query_string)
+        try:
+            args = {'id': int(host_id)}
+        except ValueError:
+            args = {'name': host_id}
+        self.db.session_open()
+        try:
+            host = self.db.load(Host, args=args, limit=1)
+        except Exception:
+            host = None
+        meters = []
+        if host:
+            host = host[0]
+            meter_ids = self.db.distinct_values(MeterRecord, 'meter_id',
+                                                args={'host_id': host.id},
+                                                order=ORDER_ASC)
+            meters = self.db.load(Meter, args={'id': meter_ids})
+        self.db.session_close()
+        return json.dumps([m.to_dict() for m in meters])
+
+    def route_hosts_hid_meters_mid_records(self, host_id, meter_id,
+                                           query_string):
+        """
+        Returns a list of MeterRecord objects for the given Host ID and Meter
+        ID.
+
+        Route: hosts/<host_id>/meters/<meter_id>
+        Returns: List of MeterRecord objects, JSON-formatted
+        Query params: start_time, end_time, aggregation=[count], order, limit
+        """
+        query = self._query_params(query_string)
+        try:
+            host_args = {'id': int(host_id)}
+        except ValueError:
+            host_args = {'name': host_id}
+        self.db.session_open()
+        try:
+            meter_args = {'id': int(meter_id)}
+        except ValueError:
+            meter_args = {'name': meter_id}
+        try:
+            host = self.db.load(Host, args=host_args, limit=1)[0]
+            meter = self.db.load(Meter, args=meter_args, limit=1)[0]
+        except Exception:
+            host = None
+            meter = None
+        result = []
+        if host and meter:
+            record_args = {'host_id': host.id, 'meter_id': meter.id}
+            if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
+                record_args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+                if query[self.PARAM_START_TIME]:
+                    record_args['timestamp'][0] = query[self.PARAM_START_TIME]
+                if query[self.PARAM_END_TIME]:
+                    record_args['timestamp'][1] = query[self.PARAM_END_TIME]
+                record_args['timestamp'] = (record_args['timestamp'][0],
+                                            record_args['timestamp'][1])
+            _logger.debug('record_args = %s' % record_args)
+            try:
+                # aggregation
+                if query[self.PARAM_AGGREGATION]:
+                    result = self._aggregate(MeterRecord,
+                                             query[self.PARAM_AGGREGATION],
+                                             args=record_args,
+                                             column='value')
+                    result = json.dumps(result)
+                # no aggregation
+                else:
+                    records = self.db.load(MeterRecord,
+                                           args=record_args,
+                                           limit=query[self.PARAM_LIMIT],
+                                           order=query[self.PARAM_ORDER],
+                                           order_attr='timestamp')
+                    result = json.dumps([r.to_dict() for r in records])
+            except Exception:
+                pass
+        self.db.session_close()
+        return result
+
     def route_projects(self, query_string=''):
         """
+        Returns a list of project name strings.
+
         Route: projects
         Returns: List of project names (string), JSON-formatted
         Query params: aggregation=[count], order
@@ -176,6 +293,116 @@ class Rest_API(object):
         if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
             return json.dumps(str(len(values)))
         return json.dumps(values)
+
+    def route_projects_pid(self, project_id, query_string=''):
+        """
+        Route: projects/<project_id>
+        Returns: -
+        Query params: -
+        """
+        raise NotImplementedError('Route projects/<project_id> not yet '\
+                                  'implemented')
+
+    def route_projects_pid_meters(self, project_id, query_string=''):
+        """
+        Returns a list of Meter objects for which MeterRecords are available
+        for the given project.
+
+        Route: projects/<project_id>/meters
+        Returns: List of Meter objects, JSON-formatted
+        Query params: -
+        """
+#        query = self._query_params(query_string)
+        self.db.session_open()
+        try:
+            meters = self.db.distinct_values(MeterRecord, 'meter_id',
+                                             args={'project_id': project_id},
+                                             order=ORDER_ASC)
+        except Exception:
+            meters = []
+        self.db.session_close()
+        return json.dumps([m.to_dict() for m in meters])
+
+    def route_projects_pid_meters_mid_records(self, project_id, meter_id,
+                                              query_string=''):
+        """
+        Route: projects/<project_id>/meters/<meter_id>/records
+        Returns: List of MeterRecord objects, JSON-formatted
+        Query params: start_time, end_time, aggregation=[count], order, limit
+        """
+        query = self._query_params(query_string)
+        self.db.session_open()
+        try:
+            meter_args = {'id': int(meter_id)}
+        except ValueError:
+            meter_args = {'name': meter_id}
+        try:
+            meter = self.db.load(Meter, args=meter_args, limit=1)[0]
+        except Exception:
+            meter = None
+
+        if meter:
+            args = {'project_id': project_id, 'meter_id': meter.id}
+            if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
+                args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+                if query[self.PARAM_START_TIME]:
+                    args['timestamp'][0] = query[self.PARAM_START_TIME]
+                if query[self.PARAM_END_TIME]:
+                    args['timestamp'][1] = query[self.PARAM_END_TIME]
+                args['timestamp'] = (args['timestamp'][0],
+                                     args['timestamp'][1])
+
+            if query[self.PARAM_AGGREGATION]:
+                result = self._aggregate(MeterRecord,
+                                         query[self.PARAM_AGGREGATION],
+                                         args)
+                result = json.dumps(result)
+            else:
+                records = self.db.load(MeterRecord, args,
+                                       limit=query[self.PARAM_LIMIT],
+                                       order=query[self.PARAM_ORDER],
+                                       order_attr='timestamp')
+                result = json.dumps([r.to_dict() for r in records])
+        self.db.session_close()
+        return result
+
+    def route_meters(self, query_string=''):
+        """
+        Route: meters
+        Returns: List of Meter objects, JSON-formatted
+        Query params: aggregation=[count], order
+        """
+        query = self._query_params(query_string)
+        self.db.session_open()
+        if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
+            result = self._aggregate(Meter, query[self.PARAM_AGGREGATION], {})
+            result = json.dumps(result)
+        else:
+            meters = self.db.load(Meter, order_attr='name',
+                                  order=query[self.PARAM_ORDER])
+            result = json.dumps([meter.to_dict() for meter in meters])
+        self.db.session_close()
+        return result
+
+    def route_meters_mid(self, meter_id, query_string=''):
+        """
+        Returns a Meter object. The meter_id can either be the ID or the NAME.
+
+        Route: meters/<meter_id>
+        Returns: Meter object, JSON-formatted
+        Query params: -
+        """
+        try:
+            args = {'id': int(meter_id)}
+        except Exception:
+            args = {'name': meter_id}
+        self.db.session_open()
+        try:
+            meter = self.db.load(Meter, args=args, limit=1)[0]
+        except Exception:
+            meter = None
+        self.db.session_close()
+        return json.dumps(meter.to_dict()) if meter else None
 
     def route_users(self, query_string=''):
         """
@@ -199,6 +426,49 @@ class Rest_API(object):
             return json.dumps(str(len(values)))
         return json.dumps(values)
 
+    def route_users_uid_meters_mid_records(self, user_id, meter_id,
+                                           query_string=''):
+        """
+        Route: users/<user_id>/meters/<meter_id>/records
+        Returns: List of MeterRecord objects, JSON-formatted
+        Query params: start_time, end_time, aggregation=[count], order, limit
+        """
+        query = self._query_params(query_string)
+        self.db.session_open()
+        try:
+            meter_args = {'id': int(meter_id)}
+        except ValueError:
+            meter_args = {'name': meter_id}
+        try:
+            meter = self.db.load(Meter, args=meter_args, limit=1)[0]
+        except Exception:
+            meter = None
+
+        if meter:
+            args = {'user_id': user_id, 'meter_id': meter.id}
+            if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
+                args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+                if query[self.PARAM_START_TIME]:
+                    args['timestamp'][0] = query[self.PARAM_START_TIME]
+                if query[self.PARAM_END_TIME]:
+                    args['timestamp'][1] = query[self.PARAM_END_TIME]
+                args['timestamp'] = (args['timestamp'][0],
+                                     args['timestamp'][1])
+
+            if query[self.PARAM_AGGREGATION]:
+                result = self._aggregate(MeterRecord,
+                                         query[self.PARAM_AGGREGATION],
+                                         args)
+                result = json.dumps(result)
+            else:
+                records = self.db.load(MeterRecord, args,
+                                       limit=query[self.PARAM_LIMIT],
+                                       order=query[self.PARAM_ORDER],
+                                       order_attr='timestamp')
+                result = json.dumps([r.to_dict() for r in records])
+        self.db.session_close()
+        return result
+
     def route_instances(self, query_string=''):
         """
         Route: instances
@@ -221,196 +491,45 @@ class Rest_API(object):
             return json.dumps(str(len(values)))
         return json.dumps(values)
 
-    def route_meters(self, query_string=''):
+    def route_instances_iid_meters_mid_records(self, instance_id, meter_id,
+                                               query_string=''):
         """
-        Route: meters
-        Returns: List of Meter objects, JSON-formatted
-        Query params: aggregation=[count], order
+        Route: instances/<instance_id>/meters/<meter_id>/records
+        Returns: List of MeterRecord objects, JSON-formatted
+        Query params: start_time, end_time, aggregation=[count], order, limit
         """
         query = self._query_params(query_string)
         self.db.session_open()
-        if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
-            result = self._aggregate(Meter, query[self.PARAM_AGGREGATION], {})
-            result = json.dumps(result)
-        else:
-            meters = self.db.load(Meter, order_attr='name',
-                                  order=query[self.PARAM_ORDER])
-            result = json.dumps([meter.to_dict() for meter in meters])
-        self.db.session_close()
-        return result
-
-    def route_hosts_hid(self, host_id, query_string):
-        """
-        Returns the Host object where the host_id matches. The host_id can be
-        the ID (int) or the NAME (string).
-
-        Route: hosts/<host_id>
-        Returns: Host object, JSON-formatted
-        Query params: -
-        """
-        #query = self._query_params(query_string)
         try:
-            args = {'id': int(host_id)}
+            meter_args = {'id': int(meter_id)}
         except ValueError:
-            args = {'name': host_id}
-        self.db.session_open()
-        host = self.db.load(Host, args=args, limit=1)
-        self.db.session_close()
-        return json.dumps(host[0].to_dict()) if host else None
+            meter_args = {'name': meter_id}
+        try:
+            meter = self.db.load(Meter, args=meter_args, limit=1)[0]
+        except Exception:
+            meter = None
 
-    def route_hosts_hid_meters_mid(self, host_id,
-                                   meter_id,
-                                   query_string=''):
-        """
-        Route: hosts/<host_id>/meters/<meter_id>
-        Returns: List of MeterRecord objects, JSON-formatted
-        Query params: start_time, end_time, aggregation=[count], order, limit
-        """
-        query = self._query_params(query_string)
-        self.db.session_open()
-        hosts = self.db.load(Host, {'name': host_id}, limit=1)
-        if not hosts:
-            return None
-        host = hosts[0]
+        if meter:
+            args = {'resource_id': instance_id, 'meter_id': meter.id}
+            if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
+                args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+                if query[self.PARAM_START_TIME]:
+                    args['timestamp'][0] = query[self.PARAM_START_TIME]
+                if query[self.PARAM_END_TIME]:
+                    args['timestamp'][1] = query[self.PARAM_END_TIME]
+                args['timestamp'] = (args['timestamp'][0],
+                                     args['timestamp'][1])
 
-        meters = self.db.load(Meter, {'name': meter_id}, limit=1)
-        if not meters:
-            return None
-        meter = meters[0]
-
-        # narrow down the args
-        args = {'host_id': host.id, 'meter_id': meter.id}
-        if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
-            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
-            if query[self.PARAM_START_TIME]:
-                args['timestamp'][0] = query[self.PARAM_START_TIME]
-            if query[self.PARAM_END_TIME]:
-                args['timestamp'][1] = query[self.PARAM_END_TIME]
-
-        limit = query[self.PARAM_LIMIT]
-        order = query[self.PARAM_ORDER]
-        if query[self.PARAM_AGGREGATION]:
-            result = self._aggregate(MeterRecord,
-                                     query[self.PARAM_AGGREGATION],
-                                     args)
-            result = json.dumps(result)
-        else:
-            records = self.db.load(MeterRecord, args, limit=limit, order=order,
-                                   order_attr='timestamp')
-            result = json.dumps([r.to_dict() for r in records])
-        self.db.session_close()
-        return result
-
-    def route_projects_pid_meters_mid(self, project_id,
-                                      meter_id,
-                                      query_string=''):
-        """
-        Route: projects/<project_id>/meters/<meter_id>
-        Returns: List of MeterRecord objects, JSON-formatted
-        Query params: start_time, end_time, aggregation=[count], order, limit
-        """
-        query = self._query_params(query_string)
-        self.db.session_open()
-        meters = self.db.load(Meter, {'name': meter_id}, limit=1)
-        if not meters:
-            return None
-        meter = meters[0]
-
-        # narrow down the args
-        args = {'project_id': project_id, 'meter_id': meter.id}
-        if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
-            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
-            if query[self.PARAM_START_TIME]:
-                args['timestamp'][0] = query[self.PARAM_START_TIME]
-            if query[self.PARAM_END_TIME]:
-                args['timestamp'][1] = query[self.PARAM_END_TIME]
-
-        limit = query[self.PARAM_LIMIT]
-        order = query[self.PARAM_ORDER]
-        if query[self.PARAM_AGGREGATION]:
-            result = self._aggregate(MeterRecord,
-                                     query[self.PARAM_AGGREGATION],
-                                     args)
-            result = json.dumps(result)
-        else:
-            records = self.db.load(MeterRecord, args, limit=limit, order=order,
-                                   order_attr='timestamp')
-            result = json.dumps([r.to_dict() for r in records])
-        self.db.session_close()
-        return result
-
-    def route_users_uid_meters_mid(self, user_id,
-                                   meter_id,
-                                   query_string=''):
-        """
-        Route: users/<user_id>/meters/<meter_id>
-        Returns: List of MeterRecord objects, JSON-formatted
-        Query params: start_time, end_time, aggregation=[count], order, limit
-        """
-        query = self._query_params(query_string)
-        self.db.session_open()
-        meters = self.db.load(Meter, {'name': meter_id}, limit=1)
-        if not meters:
-            return None
-        meter = meters[0]
-
-        # narrow down the args
-        args = {'user_id': user_id, 'meter_id': meter.id}
-        if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
-            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
-            if query[self.PARAM_START_TIME]:
-                args['timestamp'][0] = query[self.PARAM_START_TIME]
-            if query[self.PARAM_END_TIME]:
-                args['timestamp'][1] = query[self.PARAM_END_TIME]
-
-        limit = query[self.PARAM_LIMIT]
-        order = query[self.PARAM_ORDER]
-        if query[self.PARAM_AGGREGATION]:
-            result = self._aggregate(MeterRecord,
-                                     query[self.PARAM_AGGREGATION],
-                                     args)
-            result = json.dumps(result)
-        else:
-            records = self.db.load(MeterRecord, args, limit=limit, order=order,
-                                   order_attr='timestamp')
-            result = json.dumps([r.to_dict() for r in records])
-        self.db.session_close()
-        return result
-
-    def route_instances_iid_meters_mid(self, instance_id,
-                                       meter_id,
-                                       query_string=''):
-        """
-        Route: instances/<instance_id>/meters/<meter_id>
-        Returns: List of MeterRecord objects, JSON-formatted
-        Query params: start_time, end_time, aggregation=[count], order, limit
-        """
-        query = self._query_params(query_string)
-        self.db.session_open()
-        meters = self.db.load(Meter, {'name': meter_id}, limit=1)
-        if not meters:
-            return None
-        meter = meters[0]
-
-        # narrow down the args
-        args = {'resource_id': instance_id, 'meter_id': meter.id}
-        if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
-            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
-            if query[self.PARAM_START_TIME]:
-                args['timestamp'][0] = query[self.PARAM_START_TIME]
-            if query[self.PARAM_END_TIME]:
-                args['timestamp'][1] = query[self.PARAM_END_TIME]
-
-        limit = query[self.PARAM_LIMIT]
-        order = query[self.PARAM_ORDER]
-        if query[self.PARAM_AGGREGATION]:
-            result = self._aggregate(MeterRecord,
-                                     query[self.PARAM_AGGREGATION],
-                                     args)
-            result = json.dumps(result)
-        else:
-            records = self.db.load(MeterRecord, args, limit=limit, order=order,
-                                   order_attr='timestamp')
-            result = json.dumps([r.to_dict() for r in records])
+            if query[self.PARAM_AGGREGATION]:
+                result = self._aggregate(MeterRecord,
+                                         query[self.PARAM_AGGREGATION],
+                                         args)
+                result = json.dumps(result)
+            else:
+                records = self.db.load(MeterRecord, args,
+                                       limit=query[self.PARAM_LIMIT],
+                                       order=query[self.PARAM_ORDER],
+                                       order_attr='timestamp')
+                result = json.dumps([r.to_dict() for r in records])
         self.db.session_close()
         return result

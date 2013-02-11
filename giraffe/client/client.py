@@ -266,7 +266,6 @@ class BaseController(controller.CementBaseController):
                 raise Exception()
             #   ^     Exception('error: query [-q/--query ...] not specified')
             result = self._client()._get(self.pargs.query)
-            logger.debug('COOL? > %s' % str(result))
             self._display(result)
         except Exception as e:
             self._except(e)

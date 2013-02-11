@@ -26,6 +26,7 @@ class Rest_API(object):
         self.AGGREGATION_MAX = 'max'
         self.AGGREGATION_MIN = 'min'
         self.AGGREGATION_AVG = 'avg'
+        self.AGGREGATION_SUM = 'sum'
         self.server = None
         self.db = None
         self._param_patterns = {self.PARAM_START_TIME:
@@ -117,18 +118,24 @@ class Rest_API(object):
         - avg: returns the average for "column" of all the rows that match the
         args parameters.
         """
-        if aggregation == self.AGGREGATION_COUNT:
-            count = self.db.count(cls, args)
-            return int(count) if count else 0
-        elif aggregation == self.AGGREGATION_MAX:
-            record = self.db.max_row(cls, column, args)
-            return record.to_dict() if record else None
-        elif aggregation == self.AGGREGATION_MIN:
-            record = self.db.min_row(cls, column, args)
-            return record.to_dict() if record else None
-        elif aggregation == self.AGGREGATION_AVG:
-            avg = self.db.avg(cls, column, args)
-            return float(avg) if avg else 0.0
+        try:
+            if aggregation == self.AGGREGATION_COUNT:
+                count = self.db.count(cls, args)
+                return int(count) if count else 0
+            elif aggregation == self.AGGREGATION_MAX:
+                record = self.db.max_row(cls, column, args)
+                return record.to_dict() if record else None
+            elif aggregation == self.AGGREGATION_MIN:
+                record = self.db.min_row(cls, column, args)
+                return record.to_dict() if record else None
+            elif aggregation == self.AGGREGATION_AVG:
+                avg = self.db.avg(cls, column, args)
+                return float(avg) if avg else 0.0
+            elif aggregation == self.AGGREGATION_SUM:
+                value_sum = self.db.sum(cls, column, args)
+                return float(value_sum) if value_sum else 0.0
+        except Exception as e:
+            _logger.exception(e)
         return None
 
     def route_root(self):
@@ -148,7 +155,6 @@ class Rest_API(object):
         Query params: aggregation=[count], order
         """
         query = self._query_params(query_string)
-        _logger.debug(query)
         self.db.session_open()
         if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
             result = self._aggregate(Host, query[self.PARAM_AGGREGATION], {})
@@ -248,7 +254,6 @@ class Rest_API(object):
                     record_args['timestamp'][1] = query[self.PARAM_END_TIME]
                 record_args['timestamp'] = (record_args['timestamp'][0],
                                             record_args['timestamp'][1])
-            _logger.debug('record_args = %s' % record_args)
             try:
                 # aggregation
                 if query[self.PARAM_AGGREGATION]:

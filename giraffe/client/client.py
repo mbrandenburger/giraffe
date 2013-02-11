@@ -34,6 +34,7 @@ Usage:
         --min
         --max
         --avg
+        --sum
         --limit LIMIT
         --order ORDER
 
@@ -148,6 +149,9 @@ class BaseController(controller.CementBaseController):
             (['--avg'], \
                 dict(action='store_true', help='', \
                      default=None)),
+            (['--sum'], \
+                dict(action='store_true', help='', \
+                     default=None)),
             (['--count'], \
                 dict(action='store_true', help='', \
                      default=None)),
@@ -219,9 +223,10 @@ class BaseController(controller.CementBaseController):
         #               combined with some index magic and 'except:'-fallback
         try:
             params['aggregation'] \
-                = {0 : 'min', 1 : 'max', 2: 'avg', 3 : 'count'} \
+                = {0 : 'min', 1 : 'max', 2: 'avg', 3: 'sum', 4 : 'count'} \
                   [[self.pargs.min, self.pargs.max, \
-                    self.pargs.avg, self.pargs.count] \
+                    self.pargs.avg, self.pargs.sum, \
+                    self.pargs.count] \
                    .index(True)]
         except:
             pass

@@ -3,8 +3,7 @@ __author__ = 'fbahr'
 import sys
 import unittest
 import logging
-from giraffe.agent.inst_meter import Inst_UUIDs, Inst_CPU, \
-                                     Inst_PHYMEM, Inst_VIRMEM, \
+from giraffe.agent.inst_meter import Inst_CPU, Inst_PHYMEM, Inst_VIRMEM, \
                                      Inst_DISK_IO
 
 
@@ -20,7 +19,6 @@ class InstMeterTestCases(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.inst_uuids = Inst_UUIDs(None, 0)
         cls.inst_cpu = Inst_CPU(None, 0)
         cls.inst_phymem = Inst_PHYMEM(None, 0)
         cls.inst_virmem = Inst_VIRMEM(None, 0)
@@ -28,7 +26,6 @@ class InstMeterTestCases(unittest.TestCase):
 
     def setUp(self):
         if InstMeterTestCases.python_version < 270:
-            self.inst_uuids = Inst_UUIDs(None, 0)
             self.inst_cpu = Inst_CPU(None, 0)
             self.inst_phymem = Inst_PHYMEM(None, 0)
             self.inst_virmem = Inst_VIRMEM(None, 0)

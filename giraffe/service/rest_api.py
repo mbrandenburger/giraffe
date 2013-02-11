@@ -237,7 +237,7 @@ class Rest_API(object):
         except Exception:
             host = None
             meter = None
-        result = []
+        result = None
         if host and meter:
             record_args = {'host_id': host.id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
@@ -341,6 +341,7 @@ class Rest_API(object):
         except Exception:
             meter = None
 
+        result = None
         if meter:
             args = {'project_id': project_id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
@@ -444,6 +445,7 @@ class Rest_API(object):
         except Exception:
             meter = None
 
+        result = None
         if meter:
             args = {'user_id': user_id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
@@ -509,6 +511,7 @@ class Rest_API(object):
         except Exception:
             meter = None
 
+        result = None
         if meter:
             args = {'resource_id': instance_id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:

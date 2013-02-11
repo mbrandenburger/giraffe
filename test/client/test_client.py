@@ -1,7 +1,6 @@
 __author__ = 'fbahr'
 
 import sys
-sys.path.insert(0, '/home/fbahr')
 import unittest
 import re
 from giraffe.common.config import Config
@@ -17,21 +16,21 @@ class ClientTestCases(unittest.TestCase):
     def setUpClass(cls):
         cls.config = Config('../../bin/giraffe.cfg')
 
-        cls.gc = GiraffeClient(username=cls.config.get('agent', 'user'),
-                               password=cls.config.get('agent', 'pass'),
-                               tenant_name=cls.config.get('agent', 'tenant_name'),
-                               tenant_id=cls.config.get('agent', 'tenant_id'),
-                               auth_url=cls.config.get('agent', 'auth_url'))
+        cls.gc = GiraffeClient(username=cls.config.get('client', 'user'),
+                               password=cls.config.get('client', 'pass'),
+                               tenant_name=cls.config.get('client', 'tenant_name'),
+                               tenant_id=cls.config.get('client', 'tenant_id'),
+                               auth_url=cls.config.get('client', 'auth_url'))
 
     def setUp(self):
         if ClientTestCases.python_version < 270:
             self.config = Config('../../bin/giraffe.cfg')
 
-            self.gc = GiraffeClient(username=self.config.get('agent', 'user'),
-                                    password=self.config.get('agent', 'pass'),
-                                    tenant_name=self.config.get('agent', 'tenant_name'),
-                                    tenant_id=self.config.get('agent', 'tenant_id'),
-                                    auth_url=self.config.get('agent', 'auth_url'))
+            self.gc = GiraffeClient(username=self.config.get('client', 'user'),
+                                    password=self.config.get('client', 'pass'),
+                                    tenant_name=self.config.get('client', 'tenant_name'),
+                                    tenant_id=self.config.get('client', 'tenant_id'),
+                                    auth_url=self.config.get('client', 'auth_url'))
 
     def test_get_set_auth_token(self):
         auth_token = self.gc.auth_token
@@ -54,6 +53,18 @@ class ClientTestCases(unittest.TestCase):
         self.assertTrue(hosts)
         for h in hosts:
             self.assertTrue(isinstance(h, (Host)))
+
+    def test_get_host_meters(self):
+        meters = self.gc.get_host_meters(603)  # tuple (ResultSet) of dicts
+        # for h in hosts:
+        #     print h
+        self.assertTrue(meters)
+        self.assertTrue(isinstance(meters, (tuple)))
+
+        meters = meters.as_(Meter)  # tuple of Host objects
+        self.assertTrue(meters)
+        for m in meters:
+            self.assertTrue(isinstance(m, (Meter)))
 
     def test_get_host_by_id(self):
         # host_id = 'uncinus'

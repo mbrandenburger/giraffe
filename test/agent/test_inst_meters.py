@@ -31,31 +31,29 @@ class InstMeterTestCases(unittest.TestCase):
             self.inst_virmem = Inst_VIRMEM(None, 0)
             self.inst_disk_io = Inst_DISK_IO(None, 0)
 
-    def test_inst_uuids(self):
-        meters = self.inst_uuids.meter()
-        # for m in meters:
-        #     print m
-        self.assertTrue(meters)
-
     def test_inst_cpu(self):
         meters = self.inst_cpu.meter()
         # for m in meters:
         #     print m
-        self.assertTrue(meters)
+        self.assertIsNotNone(meters)
 
     def test_inst_phymem(self):
         meters = self.inst_phymem.meter()
-        self.assertTrue(meters)
+        # for m in meters:
+        #     print m
+        self.assertIsNotNone(meters)
 
     def test_inst_virmem(self):
         meters = self.inst_virmem.meter()
-        self.assertTrue(meters)
+        # for m in meters:
+        #     print m
+        self.assertIsNotNone(meters)
 
     def test_inst_disk_io(self):
         meters = self.inst_disk_io.meter()
         # for m in meters:
         #     print m
-        self.assertTrue(meters)
+        self.assertIsNotNone(meters)
 
 
 if __name__ == '__main__':

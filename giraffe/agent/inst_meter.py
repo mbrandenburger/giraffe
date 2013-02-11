@@ -124,6 +124,8 @@ from giraffe.common.task import PeriodicMeterTask
 import logging
 logger = logging.getLogger("agent.inst_meters")
 
+_LIBVIRT_SOCKET_URL = 'qemu:///system'
+
 
 def get_inst_ids(connection, pids=True):
     """
@@ -186,7 +188,7 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
     def __init__(self, callback, period):
         super(PeriodicInstMeterTask, self).__init__(callback, period)
 
-        self.conn = libvirt.openReadOnly(None)
+        self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
         if not self.conn:
             logger.exception('Failed to open connection to hypervisor.')
             sys.exit(1)
@@ -221,7 +223,7 @@ class Inst_UUIDs(PeriodicInstMeterTask):
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
-            self.conn = libvirt.openReadOnly(None)
+            self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
             return uuids
@@ -249,7 +251,7 @@ class Inst_UPTIME(PeriodicInstMeterTask):
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
-            self.conn = libvirt.openReadOnly(None)
+            self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
             return uptimes
@@ -342,7 +344,7 @@ class Inst_CPU(PeriodicInstMeterTask):
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
-            self.conn = libvirt.openReadOnly(None)
+            self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
             return cpu_utils
@@ -380,7 +382,7 @@ class Inst_PHYMEM(PeriodicInstMeterTask):
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
-            self.conn = libvirt.openReadOnly(None)
+            self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
             return phymem
@@ -416,7 +418,7 @@ class Inst_VIRMEM(PeriodicInstMeterTask):
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
-            self.conn = libvirt.openReadOnly(None)
+            self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
             return virmem
@@ -474,7 +476,7 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
         except:
             # Warning! Fails silently...
             logger.exception('Connection to hypervisor failed; reset.')
-            self.conn = libvirt.openReadOnly(None)
+            self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
             return inst_ios

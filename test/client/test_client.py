@@ -37,7 +37,7 @@ class ClientTestCases(unittest.TestCase):
         self.assertTrue(hosts)
         self.assertTrue(isinstance(hosts, (tuple)))
 
-        hosts = hosts._as(Host)  # tuple of Host objects
+        hosts = hosts.as_(Host)  # tuple of Host objects
         self.assertTrue(hosts)
         for h in hosts:
             self.assertTrue(isinstance(h, (Host)))
@@ -46,12 +46,11 @@ class ClientTestCases(unittest.TestCase):
         # _host_id = 'uncinus'
         _host_id = '600'
 
-        host = self.gc.get_host(host_id=_host_id)
-        self.assertIsNotNone(host)
+        host = self.gc.get_host(host_id=_host_id)  # remember: tuple (ResultSet)
+        self.assertIsNotNone(host)                 #           of dicts
         self.assertTrue(isinstance(host, (tuple)))
 
-        host = host._as(Host)  # Host object
-        self.assertTrue(host)
+        host = host.as_(Host)  # also: tuple of Host objects
         self.assertTrue(isinstance(host[0], (Host)))
 
     def test_get_meters(self):
@@ -59,7 +58,7 @@ class ClientTestCases(unittest.TestCase):
         self.assertTrue(meters)
         self.assertTrue(isinstance(meters, (tuple)))
 
-        meters = meters._as(Meter)  # tuple of Meter objects
+        meters = meters.as_(Meter)  # tuple of Meter objects
         self.assertTrue(meters)
         for m in meters:
             self.assertTrue(isinstance(m, (Meter)))
@@ -74,7 +73,7 @@ class ClientTestCases(unittest.TestCase):
         self.assertTrue(meter_records)
         self.assertTrue(isinstance(meter_records, (tuple)))
 
-        meter_records = meter_records._as(MeterRecord)
+        meter_records = meter_records.as_(MeterRecord)
                                     # ^ tuple of MeterRecord objects
         self.assertTrue(meter_records)
         for mr in meter_records:
@@ -98,7 +97,7 @@ class ClientTestCases(unittest.TestCase):
         self.assertTrue(meter_records)
         self.assertTrue(isinstance(meter_records, (tuple)))
 
-        meter_records = meter_records._as(MeterRecord)
+        meter_records = meter_records.as_(MeterRecord)
                                     # ^ tuple of MeterRecord objects
         self.assertTrue(meter_records)
         for mr in meter_records:
@@ -155,7 +154,7 @@ class ClientTestCases(unittest.TestCase):
                            # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(_min, (tuple)))
         self.assertTrue(len(_min) == 1)
-        _min = _min._as(MeterRecord)[0]  # MeterRecord object
+        _min = _min.as_(MeterRecord)[0]  # MeterRecord object
         self.assertTrue(isinstance(_min, (MeterRecord)))
 
         _max = self.gc.get_host_meter_records( \
@@ -165,7 +164,7 @@ class ClientTestCases(unittest.TestCase):
                           # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(_max, (tuple)))
         self.assertTrue(len(_max) == 1)
-        _max = _max._as(MeterRecord)[0]  # MeterRecord object
+        _max = _max.as_(MeterRecord)[0]  # MeterRecord object
         self.assertTrue(isinstance(_max, (MeterRecord)))
 
         self.assertLessEqual(_min.value, _max.value)
@@ -194,7 +193,7 @@ class ClientTestCases(unittest.TestCase):
                                             'order': 'asc'})
                                     # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(meter_records, (tuple)))
-        meter_records = meter_records._as(MeterRecord)
+        meter_records = meter_records.as_(MeterRecord)
         for mr in meter_records:
             self.assertTrue(isinstance(mr, (MeterRecord)))
 
@@ -212,7 +211,7 @@ class ClientTestCases(unittest.TestCase):
                                             'order': 'desc'})
                                     # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(meter_records, (tuple)))
-        meter_records = meter_records._as(MeterRecord)
+        meter_records = meter_records.as_(MeterRecord)
         for mr in meter_records:
             self.assertTrue(isinstance(mr, (MeterRecord)))
 
@@ -233,7 +232,7 @@ class ClientTestCases(unittest.TestCase):
                               meter="host.loadavg_15m", \
                               params={'aggregation': 'min'}) # tuple (ResultSet) of dicts
         self.assertTrue(len(abs_min) == 1)
-        abs_min = abs_min._as(MeterRecord)[0]  # MeterRecord object
+        abs_min = abs_min.as_(MeterRecord)[0]  # MeterRecord object
         # print abs_min.value, abs_min
 
         for _, endtime in end_time.iteritems():
@@ -245,7 +244,7 @@ class ClientTestCases(unittest.TestCase):
                                           'aggregation': 'min'})  # tuple (ResultSet) of dicts
             if isinstance(rel_min, (tuple)):
                 self.assertTrue(len(rel_min) == 1)
-                rel_min = rel_min._as(MeterRecord)[0]  # MeterRecord object
+                rel_min = rel_min.as_(MeterRecord)[0]  # MeterRecord object
                 # print rel_min.value, rel_min
                 # print abs_min.value, '<=', rel_min.value
                 self.assertLessEqual(abs_min.value, rel_min.value)
@@ -257,7 +256,7 @@ class ClientTestCases(unittest.TestCase):
                               meter="host.loadavg_15m", \
                               params={'aggregation': 'max'}) # tuple (ResultSet) of dicts
         self.assertTrue(len(abs_max) == 1)
-        abs_max = abs_max._as(MeterRecord)[0]  # MeterRecord object
+        abs_max = abs_max.as_(MeterRecord)[0]  # MeterRecord object
 
         for _, endtime in end_time.iteritems():
             rel_max = self.gc.get_host_meter_records( \
@@ -269,7 +268,7 @@ class ClientTestCases(unittest.TestCase):
                                   # ^ tuple (ResultSet) of dicts
             if isinstance(rel_max, (tuple)):
                 self.assertTrue(len(rel_max) == 1)
-                rel_max = rel_max._as(MeterRecord)[0]  # MeterRecord object
+                rel_max = rel_max.as_(MeterRecord)[0]  # MeterRecord object
                 self.assertGreaterEqual(abs_max.value, rel_max.value)
             else:
                 self.assertIsNone(rel_max)

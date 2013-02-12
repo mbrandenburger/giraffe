@@ -372,6 +372,34 @@ class Rest_API(object):
         self.db.session_close()
         return result
 
+    def route_projects_pid_instances(self, project_id, query_string=''):
+        """
+        Returns a list of Meter objects for which MeterRecords are available
+        for the given project.
+
+        Route: projects/<project_id>/meters/
+        Returns: List of Meter objects, JSON-formatted
+        Query params: -
+        """
+        query = self._query_params(query_string)
+        self.db.session_open()
+        args = {'project_id': project_id}
+        if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
+            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+            if query[self.PARAM_START_TIME]:
+                args['timestamp'][0] = query[self.PARAM_START_TIME]
+            if query[self.PARAM_END_TIME]:
+                args['timestamp'][1] = query[self.PARAM_END_TIME]
+            args['timestamp'] = (args['timestamp'][0],
+                                 args['timestamp'][1])
+        try:
+            instances = self.db.distinct_values(MeterRecord, 'resource_id',
+                                                args=args, order=ORDER_ASC)
+        except Exception:
+            instances = []
+        self.db.session_close()
+        return json.dumps(instances)
+
     def route_meters(self, query_string=''):
         """
         Route: meters/

@@ -106,6 +106,17 @@ class Rest_Server():
                 return Response(response='no records found', status=404)
             return Response(response=result, status=200)
 
+        @self.app.route('/projects/<project_id>/instaces')
+        @self.app.route('/projects/<project_id>/instances/')
+        #requires_auth
+        def projects_pid_instances(project_id):
+            result = self.rest_api.\
+                        route_projects_pid_instances(project_id,\
+                                                          request.query_string)
+            if result is None:
+                return Response(response='no instances found', status=404)
+            return Response(response=result, status=200)
+
         @self.app.route('/meters')
         @self.app.route('/meters/')
         #requires_auth

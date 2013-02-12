@@ -451,7 +451,7 @@ class Inst_NETWORK_IO(PeriodicInstMeterTask):
                                 iface_stat[4], iface_stat[5]]  # w_bytes, w_packets
                                 for iface_stat \
                                     in [dom.interfaceStats(vnet) \
-                                        for vnet in vnets]
+                                        for vnet in vnets]]
 
                 s = [sum(stat) for stat in zip(*iface_stats)]
 

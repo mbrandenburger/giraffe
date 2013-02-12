@@ -5,6 +5,8 @@ from horizon.api.base import APIDictWrapper
 
 from giraffe.client.api import GiraffeClient
 
+import calendar
+
 
 LOG = logging.getLogger(__name__)
 
@@ -82,8 +84,8 @@ def get_host(request, host_id):
 
 def get_host_meters(request, host_id):
     try:
-        return [APIDictWrapper(m) for m in giraffeclient(request).\
-                                                    get_host_meters(host_id)]
+        return [APIDictWrapper(m) for m in giraffeclient(request)
+                .get_host_meters(host_id)]
     except Exception:
         return []
 
@@ -91,6 +93,23 @@ def get_host_meters(request, host_id):
 def get_meters_count(request):
     try:
         return giraffeclient(request).get_meters({'aggregation': 'count'})
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
+def get_proj_meter_record_montly_total(request, project, meter, month, year):
+    try:
+        # TODO: change query
+        month_days = calendar.monthrange(year, month)[1]
+        query_params = {'aggregation': 'sum',
+                        'start_time': '%s-%02d-01 00:00:00' % (year, month),
+                        'end_time': '%s-%02d-%02d 23:59:59' % (
+                        year, month, month_days)}
+
+        return giraffeclient(request).\
+            get_proj_meter_records(proj=project, meter=meter,
+                                   params=query_params)
     except Exception as e:
         LOG.exception(e)
         return None

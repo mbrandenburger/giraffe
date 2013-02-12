@@ -22,9 +22,9 @@ from horizon import tables
 class BillingTable(tables.DataTable):
     label = tables.Column('label', verbose_name=_('Monthly Bill'))
     meter_cpu = tables.Column('meter_cpu', verbose_name=_(
-                                                      'inst.cpu.time [ns]'))
+                                                      'inst.cpu.time [h]'))
     meter_io = tables.Column('meter_io', verbose_name=_(\
-                                    'inst.disk.io.(read+write).bytes [mb]'))
+                                    'inst.disk.io.(read+write).bytes [Gb]'))
 
     class Meta:
         name = "Project Billing"

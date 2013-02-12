@@ -1,7 +1,6 @@
 __author__ = 'fbahr, omihelic'
 
 import sys
-sys.path.insert(0, '/home/fbahr')
 import unittest
 import re
 from giraffe.common.config import Config

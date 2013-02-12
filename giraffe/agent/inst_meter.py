@@ -447,11 +447,11 @@ class Inst_NETWORK_IO(PeriodicInstMeterTask):
                                   ETree.fromstring(descr[1]). \
                                         findall('devices/interface/target')])
 
-                iface_stats = [[r_bytes, r_packets, w_bytes, w_packets] \
-                               for w_bytes, w_packets, _, _,
-                                   w_bytes, w_packets, _, _ \
-                               in  domain.interfaceStats(vnet) \
-                                   for vnet in vnets]
+                iface_stats = [[iface_stat[0], iface_stat[1],  # r_bytes, r_packets
+                                iface_stat[4], iface_stat[5]]  # w_bytes, w_packets
+                                for iface_stat \
+                                    in [dom.interfaceStats(vnet) \
+                                        for vnet in vnets]
 
                 s = [sum(stat) for stat in zip(*iface_stats)]
 

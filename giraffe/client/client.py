@@ -175,7 +175,7 @@ class BaseController(controller.CementBaseController):
             (['-a', '--auth_url'], \
                 dict(action='store', help='$OS_AUTH_URL', \
                      default=os.getenv('OS_AUTH_URL') or \
-                             _config.get('client', 'auth_url'))),
+                             _config.get('auth', 'auth_url'))),
             # -----------------------------------------------------------------
             (['-u', '--username'], \
                 dict(action='store', help='$OS_USERNAME', \
@@ -208,7 +208,7 @@ class BaseController(controller.CementBaseController):
     def _client(self):
         #@[fbahr]: `dirty` hack, getting dict instance from self.pargs
         _kwargs = dict((k, v) for (k, v) in self.pargs._get_kwargs())
-        return GiraffeClient(auth_token=AuthProxy.get_token(credentials=_kwargs))
+        return GiraffeClient(auth_token=AuthProxy.get_token(**_kwargs))
 
     def _exec_context(self):
         outerframe = inspect.getouterframes(inspect.currentframe())[-1]

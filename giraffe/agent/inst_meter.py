@@ -16,35 +16,35 @@ Delta       Changing over time (bandwidth)
 Meters (by components) that are currently implemented:
 
 Compute (Nova)
----------------------------  ----------  --------  --------  ----------------------
-Name                         Type        Volume    Resource  Note
----------------------------  ----------  --------  --------  ----------------------
-inst.uptime                  Gauge    <seconds!>   inst ID   Duration of instance
-inst.memory.physical         Gauge      <bytes!>   inst ID   Volume of RAM in <bytes!>
-inst.memory.virtual          Gauge      <bytes!>   inst ID   Volume of RAM in <bytes!>
-inst.cpu.time                Cumulative       ms   inst ID   CPU time used
-inst.cpu.time.ratio          Gauge       percent   inst ID   CPU time used in relation to real time elapsed
-inst.cpu.percent             Gauge       percent   inst ID   ...
-* vcpus                        Gauge          cpus   inst ID   Number of VCPUs
-* disk.root.size               Gauge            GB   inst ID   Size of root disk in GB
-* disk.ephemeral.size          Gauge            GB   inst ID   Size of ephemeral disk in GB
-- inst.disk.io.requests        Cumulative  requests  inst ID   Number of disk io requests
-inst.disk.io.read.requests   Cumulative  requests  inst ID   Number of disk I/O read requests
-inst.disk.io.write.requests  Cumulative  requests  inst ID   Number of disk I/O write requests
-- inst.disk.io.bytes         Cumulative    bytes     inst ID   Volume of disk io in bytes
-inst.disk.io.read.bytes      Cumulative  bytes     inst ID   Volume of disk I/O read requests
-inst.disk.io.write.bytes     Cumulative  bytes     inst ID   Volum of disk I/O write requests
-network.incoming.bytes    Cumulative    bytes  <inst ID!>   number of incoming bytes on the network
-network.outgoing.bytes    Cumulative    bytes  <inst ID!>   number of outgoing bytes on the network
-* network.incoming.packets  Cumulative  packets  iface ID   number of incoming packets
-* network.outgoing.packets  Cumulative  packets  iface ID  face ID  number of outgoing packets
-------------------------  ----------  -------  --------  ----------------------
+--------------------------------  -------------  ----------  ----------  ------
+Name                              Type           Volume      Resource    Note
+--------------------------------  -------------  ----------  ----------  ------
+inst.uptime                       Gauge          <seconds!>     inst ID  Duration of instance
+inst.memory.physical              Gauge            <bytes!>     inst ID  Volume of RAM in <bytes!>
+inst.memory.virtual               Gauge            <bytes!>     inst ID  Volume of RAM in <bytes!>
+inst.cpu.time                     Cumulative             ms     inst ID  CPU time used
+inst.cpu.time.ratio               Gauge             percent     inst ID  CPU time used in relation to real time elapsed
+inst.cpu.percent                  Gauge             percent     inst ID  ...
+* vcpus                           Gauge                cpus     inst ID  Number of VCPUs
+* disk.root.size                  Gauge                  GB     inst ID  Size of root disk in GB
+* disk.ephemeral.size             Gauge                  GB     inst ID  Size of ephemeral disk in GB
+- inst.disk.io.requests           Cumulative       requests     inst ID  Number of disk io requests
+inst.disk.io.read.requests        Cumulative       requests     inst ID  Number of disk I/O read requests
+inst.disk.io.write.requests       Cumulative       requests     inst ID  Number of disk I/O write requests
+- inst.disk.io.bytes              Cumulative          bytes     inst ID  Volume of disk io in bytes
+inst.disk.io.read.bytes           Cumulative          bytes     inst ID  Volume of disk I/O read requests
+inst.disk.io.write.bytes          Cumulative          bytes     inst ID  Volum of disk I/O write requests
+inst.network.io.incoming.bytes    Cumulative          bytes  <inst ID!>  number of incoming bytes on the network
+inst.network.io.outgoing.bytes    Cumulative          bytes  <inst ID!>  number of outgoing bytes on the network
+inst.network.io.incoming.packets  Cumulative        packets  <inst ID!>  number of incoming packets
+inst.network.io.outgoing.packets  Cumulative        packets  <inst ID!>  number of outgoing packets
+--------------------------------  -------------  ----------  ----------  ------
 
 
 Network (Quantum) [NOT IMPLEMENTED]
-------------------------  ----------  -------  -------- ---------------------------------------
+------------------------  ----------  -------  -------- -----------------------
 Name                      Type        Volume   Resource  Note
-------------------------  ----------  -------  -------- ---------------------------------------
+------------------------  ----------  -------  -------- -----------------------
 network                   Gauge             1  netw ID   Duration of network
 network.create            Delta       request  netw ID   Creation requests for this network
 network.update            Delta       request  netw ID   Update requests for this network
@@ -60,13 +60,13 @@ router.update             Delta       request  rtr ID    Update requests for thi
 ip.floating               Gauge             1  ip ID     Duration of floating ip
 ip.floating.create        Delta             1  ip ID     Creation requests for this floating ip
 ip.floating.update        Delta             1  ip ID     Update requests for this floating ip
-------------------------  ----------  -------  -------- ---------------------------------------
+------------------------  ----------  -------  -------- -----------------------
 
 
 Image (Glance) [NOT IMPLEMENTED]
-------------------------  ----------  -------  -------- -----------------------------------
+------------------------  ----------  -------  -------- -----------------------
 Name                      Type        Volume   Resource  Note
-------------------------  ----------  -------  -------- -----------------------------------
+------------------------  ----------  -------  -------- -----------------------
 image                     Gauge             1  image ID  Image polling -> it (still) exists
 image.size                Gauge         bytes  image ID  Uploaded image size
 image.update              Delta          reqs  image ID  Number of update on the image
@@ -74,7 +74,7 @@ image.upload              Delta          reqs  image ID  Number of upload of the
 image.delete              Delta          reqs  image ID  Number of delete on the image
 image.download            Delta         bytes  image ID  Image is downloaded
 image.serve               Delta         bytes  image ID  Image is served out
-------------------------  ----------  -------  -------- -----------------------------------
+------------------------  ----------  -------  -------- -----------------------
 
 
 Volume (Cinder) [NOT IMPLEMENTED]
@@ -113,18 +113,26 @@ import subprocess
 from xml.etree import ElementTree as ETree
 
 import psutil
-
 # try:
 #     from nova.virt import driver
 # except ImportError:
 import libvirt
+_LIBVIRT_SOCKET_URL = 'qemu:///system'
 
 from giraffe.common.task import PeriodicMeterTask
 
+from novaclient.v1_1.client import Client as NovaClient
+from giraffe.common.auth import AuthProxy
+from giraffe.common.config import Config
+_config = Config('giraffe.cfg')
+
 import logging
 logger = logging.getLogger("agent.inst_meters")
-
-_LIBVIRT_SOCKET_URL = 'qemu:///system'
+# logger.setLevel(logging.DEBUG)
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# fh = logging.FileHandler("agent.log")
+# fh.setFormatter(formatter)
+# logger.addHandler(fh)
 
 
 def get_inst_ids(connection, pids=True):
@@ -185,48 +193,37 @@ def get_inst_ids(connection, pids=True):
 
 
 class PeriodicInstMeterTask(PeriodicMeterTask):
-    def __init__(self, callback, period):
+
+    def __init__(self, callback, period, libvirt=False):
         super(PeriodicInstMeterTask, self).__init__(callback, period)
 
-        self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
-        if not self.conn:
-            logger.exception('Failed to open connection to hypervisor.')
-            sys.exit(1)
-
-
-class Inst_UUIDs(PeriodicInstMeterTask):
-    #@[fbahr]: Actually, this is rather a host meter... for the time being,
-    #          left as an instance metering task [since subclassing 
-    #          PeriodicInstMeterTask]
-    #          Hence, rather than a list of UUIDs, a record (UNAME,
-    #          timestamp,  list of UUIDs) should be returned
-
-    def __init__(self, callback, period):
-        super(Inst_UUIDs, self).__init__(callback, period)
-        self.uuid_map = {}
-
-    def meter(self):
-        """
-        Returns a list of (UUID, timestamp, domain-state) tuples, one for each
-        instance running on a specific host.
-        """
-        uuids = []
-
-        try:
-            domains = [self.conn.lookupByID(domain_id) \
-                       for domain_id in self.conn.listDomainsID()]
-
-            time = datetime.now()
-
-            uuids = [[d.UUIDString(), time, d.info()[0]] for d in domains]
-
-        except:
-            # Warning! Fails silently...
-            logger.exception('Connection to hypervisor failed; reset.')
+        if libvirt:
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
+            if not self.conn:
+                logger.exception('PeriodicInstMeterTask: '
+                                 'Failed to open connection to hypervisor.')
+                sys.exit(1)
 
-        finally:
-            return uuids
+        #@[fbahr]: maybe it's a good idea to move this - i.e., gathering
+        #          user and tenant informations for an instance via the
+        #          nova-client - to the service (collector)
+        _credentials = dict(username=_config.get('agent', 'user'),
+                            password=_config.get('agent', 'pass'),
+                            tenant_id=_config.get('agent', 'tenant_id'),
+                            tenant_name=_config.get('agent', 'tenant_name'),
+                            auth_url=_config.get('auth', 'auth_url'),
+                            insecure=True)
+
+        _credentials['api_key'] = AuthProxy.get_token(**_credentials)
+
+        self.nova_client = NovaClient(username=_credentials['username'],
+                                      api_key=_credentials['api_key'],
+                                      project_id=_credentials['tenant_id'],
+                                      auth_url=_credentials['auth_url'],
+                                      insecure=True)
+        self.nova_client.client.auth_token = _credentials['api_key']
+        # self.nova_client.client.authenticate()
+        # ^ raises exceptions.Unauthorized - TODO: fix auth
 
 
 class Inst_UPTIME(PeriodicInstMeterTask):
@@ -250,7 +247,8 @@ class Inst_UPTIME(PeriodicInstMeterTask):
 
         except:
             # Warning! Fails silently...
-            logger.exception('Connection to hypervisor failed; reset.')
+            logger.exception('Inst_UPTIME: '
+                             'Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
@@ -343,7 +341,8 @@ class Inst_CPU(PeriodicInstMeterTask):
 
         except:
             # Warning! Fails silently...
-            logger.exception('Connection to hypervisor failed; reset.')
+            logger.exception('Inst_CPU: '
+                             'Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
@@ -381,7 +380,8 @@ class Inst_PHYMEM(PeriodicInstMeterTask):
 
         except:
             # Warning! Fails silently...
-            logger.exception('Connection to hypervisor failed; reset.')
+            logger.exception('Inst_PHYMEM: '
+                             'Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
@@ -417,20 +417,106 @@ class Inst_VIRMEM(PeriodicInstMeterTask):
 
         except:
             # Warning! Fails silently...
-            logger.exception('Connection to hypervisor failed; reset.')
+            logger.exception('Inst_VIRMEM: '
+                             'Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
             return virmem
 
 
+class NetPollster(LibVirtPollster):
+    pass
 class Inst_NETWORK_IO(PeriodicInstMeterTask):
+
+    def __init__(self, callback, period):
+        super(Inst_VIRMEM, self).__init__(callback, period)
+
     def meter(self):
         """
-        Returns a list of IDs and corresponding network I/O (in bytes) for all
-        instances running on a specific host.
+        Returns a list of (UUID, timestamp, <network I/O (in bytes)>)
+        tuples for all, one for each instance running on a specific host.
         """
         return NotImplementedError()
+
+    def _get_vnics(self, conn, instance):
+        """Get disks of an instance, only used to bypass bug#998089."""
+        domain = conn._conn.lookupByName(_instance_name(instance))
+        tree = etree.fromstring(domain.XMLDesc(0))
+        vnics = []
+        for interface in tree.findall('devices/interface'):
+            vnic = {}
+            vnic['name'] = interface.find('target').get('dev')
+            vnic['mac'] = interface.find('mac').get('address')
+            vnic['fref'] = interface.find('filterref').get('filter')
+            for param in interface.findall('filterref/parameter'):
+                vnic[param.get('name').lower()] = param.get('value')
+            vnics.append(vnic)
+        return vnics
+
+
+
+    def get_counters(self, manager, instance):
+        try:
+            try:
+                # dict of (uuid: (pid, instance-name)) elements
+                inst_ids = get_inst_ids(self.conn, pids=False)
+                
+                # domains = [self.conn.lookupByID(dom_id) \
+                #            for dom_id in self.conn.listDomainsID()]
+
+            dom_descr = dict((dom, (dom.UUIDString(), dom.XMLDesc(0))) \
+                             for dom in domains)
+
+
+        try:
+            vnics = self._get_vnics(conn, instance)
+        except Exception as err:
+            self.LOG.warning('Ignoring instance %s: %s',
+                             instance_name, err)
+            self.LOG.exception(err)
+        else:
+            domain = conn._conn.lookupByName(instance_name)
+            for vnic in vnics:
+                rx_bytes, rx_packets, _, _, \
+                    tx_bytes, tx_packets, _, _ = \
+                    domain.interfaceStats(vnic['name'])
+                self.LOG.info(self.NET_USAGE_MESSAGE, instance_name,
+                              vnic['name'], rx_bytes, tx_bytes)
+                yield self.make_vnic_counter(instance,
+                                             name='network.incoming.bytes',
+                                             type=counter.TYPE_CUMULATIVE,
+                                             volume=rx_bytes,
+                                             vnic_data=vnic,
+                                             )
+                yield self.make_vnic_counter(instance,
+                                             name='network.outgoing.bytes',
+                                             type=counter.TYPE_CUMULATIVE,
+                                             volume=tx_bytes,
+                                             vnic_data=vnic,
+                                             )
+                yield self.make_vnic_counter(instance,
+                                             name='network.incoming.packets',
+                                             type=counter.TYPE_CUMULATIVE,
+                                             volume=rx_packets,
+                                             vnic_data=vnic,
+                                             )
+                yield self.make_vnic_counter(instance,
+                                             name='network.outgoing.packets',
+                                             type=counter.TYPE_CUMULATIVE,
+                                             volume=tx_packets,
+                                             vnic_data=vnic,
+                                             )
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
 
 
 class Inst_DISK_IO(PeriodicInstMeterTask):
@@ -440,7 +526,7 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
 
     def meter(self):
         """
-        Returns a list of (UUID, timestamp, read_rquests, bytes_read,
+        Returns a list of (UUID, timestamp, read_requests, bytes_read,
         write_requests, bytes_written) tuples, one for each instance
         running on a specific host.
         """
@@ -475,7 +561,8 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
 
         except:
             # Warning! Fails silently...
-            logger.exception('Connection to hypervisor failed; reset.')
+            logger.exception('Inst_DISK_IO: '
+                             'Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:

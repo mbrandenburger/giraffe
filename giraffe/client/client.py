@@ -196,8 +196,8 @@ class BaseController(controller.CementBaseController):
             # -----------------------------------------------------------------
             (['-e', '--endpoint'], \
                 dict(action='store', help='Giraffe service endpoint (domain:port)', \
-                     default=':'.join([_config.get('client', 'host'), \
-                                       _config.get('client', 'port')])))
+                     default=':'.join([_config.get('rest_api', 'host'), \
+                                       _config.get('rest_api', 'port')])))
             ]
         #   ...
         #   (['-F', '--FLAG'],     dict(action='store_true', help='...'))

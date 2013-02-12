@@ -88,6 +88,11 @@ class Agent(object):
             Inst_DISK_IO(self._callback_inst_disk_io, _METER_DURATION)
         )
 
+        # meter instance network I/O
+        self.tasks.append(
+            Inst_NETWORK_IO(self._callback_inst_network_io, _METER_DURATION)
+        )
+
     # CB METHODS FOR HOST METERS ----------------------------------------------
 
     def _callback_cpu_avg(self, params):
@@ -156,6 +161,26 @@ class Agent(object):
         self.publisher.add_meter_record(
                             'inst.disk.io.write.bytes',
                             # zip(*(descriptors + [zip(*zipped_params)[3]])),
+                            zip(*(descriptors + [zipped_params[5]])),
+                            0)
+
+    def _callback_inst_network_io(self, params):
+        zipped_params = zip(*params)
+        descriptors = zipped_params[0:2]  # uuids and timestamps
+        self.publisher.add_meter_record(
+                            'inst.network.io.incoming.bytes',
+                            zip(*(descriptors + [zipped_params[2]])),
+                            0)
+        self.publisher.add_meter_record(
+                            'inst.network.io.incoming.packets',
+                            zip(*(descriptors + [zipped_params[3]])),
+                            0)
+        self.publisher.add_meter_record(
+                            'inst.network.io.outgoing.bytes',
+                            zip(*(descriptors + [zipped_params[4]])),
+                            0)
+        self.publisher.add_meter_record(
+                            'inst.network.io.outgoing.packets',
                             zip(*(descriptors + [zipped_params[5]])),
                             0)
 

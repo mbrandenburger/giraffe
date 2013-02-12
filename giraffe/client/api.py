@@ -254,7 +254,7 @@ class GiraffeClient(object):
         path = '/'.join(['/projects', str(proj)])
         return self._get(path, params)
 
-    def get_project_instances(self, proj, params=None):
+    def get_proj_instances(self, proj, params=None):
         """
         Returns a tuple (actually, a ResultSet instance) of
             ...

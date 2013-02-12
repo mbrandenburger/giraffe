@@ -34,6 +34,7 @@ Usage:
         --min
         --max
         --avg
+        --sum
         --limit LIMIT
         --order ORDER
 
@@ -148,6 +149,9 @@ class BaseController(controller.CementBaseController):
             (['--avg'], \
                 dict(action='store_true', help='', \
                      default=None)),
+            (['--sum'], \
+                dict(action='store_true', help='', \
+                     default=None)),
             (['--count'], \
                 dict(action='store_true', help='', \
                      default=None)),
@@ -171,7 +175,7 @@ class BaseController(controller.CementBaseController):
             (['-a', '--auth_url'], \
                 dict(action='store', help='$OS_AUTH_URL', \
                      default=os.getenv('OS_AUTH_URL') or \
-                             _config.get('client', 'auth_url'))),
+                             _config.get('auth', 'auth_url'))),
             # -----------------------------------------------------------------
             (['-u', '--username'], \
                 dict(action='store', help='$OS_USERNAME', \
@@ -204,7 +208,7 @@ class BaseController(controller.CementBaseController):
     def _client(self):
         #@[fbahr]: `dirty` hack, getting dict instance from self.pargs
         _kwargs = dict((k, v) for (k, v) in self.pargs._get_kwargs())
-        return GiraffeClient(auth_token=AuthProxy.get_token(credentials=_kwargs))
+        return GiraffeClient(auth_token=AuthProxy.get_token(**_kwargs))
 
     def _exec_context(self):
         outerframe = inspect.getouterframes(inspect.currentframe())[-1]
@@ -219,9 +223,10 @@ class BaseController(controller.CementBaseController):
         #               combined with some index magic and 'except:'-fallback
         try:
             params['aggregation'] \
-                = {0 : 'min', 1 : 'max', 2: 'avg', 3 : 'count'} \
+                = {0 : 'min', 1 : 'max', 2: 'avg', 3: 'sum', 4 : 'count'} \
                   [[self.pargs.min, self.pargs.max, \
-                    self.pargs.avg, self.pargs.count] \
+                    self.pargs.avg, self.pargs.sum, \
+                    self.pargs.count] \
                    .index(True)]
         except:
             pass
@@ -266,7 +271,6 @@ class BaseController(controller.CementBaseController):
                 raise Exception()
             #   ^     Exception('error: query [-q/--query ...] not specified')
             result = self._client()._get(self.pargs.query)
-            logger.debug('COOL? > %s' % str(result))
             self._display(result)
         except Exception as e:
             self._except(e)

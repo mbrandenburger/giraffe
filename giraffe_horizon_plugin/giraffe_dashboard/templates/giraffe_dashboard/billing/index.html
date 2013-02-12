@@ -1,0 +1,11 @@
+{% extends 'giraffe_dashboard/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Giraffe - Project Billing" %}{% endblock %}
+
+{% block page_header %}
+  {% include "horizon/common/_page_header.html" with title=_("Project Billing") %}
+{% endblock page_header %}
+
+{% block giraffe_dashboard_main %}
+  {{ table.render }}
+{% endblock %}

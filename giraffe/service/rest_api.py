@@ -26,6 +26,7 @@ class Rest_API(object):
         self.AGGREGATION_MAX = 'max'
         self.AGGREGATION_MIN = 'min'
         self.AGGREGATION_AVG = 'avg'
+        self.AGGREGATION_SUM = 'sum'
         self.server = None
         self.db = None
         self._param_patterns = {self.PARAM_START_TIME:
@@ -117,18 +118,24 @@ class Rest_API(object):
         - avg: returns the average for "column" of all the rows that match the
         args parameters.
         """
-        if aggregation == self.AGGREGATION_COUNT:
-            count = self.db.count(cls, args)
-            return int(count) if count else 0
-        elif aggregation == self.AGGREGATION_MAX:
-            record = self.db.max_row(cls, column, args)
-            return record.to_dict() if record else None
-        elif aggregation == self.AGGREGATION_MIN:
-            record = self.db.min_row(cls, column, args)
-            return record.to_dict() if record else None
-        elif aggregation == self.AGGREGATION_AVG:
-            avg = self.db.avg(cls, column, args)
-            return float(avg) if avg else 0.0
+        try:
+            if aggregation == self.AGGREGATION_COUNT:
+                count = self.db.count(cls, args)
+                return int(count) if count else 0
+            elif aggregation == self.AGGREGATION_MAX:
+                record = self.db.max_row(cls, column, args)
+                return record.to_dict() if record else None
+            elif aggregation == self.AGGREGATION_MIN:
+                record = self.db.min_row(cls, column, args)
+                return record.to_dict() if record else None
+            elif aggregation == self.AGGREGATION_AVG:
+                avg = self.db.avg(cls, column, args)
+                return float(avg) if avg else 0.0
+            elif aggregation == self.AGGREGATION_SUM:
+                value_sum = self.db.sum(cls, column, args)
+                return float(value_sum) if value_sum else 0.0
+        except Exception as e:
+            _logger.exception(e)
         return None
 
     def route_root(self):
@@ -143,12 +150,11 @@ class Rest_API(object):
         """
         Returns a list of all available Host objects.
 
-        Route: hosts
+        Route: hosts/
         Returns: List of Host objects, JSON-formatted
         Query params: aggregation=[count], order
         """
         query = self._query_params(query_string)
-        _logger.debug(query)
         self.db.session_open()
         if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
             result = self._aggregate(Host, query[self.PARAM_AGGREGATION], {})
@@ -165,7 +171,7 @@ class Rest_API(object):
         Returns the Host object where the host_id matches. The host_id can be
         the ID (int) or the NAME (string).
 
-        Route: hosts/<host_id>
+        Route: hosts/<host_id>/
         Returns: Host object, JSON-formatted
         Query params: -
         """
@@ -187,7 +193,7 @@ class Rest_API(object):
         Returns a list of Meter objects for which MeterRecords are available
         for the given host.
 
-        Route: hosts/<host_id>/meters
+        Route: hosts/<host_id>/meters/
         Returns: List of Meter objects, JSON-formatted
         Query params: -
         """
@@ -217,9 +223,9 @@ class Rest_API(object):
         Returns a list of MeterRecord objects for the given Host ID and Meter
         ID.
 
-        Route: hosts/<host_id>/meters/<meter_id>
+        Route: hosts/<host_id>/meters/<meter_id>/
         Returns: List of MeterRecord objects, JSON-formatted
-        Query params: start_time, end_time, aggregation=[count], order, limit
+        Query params: start_time, end_time, aggregation, order, limit
         """
         query = self._query_params(query_string)
         try:
@@ -237,7 +243,7 @@ class Rest_API(object):
         except Exception:
             host = None
             meter = None
-        result = []
+        result = None
         if host and meter:
             record_args = {'host_id': host.id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
@@ -248,7 +254,6 @@ class Rest_API(object):
                     record_args['timestamp'][1] = query[self.PARAM_END_TIME]
                 record_args['timestamp'] = (record_args['timestamp'][0],
                                             record_args['timestamp'][1])
-            _logger.debug('record_args = %s' % record_args)
             try:
                 # aggregation
                 if query[self.PARAM_AGGREGATION]:
@@ -274,7 +279,7 @@ class Rest_API(object):
         """
         Returns a list of project name strings.
 
-        Route: projects
+        Route: projects/
         Returns: List of project names (string), JSON-formatted
         Query params: aggregation=[count], order
         """
@@ -296,7 +301,7 @@ class Rest_API(object):
 
     def route_projects_pid(self, project_id, query_string=''):
         """
-        Route: projects/<project_id>
+        Route: projects/<project_id>/
         Returns: -
         Query params: -
         """
@@ -308,7 +313,7 @@ class Rest_API(object):
         Returns a list of Meter objects for which MeterRecords are available
         for the given project.
 
-        Route: projects/<project_id>/meters
+        Route: projects/<project_id>/meters/
         Returns: List of Meter objects, JSON-formatted
         Query params: -
         """
@@ -326,9 +331,9 @@ class Rest_API(object):
     def route_projects_pid_meters_mid_records(self, project_id, meter_id,
                                               query_string=''):
         """
-        Route: projects/<project_id>/meters/<meter_id>/records
+        Route: projects/<project_id>/meters/<meter_id>/records/
         Returns: List of MeterRecord objects, JSON-formatted
-        Query params: start_time, end_time, aggregation=[count], order, limit
+        Query params: start_time, end_time, aggregation, order, limit
         """
         query = self._query_params(query_string)
         self.db.session_open()
@@ -341,6 +346,7 @@ class Rest_API(object):
         except Exception:
             meter = None
 
+        result = None
         if meter:
             args = {'project_id': project_id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
@@ -368,7 +374,7 @@ class Rest_API(object):
 
     def route_meters(self, query_string=''):
         """
-        Route: meters
+        Route: meters/
         Returns: List of Meter objects, JSON-formatted
         Query params: aggregation=[count], order
         """
@@ -388,7 +394,7 @@ class Rest_API(object):
         """
         Returns a Meter object. The meter_id can either be the ID or the NAME.
 
-        Route: meters/<meter_id>
+        Route: meters/<meter_id>/
         Returns: Meter object, JSON-formatted
         Query params: -
         """
@@ -406,7 +412,7 @@ class Rest_API(object):
 
     def route_users(self, query_string=''):
         """
-        Route: users
+        Route: users/
         Returns: List of user names (string), JSON-formatted
         Query params: aggregation=[count], order
         """
@@ -429,9 +435,9 @@ class Rest_API(object):
     def route_users_uid_meters_mid_records(self, user_id, meter_id,
                                            query_string=''):
         """
-        Route: users/<user_id>/meters/<meter_id>/records
+        Route: users/<user_id>/meters/<meter_id>/records/
         Returns: List of MeterRecord objects, JSON-formatted
-        Query params: start_time, end_time, aggregation=[count], order, limit
+        Query params: start_time, end_time, aggregation, order, limit
         """
         query = self._query_params(query_string)
         self.db.session_open()
@@ -444,6 +450,7 @@ class Rest_API(object):
         except Exception:
             meter = None
 
+        result = None
         if meter:
             args = {'user_id': user_id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
@@ -471,7 +478,7 @@ class Rest_API(object):
 
     def route_instances(self, query_string=''):
         """
-        Route: instances
+        Route: instances/
         Returns: List of instance names (string), JSON-formatted
         Query params: aggregation=[count], order
         """
@@ -494,9 +501,9 @@ class Rest_API(object):
     def route_instances_iid_meters_mid_records(self, instance_id, meter_id,
                                                query_string=''):
         """
-        Route: instances/<instance_id>/meters/<meter_id>/records
+        Route: instances/<instance_id>/meters/<meter_id>/records/
         Returns: List of MeterRecord objects, JSON-formatted
-        Query params: start_time, end_time, aggregation=[count], order, limit
+        Query params: start_time, end_time, aggregation, order, limit
         """
         query = self._query_params(query_string)
         self.db.session_open()
@@ -509,6 +516,7 @@ class Rest_API(object):
         except Exception:
             meter = None
 
+        result = None
         if meter:
             args = {'resource_id': instance_id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
@@ -531,5 +539,58 @@ class Rest_API(object):
                                        order=query[self.PARAM_ORDER],
                                        order_attr='timestamp')
                 result = json.dumps([r.to_dict() for r in records])
+        self.db.session_close()
+        return result
+
+    def route_records(self, query_string=''):
+        """
+        Returns a list of MeterRecord objects.
+
+        Route: records/
+        Returns: List of MeterRecord objects, JSON-formatted
+        Query params: start_time, end_time, aggregation, order, limit
+        """
+        args = {}
+        query = self._query_params(query_string)
+        if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
+            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
+            if query[self.PARAM_START_TIME]:
+                args['timestamp'][0] = query[self.PARAM_START_TIME]
+            if query[self.PARAM_END_TIME]:
+                args['timestamp'][1] = query[self.PARAM_END_TIME]
+            args['timestamp'] = (args['timestamp'][0],
+                                 args['timestamp'][1])
+        self.db.session_open()
+        result = []
+        if query[self.PARAM_AGGREGATION]:
+            result = self._aggregate(MeterRecord,
+                                     query[self.PARAM_AGGREGATION],
+                                     args)
+            result = json.dumps(result)
+        else:
+            records = self.db.load(MeterRecord, args,
+                                   limit=query[self.PARAM_LIMIT],
+                                   order=query[self.PARAM_ORDER],
+                                   order_attr='timestamp')
+            result = json.dumps([r.to_dict() for r in records])
+        self.db.session_close()
+        return result
+
+    def route_records_rid(self, record_id, query_string=''):
+        """
+        Returns a MeterRecord object.
+
+        Route: records/<record_id>/
+        Returns: MeterRecord object, JSON-formatted
+        Query params: -
+        """
+#        query = self._query_params(query_string)
+        self.db.session_open()
+        try:
+            record = self.db.load(MeterRecord, args={'id': record_id},
+                                  limit=1)[0]
+            result = json.dumps(record.to_dict())
+        except:
+            result = None
         self.db.session_close()
         return result

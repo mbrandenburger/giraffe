@@ -3,18 +3,18 @@ from django.utils.translation import ugettext as _
 import horizon
 
 
-class BasePanels(horizon.PanelGroup):
-    slug = "giraffe_info"
-    name = _("Giraffe Information")
+class AdminPanels(horizon.PanelGroup):
+    slug = "giraffe_admin"
+    name = _("Admin Tools")
     panels = ('overview', 'hosts',)
 
 
-class SpecialPanels(horizon.PanelGroup):
-    slug = "special"
-    name = _("Special Information")
+class BillingPanels(horizon.PanelGroup):
+    slug = "giraffe_billing"
+    name = _("Billing Information")
     # note: the comma at the end DOES make a difference -
     # without it, a PanelGroup with only one panel is not displayed!
-    panels = ('cats',)
+    panels = ('billing',)
 
 
 class GiraffePlugin(horizon.Dashboard):
@@ -22,7 +22,7 @@ class GiraffePlugin(horizon.Dashboard):
     slug = "giraffe_dashboard"
     # note: the comma at the end DOES make a difference -
     # without it, the last PanelGroup is not displayed at all!
-    panels = (BasePanels, SpecialPanels,)
+    panels = (BillingPanels, AdminPanels,)
     default_panel = 'overview'
     nav = False
 

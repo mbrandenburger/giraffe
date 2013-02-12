@@ -14,25 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from django.utils.translation import ugettext as _
+from django.conf.urls.defaults import patterns, url
 
-from horizon import api
-from horizon import tables
-
-
-class ViewCat(tables.LinkAction):
-    name = "view"
-    verbose_name = _("View")
-    url = "horizon:giraffe:cats:detail"
-    classes = ("btn-edit",)
+from .views import IndexView
 
 
-class CatsTable(tables.DataTable):
-    id = tables.Column('id', verbose_name=_('ID'))
-    thumb = tables.Column('thumb', verbose_name=_('Thumb'))
-    url = tables.Column('url', verbose_name=_('Url'))
-
-    class Meta:
-        name = "cats"
-        verbose_name = _("Cats")
-        row_actions = (ViewCat,)
+urlpatterns = patterns('giraffe.billing.views',
+    url(r'^$', IndexView.as_view(), name='index'),
+)

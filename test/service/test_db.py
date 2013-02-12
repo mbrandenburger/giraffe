@@ -140,3 +140,21 @@ class DbTestCases(unittest.TestCase):
         self.db.save(meter)
         distinct_values = self.db.distinct_values(Meter, 'name')
         self.assertTrue(meter_name in distinct_values)
+
+    def test_sum(self):
+        record = MeterRecord(meter_id=self.meter.id,
+                             host_id=self.host.id,
+                             user_id='unit_test_user_id',
+                             resource_id='unit_test_resource_id',
+                             project_id='uni_test_project_id',
+                             value='100',
+                             duration=0,
+                             timestamp=self.timestamp())
+        self.db.save(record)
+        args = {'meter_id': self.meter.id}
+        records = self.db.load(MeterRecord, args=args)
+        value_sum = 0
+        for r in records:
+            value_sum += int(r.value)
+        self.assertEqual(value_sum, self.db.sum(MeterRecord, 'value',
+                                                args=args))

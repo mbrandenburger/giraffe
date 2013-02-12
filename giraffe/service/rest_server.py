@@ -24,7 +24,7 @@ class Rest_Server():
         def root():
             result = self.rest_api.route_root()
             if result is None:
-                return Response(response='root not available', status=404)
+                return Response(response='root not found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/hosts')
@@ -33,7 +33,7 @@ class Rest_Server():
         def hosts():
             result = self.rest_api.route_hosts(request.query_string)
             if result is None:
-                return Response(response='hosts not available', status=404)
+                return Response(response='no hosts found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/hosts/<host_id>')
@@ -43,7 +43,7 @@ class Rest_Server():
             result = self.rest_api.route_hosts_hid(host_id,
                                                    request.query_string)
             if result is None:
-                return Response(response='host not available', status=404)
+                return Response(response='host not found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/hosts/<host_id>/meters')
@@ -53,7 +53,7 @@ class Rest_Server():
             result = self.rest_api.route_hosts_hid_meters(host_id,
                                                           request.query_string)
             if result is None:
-                return Response(response='host not available', status=404)
+                return Response(response='no meters found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/hosts/<host_id>/meters/<meter_id>/records')
@@ -62,7 +62,7 @@ class Rest_Server():
             result = self.rest_api.route_hosts_hid_meters_mid_records(\
                                        host_id, meter_id, request.query_string)
             if result is None:
-                return Response(response='host not available', status=404)
+                return Response(response='no records found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/projects')
@@ -71,7 +71,7 @@ class Rest_Server():
         def projects():
             result = self.rest_api.route_projects(request.query_string)
             if result is None:
-                return Response(response='projects not available', status=404)
+                return Response(response='no projects found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/projects/<project_id>')
@@ -81,7 +81,7 @@ class Rest_Server():
             result = self.rest_api.route_projects_pid(project_id,
                                                       request.query_string)
             if result is None:
-                return Response(response='projects not available', status=404)
+                return Response(response='project not found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/projects/<project_id>/meters')
@@ -91,7 +91,7 @@ class Rest_Server():
             result = self.rest_api.route_projects_pid_meters(project_id,\
                                                          request.query_string)
             if result is None:
-                return Response(response='projects not available', status=404)
+                return Response(response='no meters found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/projects/<project_id>/meters/<meter_id>/records')
@@ -103,8 +103,7 @@ class Rest_Server():
                                                               meter_id,\
                                                           request.query_string)
             if result is None:
-                return Response(response='project or meter not available',
-                                status=404)
+                return Response(response='no records found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/meters')
@@ -113,7 +112,7 @@ class Rest_Server():
         def meters():
             result = self.rest_api.route_meters(request.query_string)
             if result is None:
-                return Response(response='meters not available', status=404)
+                return Response(response='no meters found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/meters/<meter_id>')
@@ -123,7 +122,7 @@ class Rest_Server():
             result = self.rest_api.route_meters_mid(meter_id,
                                                     request.query_string)
             if result is None:
-                return Response(response='meters not available', status=404)
+                return Response(response='meter not found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/users')
@@ -132,7 +131,7 @@ class Rest_Server():
         def users():
             result = self.rest_api.route_users(request.query_string)
             if result is None:
-                return Response(response='users not available', status=404)
+                return Response(response='no users found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/users/<user_id>/meters/<meter_id>/records')
@@ -143,8 +142,7 @@ class Rest_Server():
                         route_users_uid_meters_mid_records(user_id, meter_id,\
                                                        request.query_string)
             if result is None:
-                return Response(response='user or meter not available',
-                                status=404)
+                return Response(response='no records found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/instances')
@@ -153,7 +151,7 @@ class Rest_Server():
         def instances():
             result = self.rest_api.route_instances(request.query_string)
             if result is None:
-                return Response(response='instances not available', status=404)
+                return Response(response='no instances found', status=404)
             return Response(response=result, status=200)
 
         @self.app.route('/instances/<instance_id>/meters/<meter_id>/records')
@@ -165,6 +163,24 @@ class Rest_Server():
                                                                meter_id,\
                                                        request.query_string)
             if result is None:
-                return Response(response='instance or meter not available',
-                                status=404)
+                return Response(response='no records found', status=404)
+            return Response(response=result, status=200)
+
+        @self.app.route('/records')
+        @self.app.route('/records/')
+        #requires_auth
+        def records():
+            result = self.rest_api.route_records(request.query_string)
+            if result is None:
+                return Response(response='no records found', status=404)
+            return Response(response=result, status=200)
+
+        @self.app.route('/records/<record_id>')
+        @self.app.route('/records/<record_id>/')
+        #requires_auth
+        def records_rid(record_id):
+            result = self.rest_api.route_records_rid(record_id,
+                                                     request.query_string)
+            if result is None:
+                return Response(response='record not found', status=404)
             return Response(response=result, status=200)

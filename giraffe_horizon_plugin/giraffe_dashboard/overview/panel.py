@@ -7,5 +7,6 @@ import giraffe_dashboard.dashboard
 class OverviewPanel(horizon.Panel):
     name = _("Overview")
     slug = 'overview'
+    roles = ('admin',)
 
 giraffe_dashboard.dashboard.GiraffePlugin.register(OverviewPanel)

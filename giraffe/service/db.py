@@ -123,6 +123,10 @@ class Db(object):
         """
         Loads all persistent objects of the given class that meet the given
         arguments.
+        args is a dict of column-value-pairs that are matched for equality,
+        except:
+        - value is a list: converted into an IN clause
+        - value is a tuple of length 2: converted into col <= V and col >= V
         """
         query = self._query(cls, args, limit, order, order_attr)
         return query.all()
@@ -143,8 +147,7 @@ class Db(object):
         Returns the number of all rows for the given object class.
 
         An optional dictionary "args" can be passed that contains column values
-        which have to be matched (test for equality): the key is the column
-        name and the value the column value to match.
+        which have to be matched.
         """
         pk = class_mapper(cls).primary_key[0].name
         query = self._session.query(func.count(getattr(cls, pk)))
@@ -155,8 +158,7 @@ class Db(object):
         """
         Returns the maximum of column "column" of all rows for the given object
         class.
-        An optional dictionary "args" can be passed to filter rows (see
-        count()).
+        An optional dictionary "args" can be passed to filter rows.
         """
         query = self._session.query(func.max(getattr(cls, column)))
         query = self._filter(cls, query, args)
@@ -174,8 +176,7 @@ class Db(object):
         """
         Returns the minimum of column "column" of all rows for the given object
         class.
-        An optional dictionary "args" can be passed to filter rows (see
-        count()).
+        An optional dictionary "args" can be passed to filter rows.
         """
         query = self._session.query(func.min(getattr(cls, column)))
         query = self._filter(cls, query, args)
@@ -193,10 +194,18 @@ class Db(object):
         """
         Returns the average of column "column" of all rows for the given object
         class.
-        An optional dictionary "args" can be passed to filter rows (see
-        count()).
+        An optional dictionary "args" can be passed to filter rows.
         """
         query = self._session.query(func.avg(getattr(cls, column)))
+        query = self._filter(cls, query, args)
+        return query.first()[0]
+
+    def sum(self, cls, column, args={}):
+        """
+        Returns the sum of column "column" of all rows for the cls object
+        that match the given arguments.
+        """
+        query = self._session.query(func.sum(getattr(cls, column)))
         query = self._filter(cls, query, args)
         return query.first()[0]
 

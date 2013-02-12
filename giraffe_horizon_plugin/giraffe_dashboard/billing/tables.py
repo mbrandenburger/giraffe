@@ -16,13 +16,16 @@
 
 from django.utils.translation import ugettext as _
 
-import horizon
-import giraffe_dashboard.dashboard
+from horizon import tables
 
 
-class CatPanel(horizon.Panel):
-    name = _("Cats")
-    slug = 'cats'
+class BillingTable(tables.DataTable):
+    label = tables.Column('label', verbose_name=_('Monthly Bill'))
+    meter_cpu = tables.Column('meter_cpu', verbose_name=_(
+                                                      'inst.cpu.time [ns]'))
+    meter_io = tables.Column('meter_io', verbose_name=_(\
+                                    'inst.disk.io.(read+write).bytes [mb]'))
 
-
-giraffe_dashboard.dashboard.GiraffePlugin.register(CatPanel)
+    class Meta:
+        name = "Project Billing"
+        verbose_name = _("project_billing")

@@ -1,8 +1,14 @@
 __author__ = 'marcus, fbahr'
 
 import os
+import sys
+from datetime import datetime
+import libvirt
 import psutil
 from giraffe.common.task import PeriodicMeterTask
+
+import logging
+logger = logging.getLogger("agent.host_meters")
 
 
 class Host_UNAME(PeriodicMeterTask):
@@ -11,6 +17,40 @@ class Host_UNAME(PeriodicMeterTask):
         Returns uname
         """
         return os.uname()
+
+
+class Host_INST_Count(PeriodicMeterTask):
+    def __init__(self, callback, period):
+        super(Host_INST_Count, self).__init__(callback, period)
+        self.conn = libvirt.openReadOnly('qemu:///system')
+        if not self.conn:
+            logger.exception('Failed to open connection to hypervisor.')
+            sys.exit(1)
+
+    def meter(self):
+        """
+        Returns a list of (UUID, timestamp, domain-state) tuples, one for each
+        instance running on a specific host.
+        """
+        num_instances = -1
+    #   uuids = []
+
+        try:
+            num_instances = self.conn.numOfDomains()
+    #       domains = [self.conn.lookupByID(domain_id) \
+    #                       for domain_id in self.conn.listDomainsID()]
+    #       time = datetime.now()
+    #
+    #       uuids = [[d.UUIDString(), time, d.info()[0]] for d in domains]
+
+        except:
+            # Warning! Fails silently...
+            logger.exception('Connection to hypervisor failed; reset.')
+            self.conn = libvirt.openReadOnly('qemu:///system')
+
+        finally:
+            return num_instances
+    #       return uuids
 
 
 class Host_CPU_AVG(PeriodicMeterTask):

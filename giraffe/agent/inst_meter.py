@@ -194,15 +194,14 @@ def get_inst_ids(connection, pids=True):
 
 class PeriodicInstMeterTask(PeriodicMeterTask):
 
-    def __init__(self, callback, period, libvirt=False):
+    def __init__(self, callback, period):
         super(PeriodicInstMeterTask, self).__init__(callback, period)
 
-        if libvirt:
-            self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
-            if not self.conn:
-                logger.exception('PeriodicInstMeterTask: '
-                                 'Failed to open connection to hypervisor.')
-                sys.exit(1)
+        self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
+        if not self.conn:
+            logger.exception('PeriodicInstMeterTask: '
+                             'Failed to open connection to hypervisor.')
+            sys.exit(1)
 
         #@[fbahr]: maybe it's a good idea to move this - i.e., gathering
         #          user and tenant informations for an instance via the
@@ -429,66 +428,43 @@ class NetPollster(LibVirtPollster):
     pass
 class Inst_NETWORK_IO(PeriodicInstMeterTask):
 
-    def __init__(self, callback, period):
-        super(Inst_VIRMEM, self).__init__(callback, period)
-
     def meter(self):
         """
-        Returns a list of (UUID, timestamp, <network I/O (in bytes)>)
-        tuples for all, one for each instance running on a specific host.
+        Returns a list of (UUID, timestamp, <network I/O>) tuples for all,
+        one for each instance running on a specific host.
         """
-        return NotImplementedError()
+        inst_net_ios = []
 
-    def _get_vnics(self, conn, instance):
-        """Get disks of an instance, only used to bypass bug#998089."""
-        domain = conn._conn.lookupByName(_instance_name(instance))
-        tree = etree.fromstring(domain.XMLDesc(0))
-        vnics = []
-        for interface in tree.findall('devices/interface'):
-            vnic = {}
-            vnic['name'] = interface.find('target').get('dev')
-            vnic['mac'] = interface.find('mac').get('address')
-            vnic['fref'] = interface.find('filterref').get('filter')
-            for param in interface.findall('filterref/parameter'):
-                vnic[param.get('name').lower()] = param.get('value')
-            vnics.append(vnic)
-        return vnics
-
-
-
-    def get_counters(self, manager, instance):
         try:
-            try:
-                # dict of (uuid: (pid, instance-name)) elements
-                inst_ids = get_inst_ids(self.conn, pids=False)
-                
-                # domains = [self.conn.lookupByID(dom_id) \
-                #            for dom_id in self.conn.listDomainsID()]
+            domains = [self.conn.lookupByID(dom_id) \
+                       for dom_id in self.conn.listDomainsID()]
 
             dom_descr = dict((dom, (dom.UUIDString(), dom.XMLDesc(0))) \
-                             for dom in domains)
+                              for dom in domain)
 
+            for dom, descr in dom_descr.iteritems():
+                #@[fbahr] - TODO: Exception handling?
+                tree = Etree.fromstring(decr[1])
+                vnics = []
+                for interace in tree.findall('devices/interface'):
+                    vnic = {}
+                    vnic['name'] = interface.find('target').get('dev')
+                    if vnic['name'].startswith('lo'):
+                        continue
+                    # vnic['mac'] = interface.find('mac').get('address')
+                    # vnic['fref'] = interface.find('filterref').get('filter')
+                    # for param in interface.findall('filterref/parameter'):
+                    #     vnic[param.get('name').lower()] = param.get('value')
+                    vnics.append(vnic)
 
-        try:
-            vnics = self._get_vnics(conn, instance)
-        except Exception as err:
-            self.LOG.warning('Ignoring instance %s: %s',
-                             instance_name, err)
-            self.LOG.exception(err)
-        else:
-            domain = conn._conn.lookupByName(instance_name)
-            for vnic in vnics:
-                rx_bytes, rx_packets, _, _, \
-                    tx_bytes, tx_packets, _, _ = \
-                    domain.interfaceStats(vnic['name'])
-                self.LOG.info(self.NET_USAGE_MESSAGE, instance_name,
-                              vnic['name'], rx_bytes, tx_bytes)
-                yield self.make_vnic_counter(instance,
-                                             name='network.incoming.bytes',
-                                             type=counter.TYPE_CUMULATIVE,
-                                             volume=rx_bytes,
-                                             vnic_data=vnic,
-                                             )
+                timestamp = datetime.now()
+                for vnic in vnics:
+                    rx_bytes, rx_packets, _, _,
+                    tx_bytes, tx_packets, _, _ \
+                        = domain.interfaceStats(vnic['name'])
+                
+                
+
                 yield self.make_vnic_counter(instance,
                                              name='network.outgoing.bytes',
                                              type=counter.TYPE_CUMULATIVE,
@@ -501,21 +477,7 @@ class Inst_NETWORK_IO(PeriodicInstMeterTask):
                                              volume=rx_packets,
                                              vnic_data=vnic,
                                              )
-                yield self.make_vnic_counter(instance,
-                                             name='network.outgoing.packets',
-                                             type=counter.TYPE_CUMULATIVE,
-                                             volume=tx_packets,
-                                             vnic_data=vnic,
-                                             )
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
 
 
 
@@ -530,7 +492,7 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
         write_requests, bytes_written) tuples, one for each instance
         running on a specific host.
         """
-        inst_ios = []
+        inst_disk_ios = []
 
         #@[fbahr] Alternative implementation:
         #         psutil.Process(pid).get_io_counters().[read|write]_bytes
@@ -542,6 +504,7 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
                              for dom in domains)
 
             for dom, descr in dom_descr.iteritems():
+                #@[fbahr] - TODO: Exception handling?
                 devices = filter(bool, \
                                  [target.get('dev') for target in \
                                   ETree.fromstring(descr[1]). \
@@ -551,13 +514,13 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
 
                 s = [sum(stat) for stat in zip(*block_stats)]
 
-                inst_ios.append((descr[0],  # uuid
-                                 datetime.now(),
-                                 s[0],      # r_requests
-                                 s[1],      # r_bytes
-                                 s[2],      # w_requests
-                                 s[3]))     # w_bytes
-                #                s[4]))     # errors
+                inst_disk_ios.append((descr[0],  # uuid
+                                      datetime.now(),
+                                      s[0],      # r_requests
+                                      s[1],      # r_bytes
+                                      s[2],      # w_requests
+                                      s[3]))     # w_bytes
+                #                     s[4]))     # errors
 
         except:
             # Warning! Fails silently...
@@ -566,4 +529,4 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
         finally:
-            return inst_ios
+            return inst_disk_ios

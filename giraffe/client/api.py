@@ -94,8 +94,8 @@ class GiraffeClient(object):
         self.protocol = kwargs.get('protocol', 'http')
         self.endpoint = kwargs.get('endpoint')
         if not self.endpoint:
-            host = kwargs.get('host', self.config.get('client', 'host'))
-            port = kwargs.get('port', self.config.get('client', 'port'))
+            host = kwargs.get('host', self.config.get('rest_api', 'host'))
+            port = kwargs.get('port', self.config.get('rest_api', 'port'))
             self.endpoint = ':'.join((host, port))
 
     @property

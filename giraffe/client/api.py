@@ -80,7 +80,7 @@ class GiraffeClient(object):
             _tenant_id = kwargs.get('tenant_id')
             #                       , self.config.get('client', 'tenant_id'))
             _auth_url = kwargs.get('auth_url', \
-                                   self.config.get('client', 'auth_url'))
+                                   self.config.get('auth', 'auth_url'))
 
             auth_token = AuthProxy.get_token(username=_username,
                                              password=_password,
@@ -287,3 +287,20 @@ class GiraffeClient(object):
         path = '/'.join(['/meters', str(meter)])
         return self._get(path, params)  # .as_(Meter)
 
+    def get_records(self, params=None):
+        """
+        Returns a tuple (actually, a ResultSet instance) of
+            ...
+        dicts
+        """
+        path = '/records'
+        return self._get(path, params)
+
+    def get_record(self, record, params=None):
+        """
+        WARNING: get_host - like every other API method - returns a _tuple_
+          (ResultSet), despite containing only a single element; the same
+          applies to ResultSet::as_().
+        """
+        path = '/'.join(['/records', str(record)])
+        return self._get(path, params)

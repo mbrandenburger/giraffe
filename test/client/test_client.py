@@ -113,6 +113,11 @@ class ClientTestCases(unittest.TestCase):
         self.assertEqual(len(meter_records), limit)
 
     def test_count_host_meter_records(self):
+        len_meter_records = len(self.gc.get_host_meter_records( \
+                                            host='uncinus', \
+                                            meter="host.loadavg_15m"))
+                            # ^ int
+
         count = self.gc.get_host_meter_records( \
                             host='uncinus', \
                             meter="host.loadavg_15m", \
@@ -120,6 +125,7 @@ class ClientTestCases(unittest.TestCase):
                             # ^ int
         self.assertFalse(isinstance(count, (tuple)))
         self.assertTrue(isinstance(count, (int)))
+        self.assertEqual(count, len_meter_records)
 
     def test_count_host_meter_records_with_time_limits(self):
         start_time = '2013-02-07_12-00-00'

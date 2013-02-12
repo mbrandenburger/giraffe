@@ -14,16 +14,19 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from django.utils.translation import ugettext as _
+import logging
 
-import horizon
-import giraffe_dashboard.dashboard
+from horizon import tables
 
-
-class HostPanel(horizon.Panel):
-    name = _("Hosts")
-    slug = 'hosts'
-    roles = ('admin',)
+from .tables import BillingTable
 
 
-giraffe_dashboard.dashboard.GiraffePlugin.register(HostPanel)
+LOG = logging.getLogger(__name__)
+
+
+class IndexView(tables.DataTableView):
+    table_class = BillingTable
+    template_name = 'giraffe_dashboard/billing/index.html'
+
+    def get_data(self):
+        return []

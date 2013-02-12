@@ -14,12 +14,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from django.conf.urls.defaults import patterns, url
+from django.utils.translation import ugettext as _
 
-from .views import IndexView, DetailView
+import horizon
+import giraffe_dashboard.dashboard
 
 
+class BillingPanel(horizon.Panel):
+    name = _("Giraffe Billing")
+    slug = 'billing'
 
-urlpatterns = patterns('giraffe.cats.views',
-    url(r'^$', IndexView.as_view(), name='index'),
-)
+
+giraffe_dashboard.dashboard.GiraffePlugin.register(BillingPanel)

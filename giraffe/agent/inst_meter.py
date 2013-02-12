@@ -135,63 +135,6 @@ logger = logging.getLogger("agent.inst_meters")
 # logger.addHandler(fh)
 
 
-def get_inst_ids(connection, pids=True):
-    """
-    Returns a dict of (uuid: (pid, instance-name)) elements for instances
-    running on a certain host.
-    """
-    #@[fbahr] To do: Lookups for UUIDs and PIDs are considered "harmful",
-    #         so: figure out a way to perform these only whenever
-    #         really neccessary
-    ids = {}
-
-    try:
-        # dict of (uuid: None) elements, in short: instances running on a host
-        for domain_id in connection.listDomainsID():
-            ids[connection.lookupByID(domain_id).UUIDString()] = None
-
-        # ^ alt. implementation
-        # ---------------------
-        # ids = dict((uuid, None)
-        #            for uuid in [connection.lookupByID(domain_id).UUIDString()
-        #                         for domain_id in connection.listDomainsID()])
-
-        if not pids:
-            return ids
-
-        # CLI 'magic' to grep pids and instance_names, 
-        # as initially introduced by marcus
-        cmd = "| ".join(["ps -eo pid,command ",
-                         "grep uuid ",
-                         "grep -v grep ",
-                         "grep '"
-                         + "\|".join(ids.keys())
-                         + "' ",
-                         "awk '{print $1, $12, $14}'"])
-
-        # tabular = list of [pid, instance-name, uuid] elements/rows
-        tabular = subprocess.check_output(cmd, shell=True) \
-                            .decode('ascii')[:-1] \
-                            .split('\n')
-
-        # now, ids = dict of (uuid: (pid, instance-name)) elements
-        for row in tabular:
-            col = row.split()
-            ids[col[2]] = (int(col[0]), col[1])
-
-        # ^ alt. implementation
-        # ---------------------
-        # [ids[col[2]] = (col[0], col[1])
-        #                for col in [row.split() for row in tabular]]
-
-    except:
-        # Warning! Fails silently...
-        pass
-
-    finally:
-        return ids
-
-
 class PeriodicInstMeterTask(PeriodicMeterTask):
 
     def __init__(self, callback, period):
@@ -224,6 +167,50 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
         # self.nova_client.client.authenticate()
         # ^ raises exceptions.Unauthorized - TODO: fix auth
 
+    def get_inst_ids(self, pids=True):
+        """
+        Returns a dict of (uuid: (pid, instance-name)) elements for instances
+        running on a certain host.
+        """
+        ids = {}
+
+        try:
+            # dict of (uuid: None) elements,
+            # in short: instances running on a host
+            for domain_id in self.conn.listDomainsID():
+                ids[self.conn.lookupByID(domain_id).UUIDString()] = None
+
+            if not pids:
+                return ids
+
+            # CLI 'magic' to grep pids and instance_names, 
+            # as initially introduced by marcus
+            cmd = "| ".join(["ps -eo pid,command ",
+                             "grep uuid ",
+                             "grep -v grep ",
+                             "grep '"
+                             + "\|".join(ids.keys())
+                             + "' ",
+                             "awk '{print $1, $12, $14}'"])
+
+            # tabular = list of [pid, instance-name, uuid] elements/rows
+            tabular = subprocess.check_output(cmd, shell=True) \
+                                .decode('ascii')[:-1] \
+                                .split('\n')
+
+            # now, ids = dict of (uuid: (pid, instance-name)) elements
+            for row in tabular:
+                col = row.split()
+                ids[col[2]] = (int(col[0]), col[1])
+
+        except:
+            # Warning! Fails silently...
+            pass
+
+        finally:
+            return ids
+
+
 
 class Inst_UPTIME(PeriodicInstMeterTask):
     def meter(self):
@@ -235,7 +222,7 @@ class Inst_UPTIME(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = get_inst_ids(self.conn)
+            inst_ids = self.get_inst_ids()
             # list of (uuid, timestamp, uptime) tuples
             uptimes = [(uuid,
                         datetime.now(),
@@ -295,7 +282,7 @@ class Inst_CPU(PeriodicInstMeterTask):
                 #   provides all informations needed for subsequent
                 #   execution(s).
                 if not(prev_cpu_util or inst_ids):
-                    inst_ids = get_inst_ids(self.conn, pids=True)
+                    inst_ids = self.get_inst_ids(pids=True)
 
                 if not prev_cpu_util:
                     process = psutil.Process(inst_ids[uuid][0])
@@ -364,7 +351,7 @@ class Inst_PHYMEM(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = get_inst_ids(self.conn)
+            inst_ids = self.get_inst_ids()
             # list of (uuid, timestamp, phymem [in bytes], phymem usage [in
             # pct of total]) tuples
             phymem = [(uuid,
@@ -403,7 +390,7 @@ class Inst_VIRMEM(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = get_inst_ids(self.conn)
+            inst_ids = self.get_inst_ids()
             # list of (uuid, timestamp, virmem [in bytes], virmem usage [in
             # pct of total]) tuples
             virmem = [(uuid,
@@ -424,8 +411,6 @@ class Inst_VIRMEM(PeriodicInstMeterTask):
             return virmem
 
 
-class NetPollster(LibVirtPollster):
-    pass
 class Inst_NETWORK_IO(PeriodicInstMeterTask):
 
     def meter(self):
@@ -440,45 +425,51 @@ class Inst_NETWORK_IO(PeriodicInstMeterTask):
                        for dom_id in self.conn.listDomainsID()]
 
             dom_descr = dict((dom, (dom.UUIDString(), dom.XMLDesc(0))) \
-                              for dom in domain)
+                              for dom in domains)
 
             for dom, descr in dom_descr.iteritems():
                 #@[fbahr] - TODO: Exception handling?
-                tree = Etree.fromstring(decr[1])
-                vnics = []
-                for interace in tree.findall('devices/interface'):
-                    vnic = {}
-                    vnic['name'] = interface.find('target').get('dev')
-                    if vnic['name'].startswith('lo'):
-                        continue
-                    # vnic['mac'] = interface.find('mac').get('address')
-                    # vnic['fref'] = interface.find('filterref').get('filter')
-                    # for param in interface.findall('filterref/parameter'):
-                    #     vnic[param.get('name').lower()] = param.get('value')
-                    vnics.append(vnic)
 
-                timestamp = datetime.now()
-                for vnic in vnics:
-                    rx_bytes, rx_packets, _, _,
-                    tx_bytes, tx_packets, _, _ \
-                        = domain.interfaceStats(vnic['name'])
-                
-                
+                # tree = ETree.fromstring(descr[1])
+                # vnets = []
+                # for iface in tree.findall('devices/interface'):
+                #     vnet = {}
+                #     vnet['name'] = iface.find('target').get('dev')  # e.g. vnet1
+                #     vnet['mac'] = iface.find('mac').get('address')  # ...
+                #     vnet['fref'] = iface.find('filterref').get('filter')  # e.g. nova-instance-instance-00000028-fa163e4433d9
+                #     for param in interface.findall('filterref/parameter'):
+                #         vnet[param.get('name').lower()] = param.get('value')  # e.g. dhcpserver=192.168.4.33, ip=192.168.4.39
+                #     vnets.append(vnet)
 
-                yield self.make_vnic_counter(instance,
-                                             name='network.outgoing.bytes',
-                                             type=counter.TYPE_CUMULATIVE,
-                                             volume=tx_bytes,
-                                             vnic_data=vnic,
-                                             )
-                yield self.make_vnic_counter(instance,
-                                             name='network.incoming.packets',
-                                             type=counter.TYPE_CUMULATIVE,
-                                             volume=rx_packets,
-                                             vnic_data=vnic,
-                                             )
+                vnets = filter(bool, \
+                        # ^ prevents NoneType elements from being added to 'vnets'
+                               [target.get('dev') for target in \
+                                  ETree.fromstring(descr[1]). \
+                                        findall('devices/interface/target')])
 
+                iface_stats = [[r_bytes, r_packets, w_bytes, w_packets] \
+                               for w_bytes, w_packets, _, _,
+                                   w_bytes, w_packets, _, _ \
+                               in  domain.interfaceStats(vnet) \
+                                   for vnet in vnets]
 
+                s = [sum(stat) for stat in zip(*iface_stats)]
+
+                inst_net_ios.append((descr[0],  # uuid
+                                     datetime.now(),
+                                     s[0],      # r_bytes
+                                     s[1],      # r_packets
+                                     s[2],      # w_bytes
+                                     s[3]))     # w_packets
+
+        except:
+            # Warning! Fails silently...
+            logger.exception('Inst_NETWORK_IO: '
+                             'Connection to hypervisor failed; reset.')
+            self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
+
+        finally:
+            return inst_net_ios
 
 
 class Inst_DISK_IO(PeriodicInstMeterTask):
@@ -506,6 +497,7 @@ class Inst_DISK_IO(PeriodicInstMeterTask):
             for dom, descr in dom_descr.iteritems():
                 #@[fbahr] - TODO: Exception handling?
                 devices = filter(bool, \
+                          # ^ prevents NoneType elements from being added to 'devices'
                                  [target.get('dev') for target in \
                                   ETree.fromstring(descr[1]). \
                                         findall('devices/disk/target')])

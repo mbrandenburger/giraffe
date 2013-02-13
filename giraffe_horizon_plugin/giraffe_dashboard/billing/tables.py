@@ -20,14 +20,14 @@ from horizon import tables
 
 
 class BillingTable(tables.DataTable):
-    label = tables.Column('label', verbose_name=_('Monthly Bill'))
-    meter_cpu = tables.Column('meter_cpu', verbose_name=_(
-                                                      'Instances CPU hours [h]'))
-    meter_disk_io = tables.Column('meter_disk_io', verbose_name=_(\
-                                    'Disk I/O [Gb]'))
-    meter_net_io = tables.Column('meter_net_io', verbose_name=_( \
-        'Network I/O [Gb]'))
+    label = tables.Column('label', verbose_name=_('Details'))
+    meter_cpu = tables.Column('meter_cpu',
+                              verbose_name=_('Instances CPU hours [h]'))
+    meter_disk_io = tables.Column('meter_disk_io',
+                                  verbose_name=_('Disk I/O [Gb]'))
+    meter_net_io = tables.Column('meter_net_io',
+                                 verbose_name=_('Network I/O [Gb]'))
 
     class Meta:
-        name = "Project Billing"
-        verbose_name = _("project_billing")
+        name = "monthly_bill"
+        verbose_name = _("Monthly Bill")

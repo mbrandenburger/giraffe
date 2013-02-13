@@ -4,6 +4,7 @@ import sys
 import unittest
 import re
 from giraffe.common.config import Config
+from giraffe.common.auth import AuthProxy
 from giraffe.client.api import GiraffeClient
 from giraffe.client.formatter import Text, CsvFormatter
 from giraffe.service.db import Host, Meter, MeterRecord
@@ -357,6 +358,18 @@ class ClientTestCases(unittest.TestCase):
         count = self.gc.get_records(params={'aggregation': 'count'})
 
         self.assertEqual(count, len_result_set)
+
+    def test_get_proj_meter_records(self):
+        project = 1
+        meter   = 'host.loadavg_15m'
+
+        proj_meter_records = self.gc.get_proj_meter_records(project, meter)
+        self.assertIsNotNone(proj_meter_records)
+        self.assertTrue(isinstance(proj_meter_records, (tuple)))
+
+    def test_with_giraffe_user(self):
+        # auth_token = AuthProxy.get_token()
+        pass
 
 
 if __name__ == '__main__':

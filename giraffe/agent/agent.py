@@ -3,12 +3,12 @@ __author__ = 'marcus, fbahr'
 import threading
 import time
 import logging
-from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRMEM_Usage, \
-    Host_PHYMEM_Usage, Host_UPTIME, \
-    Host_NETWORK_IO
-from giraffe.agent.inst_meter import Inst_CPU, Inst_VIRMEM, Inst_PHYMEM, \
-    Inst_UPTIME, Inst_DISK_IO, \
-    Inst_NETWORK_IO
+from giraffe.agent.host_meter \
+     import Host_CPU_AVG, Host_VIRMEM_Usage, Host_PHYMEM_Usage, Host_UPTIME, \
+            Host_NETWORK_IO
+from giraffe.agent.instance_meter \
+     import Inst_CPU, Inst_VIRMEM, Inst_PHYMEM, Inst_UPTIME, Inst_DISK_IO, \
+            Inst_NETWORK_IO
 from giraffe.agent import publisher
 from giraffe.common.config import Config
 

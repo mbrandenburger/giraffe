@@ -82,7 +82,7 @@ from giraffe.common.config import Config
 _config = Config('giraffe.cfg')
 
 import logging
-logger = logging.getLogger("agent.inst_meters")
+logger = logging.getLogger("agent.instance_meter")
 # logger.setLevel(logging.DEBUG)
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # fh = logging.FileHandler("agent.log")

@@ -38,6 +38,7 @@ Usage:
         --max
         --avg
         --daily
+      [ --first-last : NOT_IMPLEMENTED! ]
         --sum
         --limit LIMIT
         --order ORDER  (ASC [default] or DESC)

@@ -15,7 +15,7 @@ Delta       Changing over time (bandwidth)
 
 Meters (by components) that are currently implemented:
 
-Compute (Nova)
+Instance [Compute / Nova]
 --------------------------------  -------------  ----------  ----------  ------
 Name                              Type           Volume      Resource    Note
 --------------------------------  -------------  ----------  ----------  ------
@@ -39,51 +39,6 @@ inst.network.io.outgoing.bytes    Cumulative          bytes  <inst ID!>  number 
 inst.network.io.incoming.packets  Cumulative        packets  <inst ID!>  number of incoming packets
 inst.network.io.outgoing.packets  Cumulative        packets  <inst ID!>  number of outgoing packets
 --------------------------------  -------------  ----------  ----------  ------
-
-
-Network (Quantum) [NOT IMPLEMENTED]
-------------------------  ----------  -------  -------- -----------------------
-Name                      Type        Volume   Resource  Note
-------------------------  ----------  -------  -------- -----------------------
-network                   Gauge             1  netw ID   Duration of network
-network.create            Delta       request  netw ID   Creation requests for this network
-network.update            Delta       request  netw ID   Update requests for this network
-subnet                    Gauge             1  subnt ID  Duration of subnet
-subnet.create             Delta       request  subnt ID  Creation requests for this subnet
-subnet.update             Delta       request  subnt ID  Update requests for this subnet
-port                      Gauge             1  port ID   Duration of port
-port.create               Delta       request  port ID   Creation requests for this port
-port.update               Delta       request  port ID   Update requests for this port
-router                    Gauge             1  rtr ID    Duration of router
-router.create             Delta       request  rtr ID    Creation requests for this router
-router.update             Delta       request  rtr ID    Update requests for this router
-ip.floating               Gauge             1  ip ID     Duration of floating ip
-ip.floating.create        Delta             1  ip ID     Creation requests for this floating ip
-ip.floating.update        Delta             1  ip ID     Update requests for this floating ip
-------------------------  ----------  -------  -------- -----------------------
-
-
-Image (Glance) [NOT IMPLEMENTED]
-------------------------  ----------  -------  -------- -----------------------
-Name                      Type        Volume   Resource  Note
-------------------------  ----------  -------  -------- -----------------------
-image                     Gauge             1  image ID  Image polling -> it (still) exists
-image.size                Gauge         bytes  image ID  Uploaded image size
-image.update              Delta          reqs  image ID  Number of update on the image
-image.upload              Delta          reqs  image ID  Number of upload of the image
-image.delete              Delta          reqs  image ID  Number of delete on the image
-image.download            Delta         bytes  image ID  Image is downloaded
-image.serve               Delta         bytes  image ID  Image is served out
-------------------------  ----------  -------  -------- -----------------------
-
-
-Volume (Cinder) [NOT IMPLEMENTED]
-------------------------  ----------  -------  -------- -------------------
-Name                      Type        Volume   Resource  Note
-------------------------  ----------  -------  -------- -------------------
-volume                    Gauge             1  vol ID    Duration of volune
-volume.size               Gauge            GB  vol ID    Size of volume
-------------------------  ----------  -------  -------- -------------------
 
 
 Naming convention
@@ -146,9 +101,6 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
                              'Failed to open connection to hypervisor.')
             sys.exit(1)
 
-        #@[fbahr] - TODO: maybe it's a good idea to move this - i.e., 
-        #    gathering user and tenant informations for an instance
-        #    via the nova-client - to the service (collector)
         _credentials = dict(username=_config.get('agent', 'user'),
                             password=_config.get('agent', 'pass'),
                             tenant_id=_config.get('agent', 'tenant_id'),
@@ -168,7 +120,8 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
         _credentials['api_key'] = AuthProxy.get_token(**_credentials)
         self.nova_client.client.auth_token = _credentials['api_key']
         self.nova_client.client.authenticate()
-        # self.nova_client.servers...
+        servers = self.nova_client.servers.all([])
+        servers.
 
     def get_inst_ids(self, pids=True):
         """

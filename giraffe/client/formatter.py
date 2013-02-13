@@ -164,7 +164,7 @@ class MeterRecordFormatter(Formatter):
                 element['id'], element['host_id'], \
                 element['resource_id'], element['project_id'], \
                 element['user_id'], int(element['meter_id']), \
-                element['timestamp'], element['value'], \
+                element['timestamp'], float(element['value']), \
                 element['duration']
 
         except Exception as e:

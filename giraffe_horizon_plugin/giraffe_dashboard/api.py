@@ -117,20 +117,20 @@ def get_proj_meter_record_montly_total(request, project, meter, month, year):
 
         month_days = calendar.monthrange(year, month)[1]
 
-        query_params = {'start_time': '%s-%02d-01 00:00:00' % (year, month),
-                        'end_time': '%s-%02d-%02d 23:59:59' % (year, month, month_days)}
+        query_params = {'start_time': '%s-%02d-01_00-00-00' % (year, month),
+                        'end_time': '%s-%02d-%02d_23-59-59' % (year, month, month_days)}
 
         all_instances = giraffeclient(request).get_proj_instances(proj=project, params=query_params)
 
         sum = 0
 
         first = {'ordering': 'asc', 'limit': 1,
-                 'start_time': '%s-%02d-01 00:00:00' % (year, month),
-                 'end_time': '%s-%02d-%02d 23:59:59' % (year, month, month_days)}
+                 'start_time': '%s-%02d-01_00-00-00' % (year, month),
+                 'end_time': '%s-%02d-%02d_23-59-59' % (year, month, month_days)}
 
         last = {'ordering': 'desc', 'limit': 1,
-                'start_time': '%s-%02d-01 00:00:00' % (year, month),
-                 'end_time': '%s-%02d-%02d 23:59:59' % (year, month, month_days)}
+                'start_time': '%s-%02d-01_00-00-00' % (year, month),
+                'end_time': '%s-%02d-%02d_23-59-59' % (year, month, month_days)}
 
         for inst_id in all_instances:
 

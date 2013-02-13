@@ -28,3 +28,16 @@ class DetailView(tabs.TabView):
         # Call the base implementation first to get a context
         context = super(DetailView, self).get_context_data(**kwargs)
         return context
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+#        if request.is_ajax():
+#            context['hide'] = True
+#            context['x_values'] = range(1, 31)
+#            self.template_name = ('giraffe_dashboard/hosts/_'\
+#                                  'analysis_data.html')
+        return self.render_to_response(context)
+
+#    def post(self, request, *args, **kwargs):
+#        # GET and POST handling are the same
+#        return self.get(request, *args, **kwargs)

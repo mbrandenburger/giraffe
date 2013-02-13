@@ -146,26 +146,29 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
                              'Failed to open connection to hypervisor.')
             sys.exit(1)
 
-        #@[fbahr]: maybe it's a good idea to move this - i.e., gathering
-        #          user and tenant informations for an instance via the
-        #          nova-client - to the service (collector)
+        #@[fbahr] - TODO: maybe it's a good idea to move this - i.e., 
+        #    gathering user and tenant informations for an instance
+        #    via the nova-client - to the service (collector)
         _credentials = dict(username=_config.get('agent', 'user'),
                             password=_config.get('agent', 'pass'),
                             tenant_id=_config.get('agent', 'tenant_id'),
                             tenant_name=_config.get('agent', 'tenant_name'),
-                            auth_url=_config.get('auth', 'auth_url'),
+                            auth_url=_config.get('auth', 'admin_url'),
                             insecure=True)
 
-        _credentials['api_key'] = AuthProxy.get_token(**_credentials)
-
         self.nova_client = NovaClient(username=_credentials['username'],
-                                      api_key=_credentials['api_key'],
-                                      project_id=_credentials['tenant_id'],
+                                      api_key=_credentials['password'],
+                                      project_id=_credentials['tenant_name'],
                                       auth_url=_credentials['auth_url'],
+                                      service_type='metering',
+                                      service_name='giraffe',
+                                      region_name='IBR',
                                       insecure=True)
+
+        _credentials['api_key'] = AuthProxy.get_token(**_credentials)
         self.nova_client.client.auth_token = _credentials['api_key']
-        # self.nova_client.client.authenticate()
-        # ^ raises exceptions.Unauthorized - TODO: fix auth
+        self.nova_client.client.authenticate()
+        # self.nova_client.servers...
 
     def get_inst_ids(self, pids=True):
         """
@@ -209,7 +212,6 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
 
         finally:
             return ids
-
 
 
 class Inst_UPTIME(PeriodicInstMeterTask):

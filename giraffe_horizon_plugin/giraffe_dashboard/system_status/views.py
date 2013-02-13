@@ -23,7 +23,7 @@ from .service_status.tables import ServiceStatusTable
 
 class IndexView(tables.MultiTableView):
     table_classes = (ServiceStatusTable, DatabaseStatusTable)
-    template_name = 'giraffe_dashboard/overview/index.html'
+    template_name = 'giraffe_dashboard/system_status/index.html'
     client = None
 
     def get_database_status_data(self):

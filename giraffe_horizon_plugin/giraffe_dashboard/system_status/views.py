@@ -7,12 +7,6 @@ Note: the views are referenced in the urls.py file.
 
 #import logging
 #LOG = logging.getLogger(__name__)
-#from django.contrib import messages
-#from django.views import generic
-#from horizon import api
-#from horizon import forms
-#from horizon import tables
-#from .tables import HostsTable
 
 #from django import shortcuts
 #def index(request):
@@ -33,15 +27,21 @@ class IndexView(tables.MultiTableView):
     client = None
 
     def get_database_status_data(self):
+        host_count = api.get_hosts_count(self.request)
+        meter_count = api.get_meters_count(self.request)
+        record_count = api.get_records_count(self.request)
+        if record_count:
+            record_count = '{0:,}'.format(record_count)
         data = {'id': 1,
-               'host_count': api.get_hosts_count(self.request),
-               'meter_count': api.get_meters_count(self.request),
-               'record_count': 'TODO'}
+               'host_count': host_count,
+               'meter_count': meter_count,
+               'record_count': record_count}
         return [APIDictWrapper(data)]
 
     def get_service_status_data(self):
-        data = {'id': 1, 'svc_type': 'REST API',
-                         'svc_host': api.rest_api_endpoint(self.request),
-                         'svc_status': 'Active' if api.get_root(self.request)
-                                                else 'Inactive'}
+        svc_type = 'REST API'
+        svc_host = api.rest_api_endpoint(self.request)
+        svc_status = 'Active' if api.get_root(self.request) else 'Inactive'
+        data = {'id': 1, 'svc_type': svc_type, 'svc_host': svc_host,
+                'svc_status': svc_status}
         return [APIDictWrapper(data)]

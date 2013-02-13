@@ -37,45 +37,45 @@ my_log.addHandler(fh)
 class IndexView(tables.DataTableView):
     table_class = BillingTable
     template_name = 'giraffe_dashboard/billing/index.html'
+    _out_data = None
 
-    def get_data(self):
+    def _collect_billing_data(self, year, month):
+        if self._out_data:
+            return self._out_data
 
         project = self.request.user.tenant_id
 
-        # TODO replace constant month and year
-        month = 2
-        year = 2013
-
-        calcfactor_byte2gbyte = 1000000000
+        calcfactor_byte2gbyte = 1073741824
         calcfactor_ns2hours = 3600000000000
 
-        used_meter_cpu = long(
-            api.get_proj_meter_record_montly_total(self.request, project,
-                                                   "inst.cpu.time", month,
-                                                   year)) / calcfactor_ns2hours
-        meter_disk_io_r = long(
-            api.get_proj_meter_record_montly_total(self.request, project,
-                                                   "inst.disk.io.read.bytes",
-                                                   month,
-                                                   year)) / calcfactor_byte2gbyte
-        meter_disk_io_w = long(
-            api.get_proj_meter_record_montly_total(self.request, project,
-                                                   "inst.disk.io.write.bytes",
-                                                   month,
-                                                   year)) / calcfactor_byte2gbyte
+        used_meter_cpu = api.get_proj_meter_record_montly_total(self.request, project,
+                                                                "inst.cpu.time", month,
+                                                                year) / calcfactor_ns2hours
+
+        meter_disk_io_r = api.get_proj_meter_record_montly_total(self.request, project,
+                                                                 "inst.disk.io.read.bytes",
+                                                                 month,
+                                                                 year) / calcfactor_byte2gbyte
+
+        meter_disk_io_w = api.get_proj_meter_record_montly_total(self.request, project,
+                                                                 "inst.disk.io.write.bytes",
+                                                                 month,
+                                                                 year) / calcfactor_byte2gbyte
+
         used_meter_disk_io = meter_disk_io_r + meter_disk_io_w
 
-        meter_net_io_r = long(
-            api.get_proj_meter_record_montly_total(self.request, project,
-                                                   "inst.network.io.incoming.bytes",
-                                                   month,
-                                                   year)) / calcfactor_byte2gbyte
-        meter_net_io_w = long(
-            api.get_proj_meter_record_montly_total(self.request, project,
-                                                   "inst.network.io.outgoing.bytes",
-                                                   month,
-                                                   year)) / calcfactor_byte2gbyte
+        meter_net_io_r = api.get_proj_meter_record_montly_total(self.request, project,
+                                                                "inst.network.io.incoming.bytes",
+                                                                month,
+                                                                year) / calcfactor_byte2gbyte
+        meter_net_io_w = api.get_proj_meter_record_montly_total(self.request, project,
+                                                                "inst.network.io.outgoing.bytes",
+                                                                month,
+                                                                year) / calcfactor_byte2gbyte
+
         used_meter_net_io = meter_net_io_r + meter_net_io_w
+
+        LOG.debug("cpu: %d, disk: %d net: %d" % (used_meter_cpu, used_meter_disk_io, used_meter_net_io))
 
         free_meter_cpu = 10000
         free_meter_disk_io = 1020
@@ -124,5 +124,18 @@ class IndexView(tables.DataTableView):
                    {"id": 5, "label": "Costs", "meter_cpu": cost_meter_cpu,
                     "meter_disk_io": cost_meter_disk_io,
                     "meter_net_io": cost_meter_net_io})]
+        self._out_data = out
+        return self._out_data
 
-        return out
+    def get_context_data(self, **kwargs):
+        context = super(IndexView, self).get_context_data(**kwargs)
+        out = self._collect_billing_data(2013, 2)
+        total = out[4]["meter_cpu"] + out[4]["meter_disk_io"] + out[4]["meter_net_io"]
+        context["total_costs"] = total
+        return context
+
+
+    def get_data(self):
+        return self._collect_billing_data(2013, 2)
+
+

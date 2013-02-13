@@ -6,6 +6,7 @@ from horizon.api.base import APIDictWrapper
 from giraffe.client.api import GiraffeClient
 
 import calendar
+from giraffe.service.db import MeterRecord, Meter
 
 
 LOG = logging.getLogger(__name__)
@@ -99,17 +100,69 @@ def get_meters_count(request):
 
 
 def get_proj_meter_record_montly_total(request, project, meter, month, year):
-    try:
-        # TODO: change query
-        month_days = calendar.monthrange(year, month)[1]
-        query_params = {'aggregation': 'sum',
-                        'start_time': '%s-%02d-01 00:00:00' % (year, month),
-                        'end_time': '%s-%02d-%02d 23:59:59' % (
-                        year, month, month_days)}
+    """
 
-        return giraffeclient(request).\
-            get_proj_meter_records(proj=project, meter=meter,
-                                   params=query_params)
+    :param request:
+    :param project:
+    :param meter:
+    :param month:
+    :param year:
+    :return:
+    """
+    try:
+
+        # meter_results = giraffeclient(request).get_meter(meter).as_(Meter)[0]
+        #
+        # LOG.debug("Meter result: %s" % meter_results)
+
+        month_days = calendar.monthrange(year, month)[1]
+
+        query_params = {'start_time': '%s-%02d-01 00:00:00' % (year, month),
+                        'end_time': '%s-%02d-%02d 23:59:59' % (year, month, month_days)}
+
+        all_instances = giraffeclient(request).get_proj_instances(proj=project, params=query_params)
+
+        sum = 0
+
+        first = {'ordering': 'asc', 'limit': 1,
+                 'start_time': '%s-%02d-01 00:00:00' % (year, month),
+                 'end_time': '%s-%02d-%02d 23:59:59' % (year, month, month_days)}
+
+        last = {'ordering': 'desc', 'limit': 1,
+                'start_time': '%s-%02d-01 00:00:00' % (year, month),
+                 'end_time': '%s-%02d-%02d 23:59:59' % (year, month, month_days)}
+
+        for inst_id in all_instances:
+
+            LOG.debug("Instance: %s" % inst_id)
+
+            count_result = giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params={"aggregation": "count"})
+
+            if count_result == 0:
+                LOG.debug("No results for instance")
+                continue
+
+            if count_result == 1:
+                sum += giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params=first).as_(MeterRecord)[0].value
+                LOG.debug("Sum: %d" % sum)
+                continue
+
+            if count_result > 1:
+                first_sum = giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params=first).as_(MeterRecord)[0].value
+                last_sum = giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params=last).as_(MeterRecord)[0].value
+                sum += last_sum - first_sum
+                # if tmp_sum == 0:
+                #     sum += first_sum
+                # else:
+                # sum += tmp_sum
+
+                LOG.debug("Last: %d First: %d Sum: %d" % (last_sum, first_sum, sum))
+                continue
+
+        LOG.debug("ENDSum: %d" % sum)
+        return sum
+
+
     except Exception as e:
         LOG.exception(e)
         return None

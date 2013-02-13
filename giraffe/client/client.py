@@ -1,5 +1,5 @@
 """
-Command-line interface to the Giraffe API.
+Command-line interface to the Giraffe REST API.
 
 Usage:
     Type ./start_client.sh --help or ./start_client.sh -h for help.
@@ -7,13 +7,16 @@ Usage:
     ./start_client.sh <CMD> <PARAM ...> <ARG ...>
 
     Commands (CMD):
-        meters
         hosts
-        instances
         projects
         users
+        instances
+        meters
 
         show-host
+        show-project
+        show-meter
+        show-record
 
         host-meter
         inst-meter (alias: instance-meter)
@@ -21,11 +24,11 @@ Usage:
         user-meter
 
     Required parameters (PARAM) [in combination with certain commands]:
-        --host HOST          (required with 'show-host' and 'host-meter')
-        --instance INSTANCE  (required with 'inst-meter')
-        --project PROJECT    (required with 'proj-meter')
-        --user USER          (required with 'user-meter')
-        --meter METER        (required in combination with all of the above)
+        --host HOST               (required with `show-host` and `host-meter`)
+        --proj/project PROJECT    (required with `show-host` and `proj-meter`)
+        --user USER               (required with `user-meter`)
+        --inst/instance INSTANCE  (required with `inst-meter`)
+        --meter METER             (required with all *-meter commands)
 
     Additional, optional query parameters and arguments (PARAM, ARG):
         --count
@@ -34,10 +37,10 @@ Usage:
         --min
         --max
         --avg
+        --daily
         --sum
         --limit LIMIT
-        --order ORDER
-
+        --order ORDER  (ASC [default] or DESC)
 
         --chart     ...
       [ --jsn       output as plain JSON ] **REMOVED** (but still: DEFAULT)
@@ -54,12 +57,12 @@ Usage:
     Additional configuration parameters (if not provided, information needs
     to be stored in env. variables or in Giraffe's config file, [client]
     section.)
-        -u USERNAME, --username USERNAME
-        -p PASSWORD, --password PASSWORD
+        -u/--username USERNAME
+        -p/--password PASSWORD
         --tenant_id TENANT_ID
         --tenant_name TENANT_NAME
-        -e ENDPOINT, --endpoint ENDPOINT
-        -a AUTH_URL, --auth_url AUTH_URL
+        -e/--endpoint ENDPOINT     Giraffe REST API endpoint (domain:port)
+        -a/--auth_url AUTH_URL     Keystone authentification service (URL)
 
 
 Example:
@@ -68,8 +71,8 @@ Example:
 """
 
 __author__  = 'fbahr, marcus'
-__version__ = '0.4.0'
-__date__    = '2013-02-07'
+__version__ = '0.5.0'
+__date__    = '2013-02-13'
 
 
 from cement.core import foundation, controller  # < cement 2.0.2
@@ -103,7 +106,7 @@ class BaseController(controller.CementBaseController):
         """
 
         label = 'base'
-        description = 'Command-line interface to the Giraffe API.'
+        description = 'Command-line interface to the Giraffe REST API.'
 
         _config = Config('giraffe.cfg')
 
@@ -113,23 +116,25 @@ class BaseController(controller.CementBaseController):
         arguments = [
             # -----------------------------------------------------------------
             (['--host'], \
-                dict(action='store', help='', \
+                dict(action='store', help='required with `show-host` and '
+                                          '`host-meter`', \
                      default=None)),
-            (['--instance'], \
-                dict(action='store', help='', \
+            (['--inst', '--instance'], \
+                dict(action='store', help='required with `inst-meter`', \
                      default=None)),
-            (['--project'], \
-                dict(action='store', help='', \
+            (['--proj', '--project'], \
+                dict(action='store', help='required with `show-host` and '
+                                          '`proj-meter`', \
                      default=None)),
             (['--user'], \
-                dict(action='store', help='', \
+                dict(action='store', help='required with `user-meter`', \
                      default=None)),
             (['--meter'], \
-                dict(action='store', help='', \
+                dict(action='store', help='required with *-meter commands', \
                      default=None)),
             # -----------------------------------------------------------------
             (['-q', '--query'], \
-                dict(action='store', help='..encoded as REST API URL path '
+                dict(action='store', help='REST API URL path '
                                           '(overriden by giraffe-client'
                                           ' method calls)', \
                      default=None)),
@@ -149,6 +154,10 @@ class BaseController(controller.CementBaseController):
             (['--avg'], \
                 dict(action='store_true', help='', \
                      default=None)),
+            (['--daily'], \
+                dict(action='store_true', help='group objects by day and build '
+                                               'list of daily averages', \
+                     default=None)),
             (['--sum'], \
                 dict(action='store_true', help='', \
                      default=None)),
@@ -156,26 +165,21 @@ class BaseController(controller.CementBaseController):
                 dict(action='store_true', help='', \
                      default=None)),
             (['--limit'], \
-                dict(action='store', help='LIMIT', \
+                dict(action='store', help='max. number of objects to be retrieved', \
                      default=0)),
             (['--order'], \
-                dict(action='store', help='ASC (default) or DESC', \
+                dict(action='store', help='ORDER (ASC [default] or DESC)', \
                      default=None)),
             # -----------------------------------------------------------------
             # (['--jsn'], \
             #     dict(action='store_true', help='display output as plain JSON', \
             #         default=None)),
             (['--csv'], \
-                 dict(action='store_true', help='diplay output as CSV', \
+                 dict(action='store_true', help='output formatted as CSV', \
                       default=None)),
             (['--tab'], \
-                 dict(action='store_true', help=' output as table', \
+                 dict(action='store_true', help='output formatted as table', \
                       default=None)),
-            # -----------------------------------------------------------------
-            (['-a', '--auth_url'], \
-                dict(action='store', help='$OS_AUTH_URL', \
-                     default=os.getenv('OS_AUTH_URL') or \
-                             _config.get('auth', 'auth_url'))),
             # -----------------------------------------------------------------
             (['-u', '--username'], \
                 dict(action='store', help='$OS_USERNAME', \
@@ -194,8 +198,12 @@ class BaseController(controller.CementBaseController):
                      default=os.getenv('OS_TENANT_NAME') or \
                              _config.get('client', 'tenant_name'))),
             # -----------------------------------------------------------------
+            (['-a', '--auth_url'], \
+                dict(action='store', help='$OS_AUTH_URL', \
+                     default=os.getenv('OS_AUTH_URL') or \
+                             _config.get('auth', 'public_url'))),
             (['-e', '--endpoint'], \
-                dict(action='store', help='Giraffe service endpoint (domain:port)', \
+                dict(action='store', help='Giraffe REST API endpoint (domain:port)', \
                      default=':'.join([_config.get('rest_api', 'host'), \
                                        _config.get('rest_api', 'port')])))
             ]
@@ -223,10 +231,12 @@ class BaseController(controller.CementBaseController):
         #               combined with some index magic and 'except:'-fallback
         try:
             params['aggregation'] \
-                = {0 : 'min', 1 : 'max', 2: 'avg', 3: 'sum', 4 : 'count'} \
+                = {0: 'min', 1: 'max',
+                   2: 'avg', 3: 'daily_avg',
+                   4: 'sum', 5: 'count'} \
                   [[self.pargs.min, self.pargs.max, \
-                    self.pargs.avg, self.pargs.sum, \
-                    self.pargs.count] \
+                    self.pargs.avg, self.pargs.daily, \
+                    self.pargs.sum, self.pargs.count] \
                    .index(True)]
         except:
             pass
@@ -292,6 +302,44 @@ class BaseController(controller.CementBaseController):
             self._except(e)
 
     @controller.expose()
+    def host_meter(self):
+        try:
+            result = self._client().get_host_meter_records( \
+                                        self.pargs.host, self.pargs.meter, \
+                                        self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
+
+    @controller.expose()
+    def meters(self):
+# Attempt 1:
+#       target = {0: ('hosts', self.pargs.host), \
+#                 1: ('projects', self.pargs.project), \
+#                 2: ('users', self.pargs.user), \
+#                 3: ('instances', self.pargs.instance)} \
+#                 [[self.pargs.host, self.pargs.project, \
+#                   self.pargs.user, self.pargs.instance] \
+#                  .index(True)]
+#       >> ValueError: True is not in list
+
+# Attempt 2:
+#       target =    ('hosts', self.pargs.host) if self.pargs.host else None \
+#                or ('projects', self.pargs.project) if self.pargs.project else None \
+#                or ('users', self.pargs.user) if self.pargs.user else None \
+#                or ('instances', self.pargs.instance) if self.pargs.instance else None
+
+# Attempt 3:
+
+        try:
+            result = self._client().get_host_meter_records( \
+                                        self.pargs.host, self.pargs.meter, \
+                                        self._params())
+            self._display(result)
+        except Exception as e:
+            self._except(e)
+
+    @controller.expose()
     def instances(self):
         try:
             result = self._client().get_instances(self._params())
@@ -316,19 +364,9 @@ class BaseController(controller.CementBaseController):
             self._except(e)
 
     @controller.expose()
-    def meters(self):
+    def meters_old(self):
         try:
             result = self._client().get_meters(self._params())
-            self._display(result)
-        except Exception as e:
-            self._except(e)
-
-    @controller.expose()
-    def host_meter(self):
-        try:
-            result = self._client().get_host_meter_records( \
-                                        self.pargs.host, self.pargs.meter, \
-                                        self._params())
             self._display(result)
         except Exception as e:
             self._except(e)

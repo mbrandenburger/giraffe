@@ -1,9 +1,11 @@
 __author__ = 'fbahr'
 
+
+import __builtin__
 import json
 # from prettytable import PrettyTable
 
-from giraffe.service.db import Base, Host, Meter, MeterRecord
+from giraffe.service.db import Host, Meter, MeterRecord  # , Base
 
 # -----------------------------------------------------------------------------
 
@@ -18,7 +20,7 @@ class Formatter(object):
     """
 
     @staticmethod
-    def serialize(message):
+    def serialize(message, *args):
         """
         message = list of dictionaries
         """
@@ -59,13 +61,13 @@ class Text(FormattableObject):
 
 class JsonFormatter(Formatter):
     @staticmethod
-    def serialize(message):
+    def serialize(message, *args):
         return json.dumps(message, indent=4)
 
 
 class CsvFormatter(Formatter):
     @staticmethod
-    def serialize(message):
+    def serialize(message, *args):
         if isinstance(message, (dict)):
         #   UNIX_EPOCH = datetime(1970, 1, 1, 0, 0)
         #   for key, val in message.iteritems():
@@ -85,7 +87,7 @@ class CsvFormatter(Formatter):
 
 class TabFormatter(Formatter):
     @staticmethod
-    def serialize(message):
+    def serialize(message, *args):
         raise NotImplementedError("Warning: not yet implemented.")
 
 
@@ -102,7 +104,7 @@ class __Host(FormattableObject):
 
 class HostFormatter(Formatter):
     @staticmethod
-    def serialize(element):
+    def serialize(element, *args):
         try:
             host = Host()
             host.__dict__.update(dict((k, v)
@@ -128,7 +130,7 @@ class __Meter(FormattableObject):
 
 class MeterFormatter(Formatter):
     @staticmethod
-    def serialize(element):
+    def serialize(element, *args):
         try:
             meter = Meter()
             meter.__dict__.update(dict((k, v)
@@ -155,17 +157,23 @@ class __MeterRecord(FormattableObject):
 
 class MeterRecordFormatter(Formatter):
     @staticmethod
-    def serialize(element):
+    def serialize(element, *args):
+        catalog = args[0] if args else {}
+
         try:
             record = MeterRecord()
             record.id, record.host_id, record.resource_id, \
             record.project_id, record.user_id, record.meter_id, \
-            record.timestamp, record.value, record.duration = \
+            record.timestamp, record.duration = \
                 element['id'], element['host_id'], \
                 element['resource_id'], element['project_id'], \
                 element['user_id'], int(element['meter_id']), \
-                element['timestamp'], float(element['value']), \
-                element['duration']
+                element['timestamp'], element['duration']
+
+            value_type = catalog.get(record.meter_id)
+            record.value = getattr(__builtin__, value_type)(element['value']) \
+                               if value_type \
+                               else element['value']
 
         except Exception as e:
             # logger.exception

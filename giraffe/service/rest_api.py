@@ -1,3 +1,5 @@
+import calendar
+import datetime
 import json
 import logging
 import re
@@ -26,6 +28,7 @@ class Rest_API(object):
         self.AGGREGATION_MAX = 'max'
         self.AGGREGATION_MIN = 'min'
         self.AGGREGATION_AVG = 'avg'
+        self.AGGREGATION_DAILY_AVG = 'daily_avg'
         self.AGGREGATION_SUM = 'sum'
         self.server = None
         self.db = None
@@ -62,8 +65,8 @@ class Rest_API(object):
                         auth_port=_config.getint('rest_api', 'auth_port'),
                         auth_protocol=_config.get('rest_api', 'auth_protocol'),
                         admin_token=_config.get('rest_api', 'admin_token'),
-                        delay_auth_decision=_config.getint('rest_api',
-                                                           'delay_auth_decision'),
+                        delay_auth_decision=_config.getint('rest_api',\
+                                                       'delay_auth_decision'),
                         rest_api=self,
                         host=_config.get('rest_api', 'host'),
                         port=_config.getint('rest_api', 'port'),
@@ -131,6 +134,30 @@ class Rest_API(object):
             elif aggregation == self.AGGREGATION_AVG:
                 avg = self.db.avg(cls, column, args)
                 return float(avg) if avg else 0.0
+            elif aggregation == self.AGGREGATION_DAILY_AVG:
+                startdate = datetime.datetime.strptime(args['timestamp'][0],
+                                                       '%Y-%m-%d %H:%M:%S')
+                startdate = datetime.datetime(startdate.year, startdate.month,
+                                              startdate.day)
+                enddate = datetime.datetime.strptime(args['timestamp'][1],
+                                                     '%Y-%m-%d %H:%M:%S')
+                enddate = datetime.datetime(enddate.year, enddate.month,
+                                            enddate.day, 23, 59, 59)
+                delta = enddate - startdate
+                days = (delta.days if delta.days <= 31 else 30) + 1
+                result = []
+                for d in range(0, days):
+                    query_startdate = startdate + datetime.timedelta(days=d)
+                    query_enddate = enddate - datetime.timedelta(\
+                                                         days=(delta.days - d))
+#                    _logger.debug('query_startdate = %s' % query_startdate)
+#                    _logger.debug('query_enddate = %s' % query_enddate)
+                    args['timestamp'] = (query_startdate.strftime(\
+                                                          "%Y-%m-%d %H:%M:%S"),
+                                         query_enddate.strftime(\
+                                                          "%Y-%m-%d %H:%M:%S"))
+                    result.append(self.db.avg(cls, column, args))
+                return result
             elif aggregation == self.AGGREGATION_SUM:
                 value_sum = self.db.sum(cls, column, args)
                 return float(value_sum) if value_sum else 0.0

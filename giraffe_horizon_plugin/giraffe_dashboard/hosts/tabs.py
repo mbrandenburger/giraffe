@@ -1,15 +1,17 @@
-import calendar
+import logging
 
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 
 from horizon import exceptions
 from horizon import tabs
-from horizon import forms
-from horizon.api.base import APIDictWrapper
+from horizon import forms as horizon_forms
+from horizon import time
 
 from giraffe_dashboard import api
 from giraffe_dashboard import forms
+
+LOG = logging.getLogger(__name__)
 
 
 class OverviewTab(tabs.Tab):
@@ -33,29 +35,36 @@ class AnalysisTab(tabs.Tab):
     template_name = 'giraffe_dashboard/hosts/_detail_analysis.html'
 
     def get_context_data(self, request):
-        context = {}
+        submitted = False
+        if self.request.GET.get('meter', False):
+            submitted = True
+
         host = api.get_host(self.request, self.tab_group.kwargs['host_id'])
-        host_meters = api.get_host_meters(self.request,
+        meters = api.get_host_meters(self.request,
                                    self.tab_group.kwargs['host_id'])
         if not host:
             raise exceptions.Http302(reverse(\
                                    'horizon:giraffe_dashboard:hosts:index'))
-        form = forms.HostAnalysisForm(self.request.GET, meters=host_meters)
+        today = time.today()
+        month = self.request.GET.get('month', today.month)
+        year = self.request.GET.get('year', today.year)
+        meter_id = self.request.GET.get('meter', meters[0].id if meters
+                                                              else None)
+        form = forms.DateMeterForm(initial={'month': month,
+                                            'year': year,
+                                            'meter': meter_id},
+                                   meters=meters,)
 
-        try:
-            month = self.request.GET['month']
-            year = self.request.GET['year']
-            meter_id = self.request.GET['meter']
-            daily_avgs = api.get_host_meter_records_daily_avg(host.id,
-                                                              meter_id,
-                                                              year, month)
+        context = {'submitted': submitted}
+        if submitted and meter_id:
+            daily_avgs = api.get_host_meter_records_daily_avg(self.request,\
+                                           host_id=host.id, meter_id=meter_id,\
+                                           year=year, month=month)
             context['graph'] = {'data': daily_avgs}
-        except Exception:
-            pass
 
         context['host'] = host
         context['form'] = form
-        context['meters'] = host_meters
+        context['meters'] = meters
         return context
 
 

@@ -3,7 +3,6 @@
 <h3>{% trans "Host Analysis" %}</h3>
 
 <div class="info row-fluid">
-  <h4>{% trans "Daily host meter values" %}</h4>
   <hr class="header_rule">
   <form id="_host_analysis_form" action="" method="get" id="date_form" class="form-horizontal">
     <input type="hidden" name="tab" value="host_details__analysis" />
@@ -15,17 +14,20 @@
     </div>
   </form>
   
-  <h4>{% trans "POST" %}</h4>
-  <hr class="header_rule">
-  <div>
-  {% for val in mysubmit %}
-    {{ val }}
-  {% endfor %}
-  </div>
-  
-  <div>
-    {{ mysubmit.month }}
-    {{ mysubmit.year }}
-    {{ mysubmit.meter_id }}
-  </div>
+  {% if submitted %}
+    <h4>{% trans "Graph" %}</h4>
+    <hr class="header_rule">
+
+    {% if graph %}
+    <script type="text/javascript">
+    var Giraffe = {
+      graph: {
+        data: [{% for d in graph.data %}'{{ d }}'{% if not forloop.last %},{% endif %}{% endfor %}]
+      }
+    }
+    </script>
+    {% else %}
+    <i>no data</i>
+    {% endif %}
+  {% endif %}
 </div>

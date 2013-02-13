@@ -138,13 +138,8 @@ def get_proj_meter_record_montly_total(request, project, meter, month, year):
 
             count_result = giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params={"aggregation": "count"})
 
-            if count_result == 0:
+            if count_result <= 1:
                 LOG.debug("No results for instance")
-                continue
-
-            if count_result == 1:
-                sum += giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params=first).as_(MeterRecord)[0].value
-                LOG.debug("Sum: %d" % sum)
                 continue
 
             if count_result > 1:

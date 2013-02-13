@@ -93,11 +93,13 @@ def get_host_meters(request, host_id):
 
 def get_host_meter_records_daily_avg(request, host_id, meter_id, year, month):
     try:
+        year = int(year)
+        month = int(month)
         month_days = calendar.monthrange(year, month)[1]
-        params = {'start_time': '%s-%02d-01 00:00:00' % (year, month),
-                  'end_time': '%s-%02d-%02d 23:59:59' % (year, month,
+        params = {'start_time': '%s-%02d-01_00-00-00' % (year, month),
+                  'end_time': '%s-%02d-%02d_23-59-59' % (year, month,
                                                          month_days),
-                  'aggregation': 'first_last'}
+                  'aggregation': 'daily_avg'}
         return giraffeclient(request).get_host_meter_records(host_id, meter_id,
                                                              params=params)
     except Exception as e:
@@ -108,6 +110,14 @@ def get_host_meter_records_daily_avg(request, host_id, meter_id, year, month):
 def get_meters_count(request):
     try:
         return giraffeclient(request).get_meters({'aggregation': 'count'})
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
+def get_records_count(request):
+    try:
+        return giraffeclient(request).get_records({'aggregation': 'count'})
     except Exception as e:
         LOG.exception(e)
         return None

@@ -25,6 +25,7 @@ class GiraffePlugin(horizon.Dashboard):
     panels = (BillingPanels, AdminPanels,)
     default_panel = 'system_status'
     nav = False
+    supports_tenants = True
 
 
 horizon.register(GiraffePlugin)

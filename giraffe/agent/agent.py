@@ -4,11 +4,11 @@ import threading
 import time
 import logging
 from giraffe.agent.host_meter import Host_CPU_AVG, Host_VIRMEM_Usage, \
-                                     Host_PHYMEM_Usage, Host_UPTIME, \
-                                     Host_NETWORK_IO
+    Host_PHYMEM_Usage, Host_UPTIME, \
+    Host_NETWORK_IO
 from giraffe.agent.inst_meter import Inst_CPU, Inst_VIRMEM, Inst_PHYMEM, \
-                                     Inst_UPTIME, Inst_DISK_IO, \
-                                     Inst_NETWORK_IO
+    Inst_UPTIME, Inst_DISK_IO, \
+    Inst_NETWORK_IO
 from giraffe.agent import publisher
 from giraffe.common.config import Config
 
@@ -16,11 +16,9 @@ logger = logging.getLogger("agent")
 config = Config("giraffe.cfg")
 
 _FLUSH_DURATION = config.getint("agent", "duration")
-_METER_DURATION = int(_FLUSH_DURATION / 4)
 
 
 class Agent(object):
-
     def __init__(self):
         """
         Initializes a new Agent.
@@ -38,59 +36,70 @@ class Agent(object):
 
         # meter host CPU AVG
         self.tasks.append(
-            Host_CPU_AVG(self._callback_cpu_avg, _METER_DURATION)
+            Host_CPU_AVG(self._callback_cpu_avg,
+                         config.getint("agent", "host_loadavg"))
         )
 
         # meter host phy memory
         self.tasks.append(
-            Host_PHYMEM_Usage(self._callback_phy_mem, _METER_DURATION)
+            Host_PHYMEM_Usage(self._callback_phy_mem,
+                              config.getint("agent", "host_phymem_usage"))
         )
 
         # meter host vir memory
         self.tasks.append(
-            Host_VIRMEM_Usage(self._callback_vir_mem, _METER_DURATION)
+            Host_VIRMEM_Usage(self._callback_vir_mem,
+                              config.getint("agent", "host_virmem_usage"))
         )
 
         # meter host uptime
         self.tasks.append(
-            Host_UPTIME(self._callback_uptime, _METER_DURATION)
+            Host_UPTIME(self._callback_uptime,
+                        config.getint("agent", "host_uptime"))
         )
 
         # meter host network I/O
         self.tasks.append(
-            Host_NETWORK_IO(self._callback_network_io, _METER_DURATION)
+            Host_NETWORK_IO(self._callback_network_io,
+                            config.getint("agent", "host_network_io"))
         )
 
         # INSTANCE METERS -----------------------------------------------------
 
         # meter instance cpu utilization
         self.tasks.append(
-            Inst_CPU(self._callback_inst_cpu, _METER_DURATION)
+            Inst_CPU(self._callback_inst_cpu,
+                     config.getint("agent", "inst_cpu"))
         )
 
         # meter instance phy memory
         self.tasks.append(
-            Inst_PHYMEM(self._callback_inst_phy_mem, _METER_DURATION)
+            Inst_PHYMEM(self._callback_inst_phy_mem,
+                        config.getint("agent", "inst_memory_physical"))
         )
 
         # meter instance vir memory
         self.tasks.append(
-            Inst_VIRMEM(self._callback_inst_vir_mem, _METER_DURATION)
+            Inst_VIRMEM(self._callback_inst_vir_mem,
+                        config.getint("agent", "inst_memory_virtual"))
         )
 
         # meter instance uptime
         self.tasks.append(
-            Inst_UPTIME(self._callback_inst_uptime, _METER_DURATION)
+            Inst_UPTIME(self._callback_inst_uptime,
+                        config.getint("agent", "inst_uptime"))
         )
 
         # meter instance disk I/O
         self.tasks.append(
-            Inst_DISK_IO(self._callback_inst_disk_io, _METER_DURATION)
+            Inst_DISK_IO(self._callback_inst_disk_io,
+                         config.getint("agent", "inst_disk_io"))
         )
 
         # meter instance network I/O
         self.tasks.append(
-            Inst_NETWORK_IO(self._callback_inst_network_io, _METER_DURATION)
+            Inst_NETWORK_IO(self._callback_inst_network_io,
+                            config.getint("agent", "inst_network_io"))
         )
 
     # CB METHODS FOR HOST METERS ----------------------------------------------
@@ -110,8 +119,10 @@ class Agent(object):
         self.publisher.add_meter_record('host.uptime', params, 0)
 
     def _callback_network_io(self, params):
-        self.publisher.add_meter_record('host.network.io.outgoing.bytes', params[0], 0)
-        self.publisher.add_meter_record('host.network.io.incoming.bytes', params[1], 0)
+        self.publisher.add_meter_record('host.network.io.outgoing.bytes',
+                                        params[0], 0)
+        self.publisher.add_meter_record('host.network.io.incoming.bytes',
+                                        params[1], 0)
 
     # CB METHODS FOR INSTANCE METERS ------------------------------------------
 
@@ -119,17 +130,17 @@ class Agent(object):
         zipped_params = zip(*params)
         descriptors = zipped_params[0:2]  # uuids and timestamps
         self.publisher.add_meter_record(
-                            'inst.cpu.time',
-                            zip(*(descriptors + [zipped_params[2]])),
-                            0)
+            'inst.cpu.time',
+            zip(*(descriptors + [zipped_params[2]])),
+            0)
         self.publisher.add_meter_record(
-                            'inst.cpu.time.ratio',
-                            zip(*(descriptors + [zipped_params[3]])),
-                            0)
+            'inst.cpu.time.ratio',
+            zip(*(descriptors + [zipped_params[3]])),
+            0)
         self.publisher.add_meter_record(
-                            'inst.cpu.percent',
-                            zip(*(descriptors + [zipped_params[4]])),
-                            0)
+            'inst.cpu.percent',
+            zip(*(descriptors + [zipped_params[4]])),
+            0)
 
     def _callback_inst_phy_mem(self, params):
         self.publisher.add_meter_record('inst.memory.physical', params, 0)
@@ -144,45 +155,45 @@ class Agent(object):
         zipped_params = zip(*params)
         descriptors = zipped_params[0:2]  # uuids and timestamps
         self.publisher.add_meter_record(
-                            'inst.disk.io.read.requests',
-                            # zip(*(descriptors + [zip(*zipped_params)[0]])),
-                            zip(*(descriptors + [zipped_params[2]])),
-                            0)
+            'inst.disk.io.read.requests',
+            # zip(*(descriptors + [zip(*zipped_params)[0]])),
+            zip(*(descriptors + [zipped_params[2]])),
+            0)
         self.publisher.add_meter_record(
-                            'inst.disk.io.read.bytes',
-                            # zip(*(descriptors + [zip(*zipped_params)[1]])),
-                            zip(*(descriptors + [zipped_params[3]])),
-                            0)
+            'inst.disk.io.read.bytes',
+            # zip(*(descriptors + [zip(*zipped_params)[1]])),
+            zip(*(descriptors + [zipped_params[3]])),
+            0)
         self.publisher.add_meter_record(
-                            'inst.disk.io.write.requests',
-                            # zip(*(descriptors + [zip(*zipped_params)[2]])),
-                            zip(*(descriptors + [zipped_params[4]])),
-                            0)
+            'inst.disk.io.write.requests',
+            # zip(*(descriptors + [zip(*zipped_params)[2]])),
+            zip(*(descriptors + [zipped_params[4]])),
+            0)
         self.publisher.add_meter_record(
-                            'inst.disk.io.write.bytes',
-                            # zip(*(descriptors + [zip(*zipped_params)[3]])),
-                            zip(*(descriptors + [zipped_params[5]])),
-                            0)
+            'inst.disk.io.write.bytes',
+            # zip(*(descriptors + [zip(*zipped_params)[3]])),
+            zip(*(descriptors + [zipped_params[5]])),
+            0)
 
     def _callback_inst_network_io(self, params):
         zipped_params = zip(*params)
         descriptors = zipped_params[0:2]  # uuids and timestamps
         self.publisher.add_meter_record(
-                            'inst.network.io.incoming.bytes',
-                            zip(*(descriptors + [zipped_params[2]])),
-                            0)
+            'inst.network.io.incoming.bytes',
+            zip(*(descriptors + [zipped_params[2]])),
+            0)
         self.publisher.add_meter_record(
-                            'inst.network.io.incoming.packets',
-                            zip(*(descriptors + [zipped_params[3]])),
-                            0)
+            'inst.network.io.incoming.packets',
+            zip(*(descriptors + [zipped_params[3]])),
+            0)
         self.publisher.add_meter_record(
-                            'inst.network.io.outgoing.bytes',
-                            zip(*(descriptors + [zipped_params[4]])),
-                            0)
+            'inst.network.io.outgoing.bytes',
+            zip(*(descriptors + [zipped_params[4]])),
+            0)
         self.publisher.add_meter_record(
-                            'inst.network.io.outgoing.packets',
-                            zip(*(descriptors + [zipped_params[5]])),
-                            0)
+            'inst.network.io.outgoing.packets',
+            zip(*(descriptors + [zipped_params[5]])),
+            0)
 
     # -------------------------------------------------------------------------
 

@@ -1,0 +1,16 @@
+{% extends 'giraffe_dashboard/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Giraffe - System Status" %}{% endblock %}
+
+{% block page_header %}
+  {% include "giraffe_dashboard/_page_header.html" with title=_("System Status") %}
+{% endblock page_header %}
+
+{% block giraffe_dashboard_main %}
+  <div>
+  {{ service_status_table.render }}
+  </div>
+  <div>
+  {{ database_status_table.render }}
+  </div>
+{% endblock %}

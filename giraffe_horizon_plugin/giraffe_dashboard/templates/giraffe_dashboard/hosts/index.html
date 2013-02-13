@@ -1,9 +1,9 @@
 {% extends 'giraffe_dashboard/base.html' %}
 {% load i18n %}
-{% block title %}{% trans "Giraffe Hosts" %}{% endblock %}
+{% block title %}{% trans "Giraffe - Hosts" %}{% endblock %}
 
 {% block page_header %}
-  {% include "horizon/common/_page_header.html" with title=_("Hosts") %}
+  {% include "giraffe_dashboard/_page_header.html" with title=_("Hosts") %}
 {% endblock page_header %}
 
 {% block giraffe_dashboard_main %}

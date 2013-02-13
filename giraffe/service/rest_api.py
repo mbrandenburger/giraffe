@@ -30,6 +30,7 @@ class Rest_API(object):
         self.AGGREGATION_AVG = 'avg'
         self.AGGREGATION_DAILY_AVG = 'daily_avg'
         self.AGGREGATION_SUM = 'sum'
+        self.AGGREGATION_FIRST_LAST = 'first_last'
         self.server = None
         self.db = None
         self._param_patterns = {self.PARAM_START_TIME:
@@ -161,6 +162,13 @@ class Rest_API(object):
             elif aggregation == self.AGGREGATION_SUM:
                 value_sum = self.db.sum(cls, column, args)
                 return float(value_sum) if value_sum else 0.0
+            elif aggregation == self.AGGREGATION_FIRST_LAST:
+                first = self.db.load(cls, args=args, limit=1, order=ORDER_ASC,
+                                     order_attr=column)[0]
+                last = self.db.load(cls, args=args, limit=1, order=ORDER_DESC,
+                                     order_attr=column)[0]
+                if first and last and first.id != last.id:
+                    return (first.value, last.value)
         except Exception as e:
             _logger.exception(e)
         return None
@@ -284,10 +292,13 @@ class Rest_API(object):
             try:
                 # aggregation
                 if query[self.PARAM_AGGREGATION]:
+                    column = 'value'
+                    if query[self.PARAM_AGGREGATION] == \
+                                                   self.AGGREGATION_FIRST_LAST:
+                        column = 'timestamp'
                     result = self._aggregate(MeterRecord,
                                              query[self.PARAM_AGGREGATION],
-                                             args=record_args,
-                                             column='value')
+                                             args=record_args, column=column)
                     result = json.dumps(result)
                 # no aggregation
                 else:
@@ -386,9 +397,13 @@ class Rest_API(object):
                                      args['timestamp'][1])
 
             if query[self.PARAM_AGGREGATION]:
+                column = 'value'
+                if query[self.PARAM_AGGREGATION] == \
+                                                   self.AGGREGATION_FIRST_LAST:
+                    column = 'timestamp'
                 result = self._aggregate(MeterRecord,
                                          query[self.PARAM_AGGREGATION],
-                                         args)
+                                         args=args, column=column)
                 result = json.dumps(result)
             else:
                 records = self.db.load(MeterRecord, args,
@@ -518,9 +533,13 @@ class Rest_API(object):
                                      args['timestamp'][1])
 
             if query[self.PARAM_AGGREGATION]:
+                column = 'value'
+                if query[self.PARAM_AGGREGATION] == \
+                                                   self.AGGREGATION_FIRST_LAST:
+                    column = 'timestamp'
                 result = self._aggregate(MeterRecord,
                                          query[self.PARAM_AGGREGATION],
-                                         args)
+                                         args=args, column=column)
                 result = json.dumps(result)
             else:
                 records = self.db.load(MeterRecord, args,
@@ -584,9 +603,13 @@ class Rest_API(object):
                                      args['timestamp'][1])
 
             if query[self.PARAM_AGGREGATION]:
+                column = 'value'
+                if query[self.PARAM_AGGREGATION] == \
+                                                   self.AGGREGATION_FIRST_LAST:
+                    column = 'timestamp'
                 result = self._aggregate(MeterRecord,
                                          query[self.PARAM_AGGREGATION],
-                                         args)
+                                         args=args, column=column)
                 result = json.dumps(result)
             else:
                 records = self.db.load(MeterRecord, args,

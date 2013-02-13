@@ -82,7 +82,7 @@ class AgentPublisher(threading.Thread):
                             meter_name=meter_name,
                             value=record[2],
                             duration=meter_duration,
-                            project_id='',
+                            project_id='9f4b31c709b2431b972666100cf12c79',
                             inst_id=record[0],
                             user_id='')
                 else:

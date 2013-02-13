@@ -31,7 +31,6 @@ db.session_open()
 print '\tdone'
 
 meters = []
-"""
 meters.append(Meter(name='host.loadavg_1m',
               description='as measured by os.getloadavg() for 1 minute on the host',
               type='gauge',
@@ -122,7 +121,6 @@ meters.append(Meter(name='inst.disk.io.write.bytes',
               type='cumulative',
               unit_name='bytes',
               data_type='float'))
-"""
 meters.append(Meter(name='inst.network.io.incoming.packets',
               description='number of received packets',
               type='cumulative',

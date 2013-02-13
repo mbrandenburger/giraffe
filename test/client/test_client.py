@@ -361,7 +361,7 @@ class ClientTestCases(unittest.TestCase):
 
     def test_get_proj_meter_records(self):
         project = 1
-        meter   = 'host.loadavg_15'
+        meter   = 'host.loadavg_15m'
 
         proj_meter_records = self.gc.get_proj_meter_records(project, meter)
         self.assertIsNotNone(proj_meter_records)
@@ -369,6 +369,7 @@ class ClientTestCases(unittest.TestCase):
 
     def test_with_giraffe_user(self):
         # auth_token = AuthProxy.get_token()
+        pass
 
 
 if __name__ == '__main__':

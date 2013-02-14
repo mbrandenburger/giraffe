@@ -101,7 +101,7 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
                              'Failed to open connection to hypervisor.')
             sys.exit(1)
 
-    def get_inst_ids(self, pids=True):
+    def _get_inst_ids(self, pids=True):
         """
         Returns a dict of (uuid: (pid, instance-name)) elements for instances
         running on a certain host.
@@ -176,7 +176,7 @@ class Inst_UPTIME(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = self.get_inst_ids()
+            inst_ids = self._get_inst_ids()
             # list of (uuid, timestamp, uptime) tuples
             uptimes = [(uuid,
                         datetime.now(),
@@ -229,14 +229,14 @@ class Inst_CPU(PeriodicInstMeterTask):
                 prev_cpu_util = self.util_map.get(uuid)
 
                 # register new instance (if/when required: i.e., inst_ids
-                # is None [get_inst_ids hasn't been called in previous
+                # is None [_get_inst_ids hasn't been called in previous
                 # iterations] *and* prev_cpu_util is None) ...
                 # ^ When prev_cpu_util is None, but inst_ids isn't,
-                #   get_inst_ids has already neen called - and inst_ids
+                #   _get_inst_ids has already neen called - and inst_ids
                 #   provides all informations needed for subsequent
                 #   execution(s).
                 if not(prev_cpu_util or inst_ids):
-                    inst_ids = self.get_inst_ids(pids=True)
+                    inst_ids = self._get_inst_ids(pids=True)
 
                 if not prev_cpu_util:
                     process = psutil.Process(inst_ids[uuid][0])
@@ -272,7 +272,7 @@ class Inst_CPU(PeriodicInstMeterTask):
                                   process.get_cpu_percent()))
 
             # unregister instances after shutdown (only checked when
-            # get_inst_ids has been called - i.e., "lazy evaluation")
+            # _get_inst_ids has been called - i.e., "lazy evaluation")
             if inst_ids:
                 shutdown = [_uuid for _uuid in self.util_map \
                             if _uuid not in inst_ids]
@@ -305,7 +305,7 @@ class Inst_PHYMEM(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = self.get_inst_ids()
+            inst_ids = self._get_inst_ids()
             # list of (uuid, timestamp, phymem [in bytes], phymem usage [in
             # pct of total]) tuples
             phymem = [(uuid,
@@ -344,7 +344,7 @@ class Inst_VIRMEM(PeriodicInstMeterTask):
 
         try:
             # dict of (uuid: (pid, instance-name)) elements
-            inst_ids = self.get_inst_ids()
+            inst_ids = self._get_inst_ids()
             # list of (uuid, timestamp, virmem [in bytes], virmem usage [in
             # pct of total]) tuples
             virmem = [(uuid,

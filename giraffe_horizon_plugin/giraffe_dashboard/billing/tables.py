@@ -20,7 +20,7 @@ from horizon import tables
 
 
 class BillingTable(tables.DataTable):
-    label = tables.Column('label', verbose_name=_('Details'))
+    label = tables.Column('label', verbose_name=_('Detail'))
     meter_cpu = tables.Column('meter_cpu',
                               verbose_name=_('Instances CPU hours [h]'))
     meter_disk_io = tables.Column('meter_disk_io',

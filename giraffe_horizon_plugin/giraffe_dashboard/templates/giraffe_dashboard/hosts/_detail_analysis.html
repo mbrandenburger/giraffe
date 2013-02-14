@@ -7,7 +7,7 @@
   <dt>{% trans "Plot daily averages for a given meter, month, and year" %}.</dt>
   <dt>{% trans "Note: Generating the data may take a moment" %}.</dt>
   <br/>
-  <form id="_host_analysis_form" action="" method="get" id="date_form" class="form-horizontal">
+  <form action="" method="get" id="date_form" class="form-horizontal">
     <input type="hidden" name="tab" value="host_details__analysis" />
     <div class="form-row">
       {{ form.month }}
@@ -25,7 +25,7 @@
     <script type="text/javascript">
     var Giraffe = {
       graph: {
-        data: [{% for d in graph.data %}'{{ d }}'{% if not forloop.last %},{% endif %}{% endfor %}]
+        data: [{% for d in graph.data %}{% if d %}{{ d }}{% else %}null{% endif %}{% if not forloop.last %},{% endif %}{% endfor %}]
       }
     }
     </script>

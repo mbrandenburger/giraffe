@@ -1,45 +1,44 @@
-import logging
 from datetime import datetime
-from giraffe.common.crypto import validateSignature
-
 from giraffe.common.message_adapter import MessageAdapter
 from giraffe.common.envelope_adapter import EnvelopeAdapter
+from giraffe.common.crypto import validateSignature
 from giraffe.common.config import Config
 from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
 from giraffe.service import db
 from giraffe.service.db import Host, Meter, MeterRecord
+import MySQLdb
 
+import logging
 _logger = logging.getLogger("service.collector")
-
-config = Config("giraffe.cfg")
-
-_RABBIT_HOST = config.get("rabbit", "host")
-_RABBIT_PORT = config.getint("rabbit", "port")
-_RABBIT_QUEUE = config.get("rabbit", "queue")
-_RABBIT_EXCHANGE = config.get("rabbit", "exchange")
-_RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
-_RABBIT_USER = config.get("rabbit", "user")
-_RABBIT_PASS = config.get("rabbit", "pass")
-
-_SHARED_SECRET = config.get("collector", "shared_secret")
 
 
 class Collector(object):
     def __init__(self):
-        self.connector = Connector(_RABBIT_USER, _RABBIT_PASS, _RABBIT_HOST,
-                                   _RABBIT_PORT)
-        self.queue = _RABBIT_QUEUE
-        self.exchange = _RABBIT_EXCHANGE
-        self.routing_key = _RABBIT_ROUTING_KEY
+        self.config = Config("giraffe.cfg")
+        _RABBIT_USER = self.config.get("rabbit", "user")
+        _RABBIT_PASS = self.config.get("rabbit", "pass")
+        _RABBIT_HOST = self.config.get("rabbit", "host")
+        _RABBIT_PORT = self.config.getint("rabbit", "port")
+        self.connector = Connector(_RABBIT_USER, _RABBIT_PASS,
+                                   _RABBIT_HOST, _RABBIT_PORT)
+
+        self.queue = self.config.get("rabbit", "queue")
+        self.exchange = self.config.get("rabbit", "exchange")
+        self.routing_key = self.config.get("rabbit", "routing_key")
+        self.shared_secret = self.config.get("collector", "shared_secret")
         self.consumer = BasicConsumer(self.connector, self.queue,
                                       self.exchange, self._collector_callback)
 
-        # connect to database
-        self.db = db.connect('%s://%s:%s@%s/%s' % (config.get('db', 'vendor'),
-                                                   config.get('db', 'user'),
-                                                   config.get('db', 'pass'),
-                                                   config.get('db', 'host'),
-                                                   config.get('db', 'schema')))
+        # connect to giraffe database
+        self.db = db.connect('%s://%s:%s@%s/%s'
+                             % (self.config.get('db', 'vendor'),
+                                self.config.get('db', 'user'),
+                                self.config.get('db', 'pass'),
+                                self.config.get('db', 'host'),
+                                self.config.get('db', 'schema')))
+
+        # known servers/instances
+        self.known_instances = {}
 
     def launch(self):
         try:
@@ -78,7 +77,7 @@ class Collector(object):
 
         message = MessageAdapter(envelope.message)
         # validate signature
-        if not validateSignature(str(message), _SHARED_SECRET,
+        if not validateSignature(str(message), self.shared_secret,
                                  envelope.signature):
             return
 
@@ -128,6 +127,13 @@ class Collector(object):
                 _logger.warning('Unknown meter_name "%s"' % r.meter_name)
                 continue
             try:
+                # @[fbahr] - TODO: `self.known_instances` grows over time
+                #                  towards inf. - clean-up?
+                if not r.inst_id in self.known_instances:
+                    self.known_instances[r.inst_id] = self._metadata(uuid=r.inst_id)
+
+                r.project_id, r.user_id = self.known_instances[r.inst_id]
+
                 record = MeterRecord(meter_id=meter_dict[r.meter_name].id,
                                      host_id=host.id,
                                      user_id=r.user_id,
@@ -151,3 +157,22 @@ class Collector(object):
             self.db.rollback()
             _logger.exception(e)
         self.db.session_close()
+
+    def _metadata(self, uuid):
+        """
+        (Low-level) connection to nova database; fetches a (project_id,
+        user_id) tuple for a given instance uuid.
+
+        TODO: Provide a more 'abstract' way to interact with the nova-db.
+        """
+        nova_db = MySQLdb.connect(self.config.get('nova-db', 'host'),
+                                  self.config.get('nova-db', 'user'),
+                                  self.config.get('nova-db', 'pass'),
+                                  self.config.get('nova-db', 'schema'))
+
+        cursor = nova_db.cursor()
+        cursor.execute('SELECT project_id, user_id '
+                       'FROM instances '
+                       'WHERE uuid = "%s"' % uuid)
+
+        return cursor.fetchone()

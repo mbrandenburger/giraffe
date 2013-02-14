@@ -2,7 +2,6 @@ __author__ = 'marcus, fbahr'
 
 import threading
 import time
-import logging
 from giraffe.agent.host_meter \
      import Host_CPU_AVG, Host_VIRMEM_Usage, Host_PHYMEM_Usage, Host_UPTIME, \
             Host_NETWORK_IO
@@ -12,6 +11,7 @@ from giraffe.agent.instance_meter \
 from giraffe.agent import publisher
 from giraffe.common.config import Config
 
+import logging
 logger = logging.getLogger("agent")
 config = Config("giraffe.cfg")
 

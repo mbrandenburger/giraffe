@@ -313,7 +313,7 @@ class BaseController(controller.CementBaseController):
             self._except(e)
 
     @controller.expose()
-    def meters(self):
+    def meters_new(self):
 # Attempt 1:
 #       target = {0: ('hosts', self.pargs.host), \
 #                 1: ('projects', self.pargs.project), \
@@ -329,8 +329,6 @@ class BaseController(controller.CementBaseController):
 #                or ('projects', self.pargs.project) if self.pargs.project else None \
 #                or ('users', self.pargs.user) if self.pargs.user else None \
 #                or ('instances', self.pargs.instance) if self.pargs.instance else None
-
-# Attempt 3:
 
         try:
             result = self._client().get_host_meter_records( \
@@ -365,7 +363,7 @@ class BaseController(controller.CementBaseController):
             self._except(e)
 
     @controller.expose()
-    def meters_old(self):
+    def meters(self):
         try:
             result = self._client().get_meters(self._params())
             self._display(result)

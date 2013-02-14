@@ -22,10 +22,28 @@
     <hr class="header_rule">
 
     {% if graph %}
+    <div id="giraffe_graph" style="min-width: 400px; height: 400px; margin: 0 auto"></div> 
     <script type="text/javascript">
     var Giraffe = {
+      static_url: '{{ STATIC_URL }}',
       graph: {
-        data: [{% for d in graph.data %}{% if d %}{{ d }}{% else %}null{% endif %}{% if not forloop.last %},{% endif %}{% endfor %}]
+        type: 'line',
+        target: 'giraffe_graph',
+        title: '{% trans "Daily Average" %}: {% if meter %}{{ meter.name }}{% else %}?{% endif %}',
+        subtitle: '',
+        y: {
+          label: '{% if meter %}{{ meter.unit_name }}{% else %}?{% endif %}',
+          series: [
+            {
+              name: '{{ host.name }}',
+              data: [{% for d in graph.y_data %}{% if d %}{{ d }}{% else %}null{% endif %}{% if not forloop.last %},{% endif %}{% endfor %}]
+            }
+          ]
+        },
+        x: {
+          label: '{% trans "Day" %}',
+          data: [{% for d in graph.x_data %}{% if d %}{{ d }}{% else %}null{% endif %}{% if not forloop.last %},{% endif %}{% endfor %}]
+        }
       }
     }
     </script>

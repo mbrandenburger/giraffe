@@ -101,28 +101,6 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
                              'Failed to open connection to hypervisor.')
             sys.exit(1)
 
-        _credentials = dict(username=_config.get('agent', 'user'),
-                            password=_config.get('agent', 'pass'),
-                            tenant_id=_config.get('agent', 'tenant_id'),
-                            tenant_name=_config.get('agent', 'tenant_name'),
-                            auth_url=_config.get('auth', 'admin_url'),
-                            insecure=True)
-
-        self.nova_client = NovaClient(username=_credentials['username'],
-                                      api_key=_credentials['password'],
-                                      project_id=_credentials['tenant_name'],
-                                      auth_url=_credentials['auth_url'],
-                                      service_type='metering',
-                                      service_name='giraffe',
-                                      region_name='IBR',
-                                      insecure=True)
-
-        _credentials['api_key'] = AuthProxy.get_token(**_credentials)
-        self.nova_client.client.auth_token = _credentials['api_key']
-        self.nova_client.client.authenticate()
-        servers = self.nova_client.servers.all([])
-        servers.
-
     def get_inst_ids(self, pids=True):
         """
         Returns a dict of (uuid: (pid, instance-name)) elements for instances
@@ -135,6 +113,27 @@ class PeriodicInstMeterTask(PeriodicMeterTask):
             # in short: instances running on a host
             for domain_id in self.conn.listDomainsID():
                 ids[self.conn.lookupByID(domain_id).UUIDString()] = None
+
+# Nova client...
+#
+#           _credentials = dict(username=_config.get('agent', 'user'),
+#                               password=_config.get('agent', 'pass'),
+#                               tenant_id=_config.get('agent', 'tenant_id'),
+#                               tenant_name=_config.get('agent', 'tenant_name'),
+#                               auth_url=_config.get('auth', 'admin_url'),
+#                               insecure=True)
+#
+#           self.nova_client = NovaClient(username=_credentials['username'],
+#                                         api_key=_credentials['password'],
+#                                         project_id=_credentials['tenant_name'],
+#                                         auth_url=_credentials['auth_url'],
+#                                         service_type='compute',
+#                                         insecure=True)
+#
+#           _credentials['api_key'] = AuthProxy.get_token(**_credentials)
+#           self.nova_client.client.auth_token = _credentials['api_key']
+#           self.nova_client.client.authenticate()
+#           servers = self.nova_client.servers.find(id=...)
 
             if not pids:
                 return ids

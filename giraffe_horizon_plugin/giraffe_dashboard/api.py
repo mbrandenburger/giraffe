@@ -100,8 +100,17 @@ def get_host_meter_records_daily_avg(request, host_id, meter_id, year, month):
                   'end_time': '%s-%02d-%02d_23-59-59' % (year, month,
                                                          month_days),
                   'aggregation': 'daily_avg'}
-        return giraffeclient(request).get_host_meter_records(host_id, meter_id,
+        avgs = giraffeclient(request).get_host_meter_records(host_id, meter_id,
                                                              params=params)
+        return [d if d != 'None' else None for d in avgs]
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
+def get_meters(request):
+    try:
+        return [APIDictWrapper(m) for m in giraffeclient(request).get_meters()]
     except Exception as e:
         LOG.exception(e)
         return None
@@ -123,73 +132,50 @@ def get_records_count(request):
         return None
 
 
-def get_proj_meter_record_montly_total(request, project, meter, month, year):
-    """
-
-    :param request:
-    :param project:
-    :param meter:
-    :param month:
-    :param year:
-    :return:
-    """
+def get_project_instances(request, project_id):
     try:
-
-        # meter_results = giraffeclient(request).get_meter(meter).as_(Meter)[0]
-        #
-        # LOG.debug("Meter result: %s" % meter_results)
-
-        month_days = calendar.monthrange(year, month)[1]
-
-        query_params = {'aggregation': 'first_last',
-                        'start_time': '%s-%02d-01_00-00-00' % (year, month),
-                        'end_time': '%s-%02d-%02d_23-59-59' % (year, month, month_days)}
-
-        all_instances = giraffeclient(request).get_proj_instances(proj=project, params=query_params)
-
-        sum = 0
-
-        # first = {'ordering': 'asc', 'limit': 1,
-        #          'start_time': '%s-%02d-01_00-00-00' % (year, month),
-        #          'end_time': '%s-%02d-%02d_23-59-59' % (year, month, month_days)}
-        #
-        # last = {'ordering': 'desc', 'limit': 1,
-        #         'start_time': '%s-%02d-01_00-00-00' % (year, month),
-        #         'end_time': '%s-%02d-%02d_23-59-59' % (year, month, month_days)}
-
-        for inst_id in all_instances:
-
-            LOG.debug("Instance: %s" % inst_id)
-
-            results = giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params=query_params)
-            # LOG.debug("Result: %s", results)
-
-            if results and len(results) == 2:
-                sum += float(results[1]) - float(results[0])
-
-
-            # count_result = giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params={"aggregation": "count"})
-            #
-            # if count_result <= 1:
-            #     LOG.debug("No results for instance")
-            #     continue
-            #
-            # if count_result > 1:
-            #     first_sum = giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params=first).as_(MeterRecord)[0].value
-            #     last_sum = giraffeclient(request).get_inst_meter_records(inst=inst_id, meter=meter, params=last).as_(MeterRecord)[0].value
-            #     sum += last_sum - first_sum
-            #     # if tmp_sum == 0:
-            #     #     sum += first_sum
-            #     # else:
-            #     # sum += tmp_sum
-            #
-            #     LOG.debug("Last: %d First: %d Sum: %d" % (last_sum, first_sum, sum))
-            #     continue
-
-        LOG.debug("ENDSum for %s: %d" % (meter,sum))
-        return sum
-
-
+        return giraffeclient(request).get_proj_instances(project_id)
     except Exception as e:
         LOG.exception(e)
+        raise e
+        return None
+
+
+def get_projects_count(request):
+    try:
+        return giraffeclient(request).get_projects({'aggregation': 'count'})
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
+def get_instances_count(request):
+    try:
+        return giraffeclient(request).get_instances({'aggregation': 'count'})
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
+def get_instances_records_monthly_sum(request, instances, meter_id, month,
+                                     year):
+    try:
+        year = int(year)
+        month = int(month)
+        days = calendar.monthrange(year, month)[1]
+        params = {'aggregation': 'first_last',
+                  'start_time': '%s-%02d-01_00-00-00' % (year, month),
+                  'end_time': '%s-%02d-%02d_23-59-59' % (year, month, days)}
+        total = 0
+        for instance in instances:
+            result = giraffeclient(request).get_inst_meter_records(\
+                                  inst=instance, meter=meter_id, params=params)
+            if result and len(result) == 2:
+                first = APIDictWrapper(result[0])
+                last = APIDictWrapper(result[1])
+                total += float(last.value) - float(first.value)
+        return total
+    except Exception as e:
+        LOG.exception(e)
+        raise e
         return None

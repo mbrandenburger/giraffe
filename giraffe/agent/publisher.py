@@ -74,15 +74,13 @@ class AgentPublisher(threading.Thread):
             self.lock.acquire()
             try:
                 if meter_name.startswith("inst"):
-                    #@[fbahr]: Gathering information about project & user id
-                    #          ...how/where?
                     for record in meter_value:
                         self.envelope.add_inst_record(
                             timestamp=self._timestamp_now(record[1]),
                             meter_name=meter_name,
                             value=record[2],
                             duration=meter_duration,
-                            project_id='9f4b31c709b2431b972666100cf12c79',
+                            project_id='',
                             inst_id=record[0],
                             user_id='')
                 else:

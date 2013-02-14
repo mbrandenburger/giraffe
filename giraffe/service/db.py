@@ -368,16 +368,16 @@ class MeterRecord(Base):
                                 onupdate='CASCADE', ondelete='NO ACTION'),
                      nullable=False)
     user_id = Column(VARCHAR(40), nullable=True, default=None,
-                     doc='keystone user ID')
+                     doc='keystone user ID', index=True)
     resource_id = Column(VARCHAR(40), nullable=True, default=None,
-                     doc='nova instance ID')
-    project_id = Column(VARCHAR(40), nullable=True, default=None)
+                     doc='nova instance ID', index=True)
+    project_id = Column(VARCHAR(40), nullable=True, default=None, index=True)
     value = Column('meter_value', VARCHAR(255), nullable=False)
     duration = Column('meter_duration', INTEGER(unsigned=True),
                       nullable=False, default=0,
                       doc='duration of measurement in seconds')
     timestamp = Column('meter_timestamp', TIMESTAMP(), nullable=False,
-                        default='CURRENT_TIMESTAMP')
+                        default='CURRENT_TIMESTAMP', index=True)
 #    signature = Column('message_signature', VARCHAR(40),
 #                        nullable=True, default=None)
 

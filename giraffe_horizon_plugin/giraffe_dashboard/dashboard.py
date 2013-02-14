@@ -6,7 +6,7 @@ import horizon
 class AdminPanels(horizon.PanelGroup):
     slug = "giraffe_admin"
     name = _("Admin Tools")
-    panels = ('system_status', 'hosts',)
+    panels = ('system_status', 'hosts', 'meters',)
 
 
 class BillingPanels(horizon.PanelGroup):
@@ -23,7 +23,7 @@ class GiraffePlugin(horizon.Dashboard):
     # note: the comma at the end DOES make a difference -
     # without it, the last PanelGroup is not displayed at all!
     panels = (BillingPanels, AdminPanels,)
-    default_panel = 'system_status'
+    default_panel = 'billing'
     nav = False
     supports_tenants = True
 

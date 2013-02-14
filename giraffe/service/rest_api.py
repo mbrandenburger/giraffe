@@ -121,6 +121,12 @@ class Rest_API(object):
         - min: returns the object that contains the minimum value for "column"
         - avg: returns the average for "column" of all the rows that match the
         args parameters.
+        - daily_avg: returns the average per day for "column" of all the rows
+        that match the args parameters
+        - sum: returns the sum for "column" of all the rows that match the
+        args parameters.
+        - first_last: returns a tuple of the first and the last object ordered
+        by "column" that match the args parameters.
         """
         try:
             if aggregation == self.AGGREGATION_COUNT:
@@ -168,7 +174,7 @@ class Rest_API(object):
                 last = self.db.load(cls, args=args, limit=1, order=ORDER_DESC,
                                      order_attr=column)[0]
                 if first and last and first.id != last.id:
-                    return (first.value, last.value)
+                    return (first.to_dict(), last.to_dict())
         except Exception as e:
             _logger.exception(e)
         return None
@@ -196,7 +202,7 @@ class Rest_API(object):
             result = json.dumps(result)
         else:
             hosts = self.db.load(Host, order=query[self.PARAM_ORDER],
-                                 order_attr='name')
+                                 order_attr='id')
             result = json.dumps([host.to_dict() for host in hosts])
         self.db.session_close()
         return result
@@ -454,7 +460,7 @@ class Rest_API(object):
             result = self._aggregate(Meter, query[self.PARAM_AGGREGATION], {})
             result = json.dumps(result)
         else:
-            meters = self.db.load(Meter, order_attr='name',
+            meters = self.db.load(Meter, order_attr='id',
                                   order=query[self.PARAM_ORDER])
             result = json.dumps([meter.to_dict() for meter in meters])
         self.db.session_close()

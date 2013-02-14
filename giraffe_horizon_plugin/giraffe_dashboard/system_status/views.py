@@ -27,15 +27,20 @@ class IndexView(tables.MultiTableView):
     client = None
 
     def get_database_status_data(self):
-        host_count = api.get_hosts_count(self.request)
-        meter_count = api.get_meters_count(self.request)
-        record_count = api.get_records_count(self.request)
+        request = self.request
+        project_count = api.get_projects_count(request)
+        host_count = api.get_hosts_count(request)
+        instance_count = api.get_instances_count(request)
+        meter_count = api.get_meters_count(request)
+        record_count = api.get_records_count(request)
         if record_count:
             record_count = '{0:,}'.format(record_count)
         data = {'id': 1,
-               'host_count': host_count,
-               'meter_count': meter_count,
-               'record_count': record_count}
+                'project_count': project_count,
+                'host_count': host_count,
+                'instance_count': instance_count,
+                'meter_count': meter_count,
+                'record_count': record_count}
         return [APIDictWrapper(data)]
 
     def get_service_status_data(self):

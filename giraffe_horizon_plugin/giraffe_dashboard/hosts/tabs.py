@@ -42,6 +42,7 @@ class AnalysisTab(tabs.Tab):
         host = api.get_host(self.request, self.tab_group.kwargs['host_id'])
         meters = api.get_host_meters(self.request,
                                    self.tab_group.kwargs['host_id'])
+        meters = [m for m in meters if m.name.startswith('host')]
         if not host:
             raise exceptions.Http302(reverse(\
                                    'horizon:giraffe_dashboard:hosts:index'))
@@ -50,6 +51,13 @@ class AnalysisTab(tabs.Tab):
         year = self.request.GET.get('year', today.year)
         meter_id = self.request.GET.get('meter', meters[0].id if meters
                                                               else None)
+        meter = None
+        if meter_id:
+            for m in meters:
+                if int(m.id) == int(meter_id):
+                    meter = m
+                    break
+
         form = forms.DateMeterForm(initial={'month': month,
                                             'year': year,
                                             'meter': meter_id},
@@ -60,11 +68,13 @@ class AnalysisTab(tabs.Tab):
             daily_avgs = api.get_host_meter_records_daily_avg(self.request,\
                                            host_id=host.id, meter_id=meter_id,\
                                            year=year, month=month)
-            context['graph'] = {'data': daily_avgs}
+            context['graph'] = {'y_data': daily_avgs,
+                                'x_data': range(1, len(daily_avgs) + 1)}
 
         context['host'] = host
         context['form'] = form
         context['meters'] = meters
+        context['meter'] = meter
         return context
 
 

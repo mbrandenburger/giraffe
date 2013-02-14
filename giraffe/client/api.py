@@ -47,23 +47,6 @@ logger = logging.getLogger("client")
 
 class GiraffeClient(object):
 
-    @staticmethod
-    def client(auth_token=None, **kwargs):
-        _config = Config('giraffe.cfg')
-        _username = _config.get('client', 'user')
-        _password = _config.get('client', 'pass')
-        _tenant_name = _config.get('client', 'tenant_name')
-        _tenant_id = _config.get('client', 'tenant_id')
-        _auth_url = _config.get('auth', 'public_url')
-
-        auth_token = AuthProxy.get_token(username=_username,
-                                         password=_password,
-                                         tenant_name=_tenant_name,
-                                         tenant_id=_tenant_id,
-                                         auth_url=_auth_url)
-
-        return GiraffeClient(auth_token, **kwargs)
-
     def __init__(self, auth_token=None, \
         #              username=None, \
         #              password=None, \
@@ -127,11 +110,30 @@ class GiraffeClient(object):
         # ---------------------------------------------------------------------
         class ResultSet(tuple):
 
-            def __new__(cls, first=(), *next):
+            def __new__(cls, first=(), *next, **kwargs):
+                cls._giraffe_client = kwargs.get('giraffe_client')
+
                 if isinstance(first, (list)) and not next:
                     return tuple.__new__(cls, tuple(first))
                 else:
                     return tuple.__new__(cls, (first, ) + next)
+
+#            @staticmethod
+#            def client(auth_token=None, **kwargs):
+#                _config = Config('giraffe.cfg')
+#                _username = _config.get('client', 'user')
+#                _password = _config.get('client', 'pass')
+#                _tenant_name = _config.get('client', 'tenant_name')
+#                _tenant_id = _config.get('client', 'tenant_id')
+#                _auth_url = _config.get('auth', 'public_url')
+# 
+#                auth_token = AuthProxy.get_token(username=_username,
+#                                                 password=_password,
+#                                                 tenant_name=_tenant_name,
+#                                                 tenant_id=_tenant_id,
+#                                                 auth_url=_auth_url)
+#
+#                return GiraffeClient(auth_token, **kwargs)
 
             def as_(self, cls, **kwargs):
                 """
@@ -148,11 +150,11 @@ class GiraffeClient(object):
                 formatter = kwargs.get('formatter', DEFAULT_FORMATTERS.get(cls))
 
                 #@[fbahr] - TODO: Come up with a smarter solution...
-                # This builds a catalog of meter_record.value types, based
-                # on (meter.id, meter.data_type) information
                 catalog = {}
-                if issubclass(cls, (MeterRecord)):
-                    meters = GiraffeClient.client().get_meters().as_(Meter)
+                if self._giraffe_client and issubclass(cls, (MeterRecord)):
+                    meters = self._giraffe_client.get_meters().as_(Meter)
+                    # constructs a catalog of meter_record.value types, based
+                    # on (meter.id, meter.data_type) information
                     catalog = dict((int(m.id), str(m.data_type)) for m in meters)
 
                 return tuple(formatter.serialize(elem, catalog) for elem in self)
@@ -164,7 +166,7 @@ class GiraffeClient(object):
         logger.debug('HTTP response status code: %s' % response.status_code)
         response.raise_for_status()
 
-        return ResultSet(response.json) \
+        return ResultSet(response.json, giraffe_client=self) \
                    if isinstance(response.json, (tuple, list, dict)) \
                    else response.json
         # ...was:  else response.text

@@ -21,7 +21,7 @@ import giraffe_dashboard.dashboard
 
 
 class BillingPanel(horizon.Panel):
-    name = _("Giraffe Billing")
+    name = _("Project Billing")
     slug = 'billing'
 
 

@@ -7,8 +7,18 @@
 {% endblock page_header %}
 
 {% block giraffe_dashboard_main %}
+  <form action="" method="get" id="date_form" class="form-horizontal">
+    <h3>{% trans "Select a month to query its costs on-the-fly" %}:</h3>
+    <div class="form-row">
+      {{ form.month }}
+      {{ form.year }}
+      <button class="btn btn-small" type="submit">{% trans "Submit" %}</button>
+    </div>
+    <br/>
+    <dt>{% trans "Note: Generating the data may take up to several minutes" %}.</dt>
+  </form>
   {{ table.render }}
-  <p>
-      <h3>Total Costs: {{ total_costs }}</h3>
-  </p>
+  {% if total_costs %}
+  <p><h3>Total Costs: {{ total_costs }}</h3></p>
+  {% endif %}
 {% endblock %}

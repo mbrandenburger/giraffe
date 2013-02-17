@@ -20,3 +20,9 @@ class Config(object):  # ...RawConfigParser):
             return getattr(self._config, name)
         else:
             raise AttributeError('\'Config\' object has no attribute \'%s\'' % name)
+
+    def get(self, section, option, default):
+        try:
+            return self._config.get(option, section)
+        except:
+            return default

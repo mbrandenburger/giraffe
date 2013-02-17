@@ -1,20 +1,22 @@
-__author__ = 'marcus'
+__author__ = 'marcus, fbahr'
 
 import os
-import ConfigParser
+from ConfigParser import RawConfigParser
 
 
-class Config(object):
+class Config(object):  # ...RawConfigParser):
 
-    def __init__(self, path="giraffe.cfg"):
-        if path == "giraffe.cfg":
+    def __init__(self, path='giraffe.cfg'):
+        # RawConfigParser.__init__(self)  # < RawConfigParser = 'old-style' class
+
+        if path == 'giraffe.cfg':
             path = os.sep.join(__file__.split(os.sep)[0:-3] + ['bin', path])
-        self.path = path
-        self.config = ConfigParser.RawConfigParser()
-        self.config.read(self.path)
 
-    def get(self, section, item):
-        return self.config.get(section, item)
+        self._config = RawConfigParser()
+        self.read(path)
 
-    def getint(self, section, item):
-        return self.config.getint(section, item)
+    def __getattr__(self, name):
+        if hasattr(self._config, name):
+            return getattr(self._config, name)
+        else:
+            raise AttributeError('\'Config\' object has no attribute \'%s\'' % name)

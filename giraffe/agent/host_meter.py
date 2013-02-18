@@ -31,7 +31,7 @@ If you plan on adding meters, please follow the convention bellow:
    For example, do not use ephemeral_disk_size but disk.ephemeral.size
 
 2. When a part of the name is a variable, it should always be at the end and
-   start with a ':'. For example do not use <type>.image but image:<type>, 
+   start with a ':'. For example do not use <type>.image but image:<type>,
    where type is your variable name.
 """
 
@@ -47,7 +47,14 @@ import logging
 logger = logging.getLogger("agent.host_meters")
 
 
-class Host_UNAME(PeriodicMeterTask):
+class PeriodicHostMeterTask(PeriodicMeterTask):
+
+    def __init__(self, callback, period):
+        super(PeriodicHostMeterTask, self).__init__(callback, period)
+        pass
+
+
+class Host_UNAME(PeriodicHostMeterTask):
     def meter(self):
         """
         Returns uname
@@ -55,7 +62,8 @@ class Host_UNAME(PeriodicMeterTask):
         return os.uname()
 
 
-class Host_INST_Count(PeriodicMeterTask):
+class Host_INST_Count(PeriodicHostMeterTask):
+
     def __init__(self, callback, period):
         super(Host_INST_Count, self).__init__(callback, period)
         self.conn = libvirt.openReadOnly('qemu:///system')
@@ -89,7 +97,22 @@ class Host_INST_Count(PeriodicMeterTask):
     #       return uuids
 
 
-class Host_CPU_AVG(PeriodicMeterTask):
+class Host_UPTIME(PeriodicHostMeterTask):
+
+    def meter(self):
+        """
+        Returns uptime in seconds
+        """
+        uptime = 0.0
+        try:
+            with open('/proc/uptime', 'r') as f:
+                uptime = float(f.readline().split()[0])
+        finally:
+            return uptime
+
+
+class Host_CPU_AVG(PeriodicHostMeterTask):
+
     def meter(self):
         """
         Returns current system load average
@@ -97,7 +120,7 @@ class Host_CPU_AVG(PeriodicMeterTask):
         return os.getloadavg()
 
 
-class Host_PHYMEM_Usage(PeriodicMeterTask):
+class Host_PHYMEM_Usage(PeriodicHostMeterTask):
     # @[fbahr]: Join with Host_VIRMEM_Usage?
 
     def meter(self):
@@ -111,7 +134,7 @@ class Host_PHYMEM_Usage(PeriodicMeterTask):
         #          -> usage(total=..L, used=1..L, free=..L, percent=x.y)
 
 
-class Host_VIRMEM_Usage(PeriodicMeterTask):
+class Host_VIRMEM_Usage(PeriodicHostMeterTask):
     # @[fbahr]: Join with Host_PHYMEM_Usage?
 
     def meter(self):
@@ -123,30 +146,19 @@ class Host_VIRMEM_Usage(PeriodicMeterTask):
         #      -> swap(total=..L, used=..L, free=..L, percent=x.y, sin=.., sout=..)
 
 
-class Host_UPTIME(PeriodicMeterTask):
-    def meter(self):
-        """
-        Returns uptime in seconds
-        """
-        uptime = 0.0
-        try:
-            with open('/proc/uptime', 'r') as f:
-                uptime = float(f.readline().split()[0])
-        finally:
-            return uptime
+class Host_DISK_IO(PeriodicHostMeterTask):
 
-
-class Host_NETWORK_IO(PeriodicMeterTask):
-    def meter(self):
-        """
-        Returns current network I/O in byte
-        """
-        return psutil.network_io_counters()
-
-
-class Host_DISK_IO(PeriodicMeterTask):
     def meter(self):
         """
         Returns current disk I/O in byte
         """
         raise NotImplementedError()
+
+
+class Host_NETWORK_IO(PeriodicHostMeterTask):
+
+    def meter(self):
+        """
+        Returns current network I/O in byte
+        """
+        return psutil.network_io_counters()

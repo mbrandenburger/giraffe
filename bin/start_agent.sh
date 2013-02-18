@@ -23,8 +23,6 @@ if __name__ == '__main__':
     if os.path.exists(os.path.join(possible_topdir, 'giraffe', '__init__.py')):
         sys.path.append(possible_topdir)
 
-    sys.path.insert(0, '/home/fbahr')
-
     # -------------------------------------------------------------------------
 
     from argparse import ArgumentParser

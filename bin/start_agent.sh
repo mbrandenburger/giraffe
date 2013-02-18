@@ -1,45 +1,69 @@
 #!/usr/bin/env python
 
 """
-Starts a Giraffe agent with "giraffe.cfg" configuration file.
+Starts a Giraffe agent, reading configuration parameters from a 'giraffe.cfg'
+file (by default, expected to be found at os.sep.join(__file__.split(os.sep)
+[0:-3] + ['bin', path]) - optionally, a different location can be passed
+through --config.
 
 Dependencies: psutil, pika
 """
 
-import os
-import sys
-import logging
-
-possible_topdir = os.path.normpath(os.path.join(os.path.abspath(
-        sys.argv[0]), os.pardir, os.pardir))
-
-if os.path.exists(os.path.join(possible_topdir, "giraffe", "__init__.py")):
-    sys.path.append(possible_topdir)
-
-
-from giraffe.agent import agent
-from giraffe.common import config
 
 if __name__ == '__main__':
 
-    logger = logging.getLogger("agent")
-    logger.setLevel(logging.DEBUG)
+    import os
+    import sys
+
+    possible_topdir = os.path.normpath(os.path.join(
+                                            os.path.abspath(sys.argv[0]),
+                                            os.pardir,
+                                            os.pardir))
+
+    if os.path.exists(os.path.join(possible_topdir, 'giraffe', '__init__.py')):
+        sys.path.append(possible_topdir)
+
+    sys.path.insert(0, '/home/fbahr')
+
+    # -------------------------------------------------------------------------
+
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(description='Start a new Giraffe agent instance.')
+    parser.add_argument('--config', action='store', default='giraffe.cfg', \
+                        help='path to giraffe.cfg file')
+    parser.add_argument('--debug', action='store_true', \
+                        help='logging level =DEBUG, else =INFO')
+    parser.add_argument('--stream', action='store_true', \
+                        help='stream logging output to sys.stdout')
+    args = parser.parse_args()
+
+    # -------------------------------------------------------------------------
+
+    import logging
+
+    logger = logging.getLogger('agent')
+    logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    ch = logging.StreamHandler()
-    fh = logging.FileHandler("agent.log")
-
-    ch.setFormatter(formatter)
+    fh = logging.FileHandler('agent.log')
     fh.setFormatter(formatter)
-
-    logger.addHandler(ch)
     logger.addHandler(fh)
 
-    logger.info("Starting Giraffe Agent")
+    if args.stream:
+        ch = logging.StreamHandler()
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
 
+    # -------------------------------------------------------------------------    
+
+    from giraffe.agent import agent
+
+    logger.info('Starting Giraffe agent...')
+    
     try:
-        agent = agent.Agent()
+        agent = agent.Agent(config=args.config)
         agent.launch()
     except (Exception, SystemExit):
-        logger.exception(('Failed to load %s') % 'Agent')
+        logger.exception(('Failed to load %s') % 'agent.')

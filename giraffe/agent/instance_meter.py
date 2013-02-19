@@ -195,10 +195,10 @@ class Inst_UPTIME(PeriodicInstMeterTask):
             return uptimes
 
 
-class Inst_CPU(PeriodicInstMeterTask):
+class Inst_CPU_Time(PeriodicInstMeterTask):
 
     def __init__(self, callback, period):
-        super(Inst_CPU, self).__init__(callback, period)
+        super(Inst_CPU_Time, self).__init__(callback, period)
         self.util_map = {}
 
     def meter(self):
@@ -281,7 +281,7 @@ class Inst_CPU(PeriodicInstMeterTask):
 
         except:
             # Warning! Fails silently...
-            logger.exception('Inst_CPU: '
+            logger.exception('Inst_CPU_Time: '
                              'Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
@@ -289,11 +289,11 @@ class Inst_CPU(PeriodicInstMeterTask):
             return cpu_utils
 
 
-class Inst_PHYMEM(PeriodicInstMeterTask):
-    #@[fbahr]: Join with Inst_VIRMEM?
+class Inst_PHYMEM_Usage(PeriodicInstMeterTask):
+    #@[fbahr]: Join with Inst_VIRMEM_Usage?
 
     def __init__(self, callback, period):
-        super(Inst_PHYMEM, self).__init__(callback, period)
+        super(Inst_PHYMEM_Usage, self).__init__(callback, period)
         # self.psutil_vmem = psutil.virtual_memory()
 
     def meter(self):
@@ -320,7 +320,7 @@ class Inst_PHYMEM(PeriodicInstMeterTask):
 
         except:
             # Warning! Fails silently...
-            logger.exception('Inst_PHYMEM: '
+            logger.exception('Inst_PHYMEM_Usage: '
                              'Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 
@@ -328,11 +328,11 @@ class Inst_PHYMEM(PeriodicInstMeterTask):
             return phymem
 
 
-class Inst_VIRMEM(PeriodicInstMeterTask):
-    #@[fbahr]: Join with Inst_PHYMEM?
+class Inst_VIRMEM_Usage(PeriodicInstMeterTask):
+    #@[fbahr]: Join with Inst_PHYMEM_Usage?
 
     def __init__(self, callback, period):
-        super(Inst_VIRMEM, self).__init__(callback, period)
+        super(Inst_VIRMEM_Usage, self).__init__(callback, period)
         self.psutil_smem = psutil.swap_memory()
 
     def meter(self):
@@ -357,7 +357,7 @@ class Inst_VIRMEM(PeriodicInstMeterTask):
 
         except:
             # Warning! Fails silently...
-            logger.exception('Inst_VIRMEM: '
+            logger.exception('Inst_VIRMEM_Usage: '
                              'Connection to hypervisor failed; reset.')
             self.conn = libvirt.openReadOnly(_LIBVIRT_SOCKET_URL)
 

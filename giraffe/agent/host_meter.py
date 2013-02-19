@@ -111,7 +111,7 @@ class Host_UPTIME(PeriodicHostMeterTask):
             return uptime
 
 
-class Host_CPU_AVG(PeriodicHostMeterTask):
+class Host_CPU_Load(PeriodicHostMeterTask):
 
     def meter(self):
         """

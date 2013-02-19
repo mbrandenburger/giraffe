@@ -1,46 +1,45 @@
-from giraffe.common.crypto import createSignature
-from giraffe.common.envelope_adapter import EnvelopeAdapter
-
 __author__ = 'marcus'
 
 import threading
 import time
-import logging
+
 from datetime import datetime
+
 from giraffe.common.message_adapter import MessageAdapter
+from giraffe.common.envelope_adapter import EnvelopeAdapter
+from giraffe.common.crypto import createSignature
 from giraffe.common.rabbit_mq_connector import Connector
 from giraffe.common.rabbit_mq_connector import BasicProducer
-from giraffe.common.config import *
+from giraffe.common.config import Config
 
+import logging
 logger = logging.getLogger("agent")
-config = Config("giraffe.cfg")
-
-_RABBIT_HOST = config.get("rabbit", "host")
-_RABBIT_PORT = config.getint("rabbit", "port")
-_RABBIT_QUEUE = config.get("rabbit", "queue")
-_RABBIT_EXCHANGE = config.get("rabbit", "exchange")
-_RABBIT_ROUTING_KEY = config.get("rabbit", "routing_key")
-_RABBIT_USER = config.get("rabbit", "user")
-_RABBIT_PASS = config.get("rabbit", "pass")
-_FLUSH_DURATION = config.getint("agent", "duration")
-_HOSTNAME = config.get("agent", "hostname")  # ...considered harmful.
-_SHARED_SECRET = config.get("agent", "shared_secret")
 
 
 class AgentPublisher(threading.Thread):
     def __init__(self, agent):
         threading.Thread.__init__(self)
+
         self.agent = agent
-        self.flush_duration = _FLUSH_DURATION
+        config = Config('giraffe.cfg')
+        self.host_name = config.get('agent', 'host_name')
+
+        self.flush_duration = config.getint('agent', 'duration')
+
+        self.connector = Connector(username=config.get('rabbit', 'user'),
+                                   password=config.get('rabbit', 'pass'),
+                                   host=config.get('rabbit', 'host'),
+                                   port=config.getint('rabbit', 'port'))
+        self.queue = config.get('rabbit', 'queue')
+        self.exchange = config.get('rabbit', 'exchange')
+        self.routing_key = config.get('rabbit', 'routing_key')
+        self.producer = BasicProducer(self.connector, self.exchange)
+
+        self.shared_secret = config.get('agent', 'shared_secret')
+        self.envelope = self._build_message()
+
         self.stopRequest = False
         self.lock = threading.Lock()
-        self.connector = Connector(_RABBIT_USER, _RABBIT_PASS, _RABBIT_HOST,
-                                   _RABBIT_PORT)
-        self.queue = _RABBIT_QUEUE
-        self.exchange = _RABBIT_EXCHANGE
-        self.routing_key = _RABBIT_ROUTING_KEY
-        self.producer = BasicProducer(self.connector, self.exchange)
-        self.envelope = self._build_message()
 
     def _timestamp_now(self, datetime_now=None):
         """
@@ -56,8 +55,7 @@ class AgentPublisher(threading.Thread):
         :rtype : MessageAdapter
         """
         envelope = EnvelopeAdapter()
-
-        envelope.message.host_name = _HOSTNAME
+        envelope.message.host_name = self.host_name
         #        message.signature = _SIGNATURE
         return envelope
 
@@ -66,14 +64,12 @@ class AgentPublisher(threading.Thread):
         Add new meter record to meter message
         Params: meter type [as string], value(s), and duration [in seconds]
         """
-        # @[fbahr]: Instead of passing meter_name as a string, either meter
-        #           or typed meter values should be returned.
         logger.debug("Add meter record: %s=%s" % (meter_name, meter_value))
 
         if not self.lock.locked():
             self.lock.acquire()
             try:
-                if meter_name.startswith("inst"):
+                if meter_name.startswith('inst'):
                     for record in meter_value:
                         self.envelope.add_inst_record(
                             timestamp=self._timestamp_now(record[1]),
@@ -83,7 +79,7 @@ class AgentPublisher(threading.Thread):
                             project_id='',
                             inst_id=record[0],
                             user_id='')
-                else:
+                else:  # .startswith('host'):
                     self.envelope.add_host_record(
                         self._timestamp_now(),
                         meter_name,
@@ -119,15 +115,11 @@ class AgentPublisher(threading.Thread):
         Create message signature and send envelop to broker
         """
         messageAdapter = MessageAdapter(envelope.message)
-
-
-        sig = createSignature(str(messageAdapter), _SHARED_SECRET)
+        sig = createSignature(str(messageAdapter), self.shared_secret)
         envelope.signature = sig
-
-        self.producer.send(
-            self.exchange,
-            self.routing_key,
-            envelope.serialize_to_str())
+        self.producer.send(exchange=self.exchange,
+                           routing_key=self.routing_key,
+                           message=envelope.serialize_to_str())
 
     def run(self):
         self.connector.connect()

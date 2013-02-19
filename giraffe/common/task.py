@@ -1,12 +1,13 @@
 __author__ = 'marcus'
 
-import threading
+from threading import Thread, Timer
 
 
-class Task(threading.Thread):
+class Task(Thread):
 
     def __init__(self, callback):
-        threading.Thread.__init__(self)
+        Thread.__init__(self)
+
         self.isRunning = False
         self.requestStop = False
         self.callbacks = []
@@ -41,8 +42,8 @@ class PeriodicMeterTask(Task):
         meter_msg = self.meter()
         self.notifyCallback(meter_msg)
 
-        if self.requestStop is False:
-            self.timer = threading.Timer(self.period, self.run)
+        if not self.requestStop:
+            self.timer = Timer(self.period, self.run)
             self.timer.start()
         else:
             self.isRunning = False
@@ -54,7 +55,8 @@ class PeriodicMeterTask(Task):
     def meter(self):
         pass
 
-#class PeriodicTaskLauncher(object):
+
+# class PeriodicTaskLauncher(Task):
 #
 #    def __init__(self, service, duration):
 #        self.requestStop = False
@@ -65,14 +67,15 @@ class PeriodicMeterTask(Task):
 #        self.requestStop = False
 #        self.run()
 #
-#    def requestStop(self):
-#        self.requestStop = True
-#
 #    def run(self):
 #        self.service.isRunning = True
 #        returnValue = self.service.run()
 #        self.service.notifyCallback(returnValue)
-#        if self.requestStop == False and self.service.timerInterval > 0:
-#            threading.Timer(self.service.timerInterval,self.run).start()
+#
+#        if not self.requestStop and self.service.timerInterval > 0:
+#            Timer(self.service.timerInterval, self.run).start()
 #        else:
 #            self.service.isRunning = False
+#
+#    def requestStop(self):
+#        self.requestStop = True

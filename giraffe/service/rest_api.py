@@ -422,12 +422,11 @@ class Rest_API(object):
 
     def route_projects_pid_instances(self, project_id, query_string=''):
         """
-        Returns a list of Meter objects for which MeterRecords are available
-        for the given project.
+        Returns a list of instance IDs for the given project.
 
-        Route: projects/<project_id>/meters/
-        Returns: List of Meter objects, JSON-formatted
-        Query params: -
+        Route: projects/<project_id>/instances/
+        Returns: List of Strings, JSON-formatted
+        Query params: start_time, end_time
         """
         query = self._query_params(query_string)
         self.db.session_open()

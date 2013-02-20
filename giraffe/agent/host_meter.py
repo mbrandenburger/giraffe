@@ -38,7 +38,7 @@ If you plan on adding meters, please follow the convention bellow:
 
 import os
 import sys
-from datetime import datetime
+# from datetime import datetime
 import libvirt
 import psutil
 from giraffe.common.task import PeriodicMeterTask
@@ -55,6 +55,9 @@ class PeriodicHostMeterTask(PeriodicMeterTask):
 
 
 class Host_UNAME(PeriodicHostMeterTask):
+    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
+    # ? .nova.compute_nodes. ..
+
     def meter(self):
         """
         Returns uname
@@ -63,6 +66,8 @@ class Host_UNAME(PeriodicHostMeterTask):
 
 
 class Host_INST_Count(PeriodicHostMeterTask):
+    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
+    # > .nova.compute_nodes.running_vms
 
     def __init__(self, callback, period):
         super(Host_INST_Count, self).__init__(callback, period)
@@ -98,6 +103,8 @@ class Host_INST_Count(PeriodicHostMeterTask):
 
 
 class Host_UPTIME(PeriodicHostMeterTask):
+    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
+    # ? .nova.compute_nodes. ..
 
     def meter(self):
         """
@@ -112,6 +119,8 @@ class Host_UPTIME(PeriodicHostMeterTask):
 
 
 class Host_CPU_Load(PeriodicHostMeterTask):
+    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
+    # ? .nova.compute_nodes. ..
 
     def meter(self):
         """
@@ -121,6 +130,9 @@ class Host_CPU_Load(PeriodicHostMeterTask):
 
 
 class Host_PHYMEM_Usage(PeriodicHostMeterTask):
+    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
+    # ? .nova.compute_nodes. ..
+
     # @[fbahr]: Join with Host_VIRMEM_Usage?
 
     def meter(self):
@@ -135,6 +147,9 @@ class Host_PHYMEM_Usage(PeriodicHostMeterTask):
 
 
 class Host_VIRMEM_Usage(PeriodicHostMeterTask):
+    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
+    # ? .nova.compute_nodes. ..
+
     # @[fbahr]: Join with Host_PHYMEM_Usage?
 
     def meter(self):
@@ -147,6 +162,8 @@ class Host_VIRMEM_Usage(PeriodicHostMeterTask):
 
 
 class Host_DISK_IO(PeriodicHostMeterTask):
+    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
+    # ? .nova. ..
 
     def meter(self):
         """
@@ -156,6 +173,8 @@ class Host_DISK_IO(PeriodicHostMeterTask):
 
 
 class Host_NETWORK_IO(PeriodicHostMeterTask):
+    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
+    # ? .nova. ..
 
     def meter(self):
         """

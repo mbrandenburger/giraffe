@@ -30,12 +30,12 @@ if __name__ == '__main__':
     logger.addHandler(fh)
 
     logger.debug("Starting Giraffe Client")
-
-    # creating a client
+   
+    # creating an application
     app = client.GiraffeClientApp()
-    
+
     try:
-        # setting up the application
+        # setting up and running the application
         app.setup()
         app.run()
     except Exception:  # (.., SystemExit)

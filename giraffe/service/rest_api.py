@@ -361,12 +361,13 @@ class Rest_API(object):
         Returns: List of Meter objects, JSON-formatted
         Query params: -
         """
-#        query = self._query_params(query_string)
+#       query = self._query_params(query_string)
         self.db.session_open()
         try:
-            meters = self.db.distinct_values(MeterRecord, 'meter_id',
-                                             args={'project_id': project_id},
-                                             order=ORDER_ASC)
+            meter_ids = self.db.distinct_values(MeterRecord, 'meter_id',
+                                                args={'project_id': project_id},
+                                                order=ORDER_ASC)
+            meters = self.db.load(Meter, args={'id': meter_ids})
         except Exception:
             meters = []
         self.db.session_close()

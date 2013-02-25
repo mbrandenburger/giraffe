@@ -1,5 +1,6 @@
 import calendar
 import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 import re
@@ -99,15 +100,15 @@ class Rest_API(object):
                 if key in params:
                     matches = self._param_patterns[key].match(value)
                     if matches:
-                        params[key] = value
-                        if key in [self.PARAM_START_TIME, self.PARAM_END_TIME]:
-                            params[key] = '%s-%s-%s %s:%s:%s' % \
-                                            (matches.group(1),
-                                             matches.group(2),
-                                             matches.group(3),
-                                             matches.group(4),
-                                             matches.group(5),
-                                             matches.group(6))
+                        params[key] = '%s-%s-%s %s:%s:%s' \
+                                      % (matches.group(1), matches.group(2), \
+                                         matches.group(3), matches.group(4), \
+                                         matches.group(5), matches.group(6)) \
+                                      if key in \
+                                          [self.PARAM_START_TIME, \
+                                           self.PARAM_END_TIME] \
+                                      else \
+                                          value
             except Exception:
                 continue
         return params
@@ -142,27 +143,21 @@ class Rest_API(object):
                 avg = self.db.avg(cls, column, args)
                 return float(avg) if avg else 0.0
             elif aggregation == self.AGGREGATION_DAILY_AVG:
-                startdate = datetime.datetime.strptime(args['timestamp'][0],
-                                                       '%Y-%m-%d %H:%M:%S')
-                startdate = datetime.datetime(startdate.year, startdate.month,
-                                              startdate.day)
-                enddate = datetime.datetime.strptime(args['timestamp'][1],
-                                                     '%Y-%m-%d %H:%M:%S')
-                enddate = datetime.datetime(enddate.year, enddate.month,
-                                            enddate.day, 23, 59, 59)
+                dt_format = "%Y-%m-%d %H:%M:%S"
+                strptime = lambda x: datetime.strptime(x, dt_format)
+                startdate, enddate = map(strptime, args['timestamp'])
+                startdate.replace(hour=0, minute=0, second=0)
+                enddate.replace(hour=23, minute=59, second=59)
                 delta = enddate - startdate
                 days = (delta.days if delta.days <= 31 else 30) + 1
                 result = []
                 for d in range(0, days):
-                    query_startdate = startdate + datetime.timedelta(days=d)
-                    query_enddate = enddate - datetime.timedelta(\
-                                                         days=(delta.days - d))
-#                    _logger.debug('query_startdate = %s' % query_startdate)
-#                    _logger.debug('query_enddate = %s' % query_enddate)
-                    args['timestamp'] = (query_startdate.strftime(\
-                                                          "%Y-%m-%d %H:%M:%S"),
-                                         query_enddate.strftime(\
-                                                          "%Y-%m-%d %H:%M:%S"))
+                    query_startdate = startdate + timedelta(days=d)
+                    query_enddate = enddate - timedelta(days=(delta.days - d))
+#                   _logger.debug('query_startdate = %s' % query_startdate)
+#                   _logger.debug('query_enddate = %s' % query_enddate)
+                    args['timestamp'] = (query_startdate.strftime(dt_format),
+                                         query_enddate.strftime(dt_format))
                     result.append(self.db.avg(cls, column, args))
                 return result
             elif aggregation == self.AGGREGATION_SUM:
@@ -238,7 +233,7 @@ class Rest_API(object):
         Returns: List of Meter objects, JSON-formatted
         Query params: -
         """
-#        query = self._query_params(query_string)
+#       query = self._query_params(query_string)
         try:
             args = {'id': int(host_id)}
         except ValueError:

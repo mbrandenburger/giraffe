@@ -163,7 +163,8 @@ class Collector(object):
         (Low-level) connection to nova database; fetches a (project_id,
         user_id) tuple for a given instance uuid.
 
-        TODO: Provide a more 'abstract' way to interact with the nova-db.
+        TODO: to be replaced with novaclient calls
+              (hint: undocumented(?) `nova list --all_tenants` call)
         """
         nova_db = MySQLdb.connect(self.config.get('nova-db', 'host'),
                                   self.config.get('nova-db', 'user'),

@@ -6,7 +6,9 @@ from giraffe.common.config import Config
 from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
 from giraffe.service import db
 from giraffe.service.db import Host, Meter, MeterRecord
-import MySQLdb
+# import MySQLdb
+# from giraffe.common.auth import AuthProxy
+from novaclient.v1_1.client import Client as NovaClient
 
 import logging
 _logger = logging.getLogger("service.collector")
@@ -14,20 +16,23 @@ _logger = logging.getLogger("service.collector")
 
 class Collector(object):
     def __init__(self):
-        self.config = Config("giraffe.cfg")
-        _RABBIT_USER = self.config.get("rabbit", "user")
-        _RABBIT_PASS = self.config.get("rabbit", "pass")
-        _RABBIT_HOST = self.config.get("rabbit", "host")
-        _RABBIT_PORT = self.config.getint("rabbit", "port")
-        self.connector = Connector(_RABBIT_USER, _RABBIT_PASS,
-                                   _RABBIT_HOST, _RABBIT_PORT)
+        self.config = Config('giraffe.cfg')
 
-        self.queue = self.config.get("rabbit", "queue")
-        self.exchange = self.config.get("rabbit", "exchange")
-        self.routing_key = self.config.get("rabbit", "routing_key")
-        self.shared_secret = self.config.get("collector", "shared_secret")
-        self.consumer = BasicConsumer(self.connector, self.queue,
-                                      self.exchange, self._collector_callback)
+        # configure RabbitMQ connector (and consumer)
+        self.connector = Connector(username=self.config.get('rabbit', 'user'),
+                                   password=self.config.get('rabbit', 'pass'),
+                                   host=self.config.get('rabbit', 'host'),
+                                   port=self.config.getint('rabbit', 'port'))
+        self.queue = self.config.get('rabbit', 'queue')
+        self.exchange = self.config.get('rabbit', 'exchange')
+        self.routing_key = self.config.get('rabbit', 'routing_key')
+
+        self.consumer = BasicConsumer(self.connector,
+                                      self.queue,
+                                      self.exchange,
+                                      self._collector_callback)
+
+        self.shared_secret = self.config.get('collector', 'shared_secret')
 
         # connect to giraffe database
         self.db = db.connect('%s://%s:%s@%s/%s'
@@ -36,6 +41,14 @@ class Collector(object):
                                 self.config.get('db', 'pass'),
                                 self.config.get('db', 'host'),
                                 self.config.get('db', 'schema')))
+
+        # prepare connection to nova-client
+        self._credentials = dict(username=self.config.get('agent', 'user'),
+                                 password=self.config.get('agent', 'pass'),
+        #                        tenant_id=self.config.get('agent', 'tenant_id'),
+                                 tenant_name=self.config.get('agent', 'tenant_name'),
+                                 auth_url=self.config.get('auth', 'admin_url'),
+                                 insecure=True)
 
         # known servers/instances
         self.known_instances = {}
@@ -144,6 +157,7 @@ class Collector(object):
                                      timestamp=r.timestamp)
                 self.db.save(record)
                 _logger.debug("New %s" % record)
+
                 # update host activity
                 record_timestamp = self._str_to_datetime(r.timestamp)
                 if not host.activity or record_timestamp > host.activity:
@@ -160,20 +174,40 @@ class Collector(object):
 
     def _metadata(self, uuid):
         """
-        (Low-level) connection to nova database; fetches a (project_id,
-        user_id) tuple for a given instance uuid.
-
-        TODO: to be replaced with novaclient calls
-              (hint: undocumented(?) `nova list --all_tenants` call)
+        Connect to nova database (by means of nova-client);
+        fetches (project_id, user_id) information for a given instance uuid.
         """
-        nova_db = MySQLdb.connect(self.config.get('nova-db', 'host'),
-                                  self.config.get('nova-db', 'user'),
-                                  self.config.get('nova-db', 'pass'),
-                                  self.config.get('nova-db', 'schema'))
+        nova_client = NovaClient(username=self._credentials['username'],
+                                 api_key=self._credentials['password'],
+                                 project_id=self._credentials['tenant_name'],
+                                 auth_url=self._credentials['auth_url'],
+                                 service_type='compute',
+                                 insecure=True)
 
-        cursor = nova_db.cursor()
-        cursor.execute('SELECT project_id, user_id '
-                       'FROM instances '
-                       'WHERE uuid = "%s"' % uuid)
+        # self._credentials['auth_token'] = AuthProxy.get_token(**self._credentials)
+        # nova_client.client.auth_token = self._credentials['auth_token']
+        # nova_client.client.authenticate()
 
-        return cursor.fetchone()
+        # unfortunately, nova_client.servers.find(id=...) is restricted
+        # to instances in an user's tentant (project) [can't tweek that,
+        # hard-coded in find()] - but:
+        search_opts = {'all_tenants': 1}
+        server = next((s.user_id,  s.tenant_id)
+                          for s in nova_client.servers.list(True, search_opts)
+                          if s.id == uuid)
+        return map(str, server)
+        # ...does the 'trick', too.
+
+        # DEPRECATED: ---------------------------------------------------------
+        #
+        # nova_db = MySQLdb.connect(self.config.get('nova-db', 'host'),
+        #                           self.config.get('nova-db', 'user'),
+        #                           self.config.get('nova-db', 'pass'),
+        #                           self.config.get('nova-db', 'schema'))
+        #
+        # cursor = nova_db.cursor()
+        # cursor.execute('SELECT project_id, user_id '
+        #                'FROM instances '
+        #                'WHERE uuid = "%s"' % uuid)
+        #
+        # return cursor.fetchone()

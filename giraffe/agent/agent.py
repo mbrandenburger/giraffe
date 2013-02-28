@@ -31,13 +31,13 @@ class Agent(object):
                   'inst_disk_io': Inst_DISK_IO,
                   'inst_network_io': Inst_NETWORK_IO}
 
-    def __init__(self, config=None):
+    def __init__(self, cfg=None):
         """
         Initializes a new Agent.
         """
 
         # fetch config parameters
-        config = Config(config if config else 'giraffe.cfg')
+        config = Config(cfg if cfg else 'giraffe.cfg')
 
         # configure agent
         self.timer = False
@@ -60,12 +60,12 @@ class Agent(object):
                 logging.exception('Host meter %s ommitted due to ValueError: '
                                   '\'%s\' is not of type \'int\'' % (meter, value))
 
-        # uptime = config.get('agent', "host_uptime", None)
-        # cpu_load = config.get('agent', "host_cpu_load", None)
-        # phymem_usage = config.get('agent', "host_phymem_usage", None)
-        # virmem_usage = config.get('agent', "host_virmem_usage", None)
-        # disk_io = config.get('agent', "host_disk_io", None)
-        # network_io = config.get('agent', "host_network_io", None)
+        # uptime = config.get('agent', 'host_uptime')
+        # cpu_load = config.get('agent', 'host_cpu_load')
+        # phymem_usage = config.get('agent', 'host_phymem_usage')
+        # virmem_usage = config.get('agent', 'host_virmem_usage')
+        # disk_io = config.get('agent', 'host_disk_io')
+        # network_io = config.get('agent', 'host_network_io')
 
         # host meter `uptime`
         # if uptime:
@@ -109,12 +109,12 @@ class Agent(object):
                 logging.exception('Instance meter %s ommitted due to ValueError: '
                                   '\'%s\' is not of type \'int\'' % (meter, value))
 
-        # uptime = config.get('agent', "inst_uptime", None)
-        # cpu_time = config.get('agent', "inst_cpu_time", None)
-        # phymem_usage = config.get('agent', "inst_phymem_usage", None)
-        # virmem_usage = config.get('agent', "inst_virmem_usage", None)
-        # disk_io = config.get('agent', "inst_disk_io", None)
-        # network_io = config.get('agent', "inst_network_io", None)
+        # uptime = config.get('agent', 'inst_uptime')
+        # cpu_time = config.get('agent', 'inst_cpu_time')
+        # phymem_usage = config.get('agent', 'inst_phymem_usage')
+        # virmem_usage = config.get('agent', 'inst_virmem_usage')
+        # disk_io = config.get('agent', 'inst_disk_io')
+        # network_io = config.get('agent', 'inst_network_io')
 
         # instance meter `uptime`
         # if uptime:

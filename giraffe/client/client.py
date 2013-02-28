@@ -15,7 +15,7 @@ Usage:
         meters
         records
 
-    Furthermore, there's - for debugging purposed only -, a hidden 'query'
+    Furthermore, there's - for debugging purposed only - a hidden 'query'
     command to query the Giraffe API directly using a REST API path.
 
     Required arguments [in combination with certain commands]:
@@ -160,9 +160,15 @@ class AbstractBaseController(controller.CementBaseController):
             (['--avg'], \
                 dict(action='store_true', help='', \
                      default=None)),
+            (['--hourly'], \
+                dict(action='store_true', dest='hourly_avg', help='hourly '
+                     'averages of meter values within an period '
+                     '[to be defined by --start and --end]', \
+                     default=None)),
             (['--daily'], \
-                dict(action='store_true', dest='daily_avg', help='group '
-                     'objects by day and build list of daily averages', \
+                dict(action='store_true', dest='daily_avg', help='daily '
+                     'averages of meter values within an period '
+                     '[to be defined by --start and --end]', \
                      default=None)),
             (['--sum'], \
                 dict(action='store_true', help='', \
@@ -180,7 +186,7 @@ class AbstractBaseController(controller.CementBaseController):
             ]
 
         _aggregations = [
-            'min', 'max', 'avg', 'daily_avg', 'sum', 'count'
+            'min', 'max', 'avg', 'hourly_avg', 'daily_avg', 'sum', 'count'
             ]
 
         _filters = [

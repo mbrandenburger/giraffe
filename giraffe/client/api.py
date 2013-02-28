@@ -244,7 +244,8 @@ class GiraffeClient(object):
           applies to ResultSet::as_().
         """
         path = '/'.join(['/instances', str(inst)])
-        raise NotImplementedError()
+        raise NotImplementedError('Route /instances/[id|name] '
+                                  'not (yet) implemented.')
 
     def get_inst_meters(self, inst, params=None):
         """
@@ -253,7 +254,8 @@ class GiraffeClient(object):
         dicts
         """
         path = '/'.join(['/instances', str(inst), 'meters'])
-        raise NotImplementedError()
+        raise NotImplementedError('Route /instances/[id|name]/meters '
+                                  'not (yet) implemented.')
 
     def get_inst_meter_records(self, inst, meter, params=None):
         """

@@ -12,8 +12,8 @@ from giraffe.service.db import MIN_TIMESTAMP, MAX_TIMESTAMP,\
                                ORDER_ASC, ORDER_DESC
 
 
-_logger = logging.getLogger("service.rest_api")
-_config = Config("giraffe.cfg")
+_logger = logging.getLogger('service.rest_api')
+_config = Config('giraffe.cfg')
 
 
 class Rest_API(object):
@@ -29,6 +29,7 @@ class Rest_API(object):
         self.AGGREGATION_MAX = 'max'
         self.AGGREGATION_MIN = 'min'
         self.AGGREGATION_AVG = 'avg'
+        self.AGGREGATION_HOURLY_AVG = 'hourly_avg'
         self.AGGREGATION_DAILY_AVG = 'daily_avg'
         self.AGGREGATION_SUM = 'sum'
         self.AGGREGATION_FIRST_LAST = 'first_last'
@@ -122,6 +123,8 @@ class Rest_API(object):
         - min: returns the object that contains the minimum value for "column"
         - avg: returns the average for "column" of all the rows that match the
         args parameters.
+        - hourly_avg: returns the average per hour for "column" of all the rows
+        that match the args parameters
         - daily_avg: returns the average per day for "column" of all the rows
         that match the args parameters
         - sum: returns the sum for "column" of all the rows that match the
@@ -142,20 +145,36 @@ class Rest_API(object):
             elif aggregation == self.AGGREGATION_AVG:
                 avg = self.db.avg(cls, column, args)
                 return float(avg) if avg else 0.0
+            elif aggregation == self.AGGREGATION_HOURLY_AVG:
+                dt_format = "%Y-%m-%d %H:%M:%S"
+                strptime = lambda x: datetime.strptime(x, dt_format)
+                startdate, enddate = map(strptime, args['timestamp'])
+                startdate = startdate.replace(minute=0, second=0)
+                enddate = enddate.replace(minute=59, second=59) \
+                              if   enddate.minute or enddate.second \
+                              else enddate - timedelta(seconds=1)
+                delta = enddate - startdate
+                hours = (delta.days * 24 * 3600 + delta.seconds) / 3600 + 1
+                result = []
+                for h in range(0, hours):
+                    query_startdate = startdate + timedelta(seconds=h * 3600)
+                    query_enddate = enddate - timedelta(seconds=(hours - h - 1) * 3600)
+                    args['timestamp'] = (query_startdate.strftime(dt_format),
+                                         query_enddate.strftime(dt_format))
+                    result.append(self.db.avg(cls, column, args))
+                return result
             elif aggregation == self.AGGREGATION_DAILY_AVG:
                 dt_format = "%Y-%m-%d %H:%M:%S"
                 strptime = lambda x: datetime.strptime(x, dt_format)
                 startdate, enddate = map(strptime, args['timestamp'])
-                startdate.replace(hour=0, minute=0, second=0)
-                enddate.replace(hour=23, minute=59, second=59)
+                startdate = startdate.replace(hour=0, minute=0, second=0)
+                enddate = enddate.replace(hour=23, minute=59, second=59)
                 delta = enddate - startdate
                 days = (delta.days if delta.days <= 31 else 30) + 1
                 result = []
                 for d in range(0, days):
                     query_startdate = startdate + timedelta(days=d)
                     query_enddate = enddate - timedelta(days=(delta.days - d))
-#                   _logger.debug('query_startdate = %s' % query_startdate)
-#                   _logger.debug('query_enddate = %s' % query_enddate)
                     args['timestamp'] = (query_startdate.strftime(dt_format),
                                          query_enddate.strftime(dt_format))
                     result.append(self.db.avg(cls, column, args))

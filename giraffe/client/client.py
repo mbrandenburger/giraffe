@@ -28,6 +28,7 @@ Usage:
         --min
         --max
         --avg
+        --hourly
         --daily
       [ --first-last : NOT_IMPLEMENTED! ]
         --sum

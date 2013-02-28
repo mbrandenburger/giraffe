@@ -1,56 +1,56 @@
+__author__ = 'omihelic'
+
 '''
 Sets up database interaction with SQLAlchemy.
 
--- Usage example --
-import giraffe.service.db as db
-from giraffe.service.db import Meter, MeterRecord
+Usage (example):
+    import giraffe.service.db as db
+    from giraffe.service.db import Meter, MeterRecord
 
-# CREATE SESSION
-db = db.connect('mysql://user:pwd@host/schema')
-db.session_open()
+    # CREATE SESSION
+    db = db.connect('mysql://user:pwd@host/schema')
+    db.session_open()
 
-# INSERT
-# Id is set explicitly only for the sake of the example.
-meter = Meter(id=99, name='test_meter', unit_name='kb', data_type='int')
-record = MeterRecord(meter_id=99, host_id='fakehost', message_id='ABCDE',
-                     value=10, timestamp='2012-12-01 12:00:00')
+    # INSERT
+    # Id is set explicitly only for the sake of the example.
+    meter = Meter(id=99, name='test_meter', unit_name='kb', data_type='int')
+    record = MeterRecord(meter_id=99, host_id='fakehost', message_id='ABCDE',
+                         value=10, timestamp='2012-12-01 12:00:00')
 
-db.save(meter)
-db.save(record)
-db.commit()
-
-# Exceptions could be thrown any time which could leave the database
-# in an inconsistent state.
-err_record = MeterRecord(meter_id=0)
-try:
-    db.save(err_record)
+    db.save(meter)
+    db.save(record)
     db.commit()
-except Exception:
-    db.rollback()
 
-# UPDATE
-print meter, record
-meter.name = 'test_meter_updated'
-record.value = 20
-db.commit()
+    # Exceptions could be thrown any time which could leave the database
+    # in an inconsistent state.
+    err_record = MeterRecord(meter_id=0)
+    try:
+        db.save(err_record)
+        db.commit()
+    except Exception:
+        db.rollback()
 
-# QUERY
-meters = db.load(Meter, {'name': 'test_meter_updated'})
-for m in meters:
-    print m
-    print m.records
+    # UPDATE
+    print meter, record
+    meter.name = 'test_meter_updated'
+    record.value = 20
+    db.commit()
 
-record = db.load(MeterRecord, limit=1)[0]
-print record
-print record.meter
+    # QUERY
+    meters = db.load(Meter, {'name': 'test_meter_updated'})
+    for m in meters:
+        print m, '\n', m.records
 
-# DELETE
-db.delete(meters[0])
-db.delete(record)
-db.commit()
+    record = db.load(MeterRecord, limit=1)[0]
+    print record, '\n', record.meter
 
-# CLOSE SESSION
-db.session_close()
+    # DELETE
+    db.delete(meters[0])
+    db.delete(record)
+    db.commit()
+
+    # CLOSE SESSION
+    db.session_close()
 '''
 
 from sqlalchemy import create_engine, Column, ForeignKey, desc, asc, and_, func
@@ -378,8 +378,8 @@ class MeterRecord(Base):
                       doc='duration of measurement in seconds')
     timestamp = Column('meter_timestamp', TIMESTAMP(), nullable=False,
                         default='CURRENT_TIMESTAMP', index=True)
-#    signature = Column('message_signature', VARCHAR(40),
-#                        nullable=True, default=None)
+#   signature = Column('message_signature', VARCHAR(40),
+#                       nullable=True, default=None)
 
     def __repr__(self):
         return "MeterRecord(%s, %d, %s, %s, %s)" % (self.id,

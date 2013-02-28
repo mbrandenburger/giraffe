@@ -13,7 +13,7 @@ class Config(object):  # ...RawConfigParser):
             path = os.sep.join(__file__.split(os.sep)[0:-3] + ['bin', path])
 
         self._config = RawConfigParser()
-        self.read(path)
+        self._config.read(path)
 
     def __getattr__(self, name):
         if hasattr(self._config, name):
@@ -21,8 +21,8 @@ class Config(object):  # ...RawConfigParser):
         else:
             raise AttributeError('\'Config\' object has no attribute \'%s\'' % name)
 
-    def get(self, section, option, default):
+    def get(self, section, option, **kwargs):
         try:
-            return self._config.get(option, section)
+            return self._config.get(section, option)
         except:
-            return default
+            return kwargs['default']

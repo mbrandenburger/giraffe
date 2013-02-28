@@ -28,9 +28,10 @@ class DateMeterForm(forms.Form):
 
         # fill years
         today = date.today()
-        years = [(today.year + i,) * 2 for i in range(2)]
+        years = [(today.year -1 + i,) * 2 for i in range(2)]
         years.reverse()
         self.fields['year'].choices = years
 
-        # placeholder for days
-        self.fields['day'].choices = []
+        # fill days (poor man's approach)
+        days = [(d, str(d) if d else '') for d in range(0, 32)]
+        self.fields['day'].choices = days

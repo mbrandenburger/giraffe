@@ -1,4 +1,6 @@
-import logging
+__author__ = 'omihelic, fbahr'
+
+import calendar
 
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
@@ -11,6 +13,7 @@ from horizon import time
 from giraffe_dashboard import api
 from giraffe_dashboard import forms
 
+import logging
 LOG = logging.getLogger(__name__)
 
 
@@ -57,15 +60,14 @@ class AnalysisTab(tabs.Tab):
         day = self.request.GET.get('day', None)
         year = self.request.GET.get('year', today.year)
 
-        meter_id = self.request.GET.get('meter', meters[0].id if meters
-                                                              else None)
+        meter_id = self.request.GET.get('meter', meters[0].id if meters else None)
         meter = next(m for m in meters if int(m.id) == int(meter_id)) \
                     if meter_id \
                     else None
 
         form = forms.DateMeterForm(initial={'month': month,
                                             'year': year,
-                                            'day': None,
+                                            'day': 0,
                                             'meter': meter_id},
                                    meters=meters)
 
@@ -76,10 +78,12 @@ class AnalysisTab(tabs.Tab):
                                                   meter_id=meter_id,
                                                   year=year,
                                                   month=month,
-                                                  day=day)
+                                                  day=int(day))
+
+            ticks = 25 if day else (calendar.monthrange(*map(int, (year, month)))[1] + 1)
 
             context['graph'] = {'y_data': avgs,
-                                'x_data': range(1, len(avgs) + 1)}
+                                'x_data': range(1, ticks)}
 
         context['form'] = form
         context['meters'] = meters

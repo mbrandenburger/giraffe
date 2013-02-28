@@ -1,14 +1,14 @@
-import logging
+__author__ = 'omihelic, fbahr'
+
+import calendar
 
 from horizon.api.base import APIResourceWrapper
 from horizon.api.base import APIDictWrapper
 
 from giraffe.client.api import GiraffeClient
-
-import calendar
 from giraffe.service.db import MeterRecord, Meter
 
-
+import logging
 LOG = logging.getLogger(__name__)
 
 
@@ -91,18 +91,30 @@ def get_host_meters(request, host_id):
         return []
 
 
-def get_host_meter_records_avg(request, host_id, meter_id, year, month, day):
+def get_host_meter_records_avg(request, host_id, meter_id,
+                               year, month, day):
     try:
         year = int(year)
         month = int(month)
-        month_days = calendar.monthrange(year, month)[1]
-        params = {'start_time': '%s-%02d-01_00-00-00' % (year, month),
-                  'end_time': '%s-%02d-%02d_23-59-59' % (year, month,
-                                                         month_days),
-                  'aggregation': 'daily_avg'}
-        avgs = giraffeclient(request).get_host_meter_records(host_id, meter_id,
+        num_days = calendar.monthrange(year, month)[1]
+        if not day:
+            start_day, end_day = 1, num_days
+        else:
+            start_day, end_day = (day if day <= num_days else num_days, ) * 2
+
+        params = {'start_time':
+                        '%s-%02d-%02d_00-00-00' % (year, month, start_day),
+                  'end_time':
+                        '%s-%02d-%02d_23-59-59' % (year, month, end_day),
+                  'aggregation':
+                        'hourly_avg' if start_day == end_day else 'daily_avg'}
+
+        avgs = giraffeclient(request).get_host_meter_records(host=host_id,
+                                                             meter=meter_id,
                                                              params=params)
+
         return [d if d != 'None' else None for d in avgs]
+
     except Exception as e:
         LOG.exception(e)
         return None

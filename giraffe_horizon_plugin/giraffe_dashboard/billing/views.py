@@ -79,6 +79,8 @@ class IndexView(tables.DataTableView):
 
         request = self.request
         project_id = self.request.user.tenant_id
+
+        # list of instance identifiers (strings)
         instances = api.get_project_instances(request, project_id)
 
         cpu = api.get_instances_records_monthly_sum(request,\

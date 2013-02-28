@@ -91,7 +91,7 @@ def get_host_meters(request, host_id):
         return []
 
 
-def get_host_meter_records_daily_avg(request, host_id, meter_id, year, month):
+def get_host_meter_records_avg(request, host_id, meter_id, year, month, day):
     try:
         year = int(year)
         month = int(month)

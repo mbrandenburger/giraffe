@@ -21,11 +21,14 @@ class OverviewTab(tabs.Tab):
 
     def get_context_data(self, request):
         host = api.get_host(self.request, self.tab_group.kwargs['host_id'])
-        host_meters = api.get_host_meters(self.request,
-                                   self.tab_group.kwargs['host_id'])
         if not host:
-            raise exceptions.Http302(reverse(\
-                                   'horizon:giraffe_dashboard:hosts:index'))
+            raise exceptions.Http302(reverse('horizon:giraffe_dashboard'
+                                             ':hosts:index'))
+
+        host_meters = api.get_host_meters( \
+                              self.request, \
+                              self.tab_group.kwargs['host_id'])
+
         return {'host': host, 'meters': host_meters}
 
 
@@ -35,46 +38,54 @@ class AnalysisTab(tabs.Tab):
     template_name = 'giraffe_dashboard/hosts/_detail_analysis.html'
 
     def get_context_data(self, request):
-        submitted = False
-        if self.request.GET.get('meter', False):
-            submitted = True
+        submitted = self.request.GET.get('meter', None) is not None
 
         host = api.get_host(self.request, self.tab_group.kwargs['host_id'])
-        meters = api.get_host_meters(self.request,
-                                   self.tab_group.kwargs['host_id'])
-        meters = [m for m in meters if m.name.startswith('host')]
         if not host:
-            raise exceptions.Http302(reverse(\
-                                   'horizon:giraffe_dashboard:hosts:index'))
+            raise exceptions.Http302(reverse('horizon:giraffe_dashboard'
+                                             ':hosts:index'))
+
+        # @[fbahr] - TODO: make /hosts/hid/meters return only host meters?!
+        meters = [meter \
+                  for meter in api.get_host_meters( \
+                                       self.request, \
+                                       self.tab_group.kwargs['host_id']) \
+                  if meter.name.startswith('host')]
+
         today = time.today()
         month = self.request.GET.get('month', today.month)
+        day = self.request.GET.get('day', None)
         year = self.request.GET.get('year', today.year)
+
         meter_id = self.request.GET.get('meter', meters[0].id if meters
                                                               else None)
-        meter = None
-        if meter_id:
-            for m in meters:
-                if int(m.id) == int(meter_id):
-                    meter = m
-                    break
+        meter = next(m for m in meters if int(m.id) == int(meter_id)) \
+                    if meter_id \
+                    else None
 
         form = forms.DateMeterForm(initial={'month': month,
                                             'year': year,
+                                            'day': None,
                                             'meter': meter_id},
-                                   meters=meters,)
+                                   meters=meters)
 
         context = {'submitted': submitted}
         if submitted and meter_id:
-            daily_avgs = api.get_host_meter_records_daily_avg(self.request,\
-                                           host_id=host.id, meter_id=meter_id,\
-                                           year=year, month=month)
-            context['graph'] = {'y_data': daily_avgs,
-                                'x_data': range(1, len(daily_avgs) + 1)}
+            avgs = api.get_host_meter_records_avg(request=self.request,
+                                                  host_id=host.id,
+                                                  meter_id=meter_id,
+                                                  year=year,
+                                                  month=month,
+                                                  day=day)
 
-        context['host'] = host
+            context['graph'] = {'y_data': avgs,
+                                'x_data': range(1, len(avgs) + 1)}
+
         context['form'] = form
         context['meters'] = meters
+        context['host'] = host
         context['meter'] = meter
+
         return context
 
 

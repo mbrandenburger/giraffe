@@ -10,7 +10,7 @@ from horizon import tabs
 from horizon import forms as horizon_forms
 from horizon import time
 
-from giraffe_dashboard import api
+from giraffe_dashboard import client_proxy
 from giraffe_dashboard import forms
 
 import logging
@@ -23,14 +23,14 @@ class OverviewTab(tabs.Tab):
     template_name = 'giraffe_dashboard/hosts/_detail_overview.html'
 
     def get_context_data(self, request):
-        host = api.get_host(self.request, self.tab_group.kwargs['host_id'])
+        host = client_proxy.get_host(self.request, self.tab_group.kwargs['host_id'])
         if not host:
             raise exceptions.Http302(reverse('horizon:giraffe_dashboard'
                                              ':hosts:index'))
 
-        host_meters = api.get_host_meters( \
-                              self.request, \
-                              self.tab_group.kwargs['host_id'])
+        host_meters = client_proxy.get_host_meters( \
+                                   self.request, \
+                                   self.tab_group.kwargs['host_id'])
 
         return {'host': host, 'meters': host_meters}
 
@@ -43,21 +43,21 @@ class AnalysisTab(tabs.Tab):
     def get_context_data(self, request):
         submitted = self.request.GET.get('meter', None) is not None
 
-        host = api.get_host(self.request, self.tab_group.kwargs['host_id'])
+        host = client_proxy.get_host(self.request, self.tab_group.kwargs['host_id'])
         if not host:
             raise exceptions.Http302(reverse('horizon:giraffe_dashboard'
                                              ':hosts:index'))
 
         # @[fbahr] - TODO: make /hosts/hid/meters return only host meters?!
         meters = [meter \
-                  for meter in api.get_host_meters( \
+                  for meter in client_proxy.get_host_meters( \
                                        self.request, \
                                        self.tab_group.kwargs['host_id']) \
                   if meter.name.startswith('host')]
 
         today = time.today()
         month = self.request.GET.get('month', today.month)
-        day = self.request.GET.get('day', None)
+        day = self.request.GET.get('day', 0)
         year = self.request.GET.get('year', today.year)
 
         meter_id = self.request.GET.get('meter', meters[0].id if meters else None)
@@ -73,17 +73,18 @@ class AnalysisTab(tabs.Tab):
 
         context = {'submitted': submitted}
         if submitted and meter_id:
-            avgs = api.get_host_meter_records_avg(request=self.request,
-                                                  host_id=host.id,
-                                                  meter_id=meter_id,
-                                                  year=year,
-                                                  month=month,
-                                                  day=int(day))
+            avgs = client_proxy.get_host_meter_records_avg(request=self.request,
+                                                           host_id=host.id,
+                                                           meter_id=meter_id,
+                                                           year=year,
+                                                           month=month,
+                                                           day=int(day))
 
-            ticks = 25 if day else (calendar.monthrange(*map(int, (year, month)))[1] + 1)
+            ticks = 25 \
+                    if   day \
+                    else (calendar.monthrange(*map(int, (year, month)))[1] + 1)
 
-            context['graph'] = {'y_data': avgs,
-                                'x_data': range(1, ticks)}
+            context['graph'] = {'y_data': avgs, 'x_data': range(1, ticks)}
 
         context['form'] = form
         context['meters'] = meters

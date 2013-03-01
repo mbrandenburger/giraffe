@@ -99,15 +99,17 @@ def get_host_meter_records_avg(request, host_id, meter_id,
         num_days = calendar.monthrange(year, month)[1]
         if not day:
             start_day, end_day = 1, num_days
+            aggregation = 'daily_avg'
         else:
             start_day, end_day = (day if day <= num_days else num_days, ) * 2
+            aggregation = 'hourly_avg'
 
         params = {'start_time':
                         '%s-%02d-%02d_00-00-00' % (year, month, start_day),
                   'end_time':
                         '%s-%02d-%02d_23-59-59' % (year, month, end_day),
                   'aggregation':
-                        'hourly_avg' if start_day == end_day else 'daily_avg'}
+                        aggregation}
 
         avgs = giraffeclient(request).get_host_meter_records(host=host_id,
                                                              meter=meter_id,

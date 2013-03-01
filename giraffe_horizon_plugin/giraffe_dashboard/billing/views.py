@@ -1,40 +1,22 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
-# Copyright 2012 Openstack, LLC
-#
-#    Licensed under the Apache License, Version 2.0 (the "License"); you may
-#    not use this file except in compliance with the License. You may obtain
-#    a copy of the License at
-#
-#         http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#    License for the specific language governing permissions and limitations
-#    under the License.
-
-import logging
+__author__ = 'omihelic, mbrandenburger'
 
 from horizon.api.base import APIDictWrapper
 from horizon import forms
 from horizon import tables
 from horizon import time
 
-from giraffe_dashboard import api
+from giraffe_dashboard import client_proxy
 
 from .tables import BillingTable
 
-
+import logging
 LOG = logging.getLogger(__name__)
-
-#my_log = logging.getLogger("giraffe_dashboard")
-#my_log.setLevel(logging.DEBUG)
-#formatter = logging.Formatter(
-#    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#fh = logging.FileHandler("/opt/giraffe/bin/log/marcus_debug_log")
-#fh.setFormatter(formatter)
-#my_log.addHandler(fh)
+# LOG = logging.getLogger("giraffe_dashboard")
+# LOG.setLevel(logging.DEBUG)
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# fh = logging.FileHandler("/opt/giraffe/bin/log/marcus_debug_log")
+# fh.setFormatter(formatter)
+# LOG.addHandler(fh)
 
 
 class IndexView(tables.DataTableView):
@@ -48,10 +30,10 @@ class IndexView(tables.DataTableView):
         year = self._get_year()
         if year and month:
             data = self._get_billing_data(year, month)
-            total = float(data[4]["meter_cpu"])\
-                    + float(data[4]["meter_disk_io"])\
-                    + float(data[4]["meter_net_io"])
-            context["total_costs"] = '%0.2f' % total
+            total = float(data[4]['meter_cpu'])\
+                    + float(data[4]['meter_disk_io'])\
+                    + float(data[4]['meter_net_io'])
+            context['total_costs'] = '%0.2f' % total
         self.today = time.today()
         initial = {'month': month if month else self.today.month,
                    'year': year if year else self.today.year}
@@ -81,19 +63,19 @@ class IndexView(tables.DataTableView):
         project_id = self.request.user.tenant_id
 
         # list of instance identifiers (strings)
-        instances = api.get_project_instances(request, project_id)
+        instances = client_proxy.get_project_instances(request, project_id)
 
-        cpu = api.get_instances_records_monthly_sum(request,\
+        cpu = client_proxy.get_instances_records_monthly_sum(request,\
                                instances=instances, meter_id='inst.cpu.time',\
                                month=month, year=year)
         # nanoseconds to hours
         cpu = float(cpu) / 3600000000000 if cpu else 0.0
 
-        disk_r = api.get_instances_records_monthly_sum(request,
+        disk_r = client_proxy.get_instances_records_monthly_sum(request,
                                                      instances=instances,\
                                            meter_id='inst.disk.io.read.bytes',\
                                            month=month, year=year)
-        disk_w = api.get_instances_records_monthly_sum(request,
+        disk_w = client_proxy.get_instances_records_monthly_sum(request,
                                                      instances=instances,\
                                           meter_id='inst.disk.io.write.bytes',\
                                           month=month, year=year)
@@ -102,11 +84,11 @@ class IndexView(tables.DataTableView):
         disk += float(disk_w) if disk_w else 0
         disk /= 1024 * 1024 * 1024  # bytes to gigabytes
 
-        net_in = api.get_instances_records_monthly_sum(request,
+        net_in = client_proxy.get_instances_records_monthly_sum(request,
                                                        instances=instances,\
                                     meter_id='inst.network.io.incoming.bytes',\
                                     month=month, year=year)
-        net_out = api.get_instances_records_monthly_sum(request,\
+        net_out = client_proxy.get_instances_records_monthly_sum(request,\
                                                         instances=instances,\
                                     meter_id='inst.network.io.outgoing.bytes',\
                                     month=month, year=year)

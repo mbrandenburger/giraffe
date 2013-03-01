@@ -1,14 +1,14 @@
-import logging
+__author__ = 'omihelic'
 
 from horizon import tables
 from horizon import tabs
 
-from giraffe_dashboard import api
+from giraffe_dashboard import client_proxy
 
 from .tables import HostsTable
 from .tabs import HostDetailTabs
 
-
+import logging
 LOG = logging.getLogger(__name__)
 
 
@@ -17,7 +17,7 @@ class IndexView(tables.DataTableView):
     template_name = 'giraffe_dashboard/hosts/index.html'
 
     def get_data(self):
-        return api.get_hosts(self.request)
+        return client_proxy.get_hosts(self.request)
 
 
 class DetailView(tabs.TabView):

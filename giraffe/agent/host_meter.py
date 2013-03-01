@@ -196,11 +196,11 @@ class Host_MEMORY_Usage(PeriodicHostMeterTask):
         vir_mem = psutil.swap_memory()
         #         -> swap(total=..L, used=..L, free=..L, percent=x.y, sin=.., sout=..)
 
-        return [phy_mem.total,      # 0 - used to report phy_mem usage
-                phy_mem.available,  # 1 - used to report phy_mem usage
+        return [phy_mem.total,      # 0
+                phy_mem.available,  # 1
                 phy_mem.used,       # 2
-                phy_mem.percent,    # 3
-                vir_mem.total,      # 4
+                phy_mem.percent,    # 3 - used to report phy_mem usage
+                vir_mem.total,      # 4 - used to report vir_mem usage
                 vir_mem.used,       # 5 - used to report vir_mem usage
                 vir_mem.free,       # 6
                 vir_mem.percent]    # 7

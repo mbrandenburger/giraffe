@@ -171,11 +171,11 @@ class Agent(object):
     def _callback_host_memory_usage(self, params):
         self.publisher.add_meter_record(
                        meter_name='host.phymem_usage',
-                       meter_value=params[0] - params[1],
+                       meter_value=params[3],
                        meter_duration=0)
         self.publisher.add_meter_record(
                        meter_name='host.virmem_usage',
-                       meter_value=params[5],
+                       meter_value=(params[4] - params[5]) / params[4] * 100,
                        meter_duration=0)
 
     def _callback_host_disk_io(self, params):

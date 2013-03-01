@@ -1,9 +1,9 @@
-__author__ = 'marcus, fbahr'
+__author__ = 'mbrandenburger, fbahr'
 
 import threading
 import time
 from giraffe.agent.host_meter \
-    import Host_UPTIME, Host_CPU_Load, Host_VIRMEM_Usage, Host_PHYMEM_Usage, \
+    import Host_UPTIME, Host_CPU_Load, Host_MEMORY_Usage, \
            Host_DISK_IO, Host_NETWORK_IO
 from giraffe.agent.instance_meter \
     import Inst_CPU_Time, Inst_VIRMEM_Usage, Inst_PHYMEM_Usage, Inst_UPTIME, \
@@ -19,8 +19,9 @@ class Agent(object):
 
     HOST_METER = {'host_uptime': Host_UPTIME,
                   'host_cpu_load': Host_CPU_Load,
-                  'host_phymem_usage': Host_PHYMEM_Usage,
-                  'host_virmem_usage': Host_VIRMEM_Usage,
+                  'host_memory_usage': Host_MEMORY_Usage,
+    #             'host_phymem_usage': Host_PHYMEM_Usage,
+    #             'host_virmem_usage': Host_VIRMEM_Usage,
                   'host_disk_io': Host_DISK_IO,
                   'host_network_io': Host_NETWORK_IO}
 
@@ -62,8 +63,7 @@ class Agent(object):
 
         # uptime = config.get('agent', 'host_uptime')
         # cpu_load = config.get('agent', 'host_cpu_load')
-        # phymem_usage = config.get('agent', 'host_phymem_usage')
-        # virmem_usage = config.get('agent', 'host_virmem_usage')
+        # mem_usage = config.get('agent', 'host_memory_usage')
         # disk_io = config.get('agent', 'host_disk_io')
         # network_io = config.get('agent', 'host_network_io')
 
@@ -79,17 +79,11 @@ class Agent(object):
         #                         self._callback_host_cpu_load,
         #                         int(loadavg)))
 
-        # host meter `phy mem`
-        # if phymem_usage:
-        #     self.tasks.append(Host_PHYMEM_Usage(
-        #                         self._callback_host_phymem_usage,
-        #                         int(phymem_usage)))
-
-        # host meter `vir mem`
-        # if virmem_usage:
-        #     self.tasks.append(Host_VIRMEM_Usage(
-        #                         self._callback_host_virmem_usage,
-        #                         int(virmem_usage)))
+        # host meter `memory`
+        # if mem_usage:
+        #     self.tasks.append(Host_MEMORY_Usage(
+        #                         self._callback_host_memory_usage,
+        #                         int(mem_usage)))
 
         # host meter `network I/O`
         # if network_io:
@@ -174,16 +168,14 @@ class Agent(object):
                        meter_value=params[2],
                        meter_duration=1500)
 
-    def _callback_host_phymem_usage(self, params):
+    def _callback_host_memory_usage(self, params):
         self.publisher.add_meter_record(
                        meter_name='host.phymem_usage',
-                       meter_value=params[3],
+                       meter_value=params[0] - params[1],
                        meter_duration=0)
-
-    def _callback_host_virmem_usage(self, params):
         self.publisher.add_meter_record(
                        meter_name='host.virmem_usage',
-                       meter_value=params[3],
+                       meter_value=params[5],
                        meter_duration=0)
 
     def _callback_host_disk_io(self, params):

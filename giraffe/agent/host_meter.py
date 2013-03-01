@@ -1,4 +1,4 @@
-__author__ = 'marcus, fbahr'
+__author__ = 'mbrandenburger, fbahr'
 
 """
 In giraffe (as known from ceilometer), three type of meters are defined:
@@ -129,36 +129,81 @@ class Host_CPU_Load(PeriodicHostMeterTask):
         return os.getloadavg()
 
 
-class Host_PHYMEM_Usage(PeriodicHostMeterTask):
+class Host_MEMORY_Usage(PeriodicHostMeterTask):
     # https://wiki.openstack.org/wiki/NovaDatabaseSchema
     # ? .nova.compute_nodes. ..
 
-    # @[fbahr]: Join with Host_VIRMEM_Usage?
-
     def meter(self):
         """
-        Returns current physical memory usage
+        Returns current physical and virtual memory usage
         """
-        # psutil.phymem_usage() deprecated in psutil v0.6.0
-        mem = psutil.virtual_memory()
-        return [mem.total, mem.used, mem.free, mem.percent]
-        # ^ return _nt_sysmeminfo(mem.total, mem.used, mem.free, mem.percent)
-        #          -> usage(total=..L, used=1..L, free=..L, percent=x.y)
+        # Note:
+        # - psutil.virtmem_usage(),
+        # - psutil.phymem_usage()
+        # have been deprecated in psutil v0.6.0
+        #
+        # From https://github.com/packages/psutil/blob/master/HISTORY:
+        #
+        # "system memory functions has been refactorized and rewritten and
+        #  now provide a more detailed and consistent representation of
+        #  the system memory."
+        #
+        # From http://code.google.com/p/psutil/wiki/Documentation:
+        #
+        # psutil.virtual_memory():
+        #   Return statistics about system memory usage as a namedtuple
+        #   including the following fields, expressed in bytes:
+        #   - total: total *physical* memory available
+        #   - available: the actual amount of available memory that can be
+        #       given instantly to processes that request more memory in
+        #       bytes; this is calculated by summing different memory values
+        #       depending on the platform (e.g. free + buffers + cached on
+        #       Linux) and it is supposed to be used to monitor actual memory
+        #       usage in a cross platform fashion.
+        #   - percent: the percentage usage calculated as
+        #       (total - available) / total * 100
+        #   - used: memory used, calculated differently depending on the
+        #       platform and designed for informational purposes only.
+        #   - free: memory not being used at all (zeroed) that is readily
+        #       available; note that this doesn't reflect the actual memory
+        #       available (use 'available' instead).
+        #
+        #   Example:
+        #   > vmem(total=8374149120L, available=1247768576L, percent=85.1,
+        #          used=8246628352L, free=127520768L, ...)
+        #
+        # psutil.swap_memory():
+        #   Return system swap memory statistics as a namedtuple including
+        #   the following attributes:
+        #   - total: total swap memory in bytes
+        #   - used: used swap memory in bytes
+        #   - free: free swap memory in bytes
+        #   - percent: the percentage usage
+        #   - sin: no. of bytes the system has swapped in from disk (cumulative)
+        #   - sout: no. of bytes the system has swapped out from disk (cumulative)
+        #     ('sin' and 'sout' on Windows are meaningless and always set to 0.)
+        #
+        #   Example:
+        #   > swap(total=2097147904L, used=886620160L, free=1210527744L,
+        #          percent=42.3, sin=1050411008, sout=1906720768)
 
+        # @[fbahr]: seriously, psutil.virtual_memory() to access physical
+        #           memory stats!? [naming issue?]
+        phy_mem = psutil.virtual_memory()
+        # ^ from: _nt_sysmeminfo(mem.total, mem.used, mem.free, mem.percent)
+        #         -> usage(total=..L, used=1..L, free=..L, percent=x.y)
 
-class Host_VIRMEM_Usage(PeriodicHostMeterTask):
-    # https://wiki.openstack.org/wiki/NovaDatabaseSchema
-    # ? .nova.compute_nodes. ..
+        vir_mem = psutil.swap_memory()
+        #         -> swap(total=..L, used=..L, free=..L, percent=x.y, sin=.., sout=..)
 
-    # @[fbahr]: Join with Host_PHYMEM_Usage?
-
-    def meter(self):
-        """
-        Returns current virtual memory usage
-        """
-        # psutil.virtmem_usage() deprecated in psutil v0.6.0
-        return psutil.swap_memory()
-        #      -> swap(total=..L, used=..L, free=..L, percent=x.y, sin=.., sout=..)
+        return [phy_mem.total,      # 0 - used to report phy_mem usage
+                phy_mem.available,  # 1 - used to report phy_mem usage
+                phy_mem.used,       # 2
+                phy_mem.percent,    # 3
+                vir_mem.total,      # 4
+                vir_mem.used,       # 5 - used to report vir_mem usage
+                vir_mem.free,       # 6
+                vir_mem.percent]    # 7
 
 
 class Host_DISK_IO(PeriodicHostMeterTask):

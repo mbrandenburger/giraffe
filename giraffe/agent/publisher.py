@@ -1,4 +1,4 @@
-__author__ = 'marcus'
+__author__ = 'mbrandenburger'
 
 import threading
 import time

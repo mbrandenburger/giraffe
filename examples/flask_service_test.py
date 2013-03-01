@@ -1,6 +1,6 @@
 import logging
 
-__author__ = 'marcus'
+__author__ = 'mbrandenburger'
 
 from flask import Flask
 import flask

@@ -1,4 +1,4 @@
-__author__ = 'marcus, fbahr'
+__author__ = 'mbrandenburger, fbahr'
 
 import logging
 # import threading

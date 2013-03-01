@@ -1,6 +1,4 @@
-__author__  = 'marcus, fbahr'
-__version__ = '0.2'
-__date__    = '2012-12-03'
+__author__  = 'mbrandenburger, fbahr'
 
 from nova.openstack.common import jsonutils
 

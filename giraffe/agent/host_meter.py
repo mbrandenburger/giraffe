@@ -201,8 +201,8 @@ class Host_MEMORY_Usage(PeriodicHostMeterTask):
                 phy_mem.used,       # 2
                 phy_mem.percent,    # 3 - used to report phy_mem usage
                 vir_mem.total,      # 4 - used to report vir_mem usage
-                vir_mem.used,       # 5 - used to report vir_mem usage
-                vir_mem.free,       # 6
+                vir_mem.used,       # 5
+                vir_mem.free,       # 6 - used to report vir_mem usage
                 vir_mem.percent]    # 7
 
 

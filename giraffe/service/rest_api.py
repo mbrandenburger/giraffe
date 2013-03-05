@@ -1,3 +1,5 @@
+__author__ = 'omihelic, fbahr'
+
 import calendar
 import datetime
 from datetime import datetime, timedelta
@@ -7,7 +9,7 @@ import re
 from giraffe.service.rest_server import Rest_Server
 from giraffe.common.config import Config
 import giraffe.service.db as db
-from giraffe.service.db import Host, Meter, MeterRecord
+from giraffe.service.db import Host, Project, Meter, MeterRecord
 from giraffe.service.db import MIN_TIMESTAMP, MAX_TIMESTAMP,\
                                ORDER_ASC, ORDER_DESC
 
@@ -217,7 +219,7 @@ class Rest_API(object):
         else:
             hosts = self.db.load(Host, order=query[self.PARAM_ORDER],
                                  order_attr='id')
-            result = json.dumps([host.to_dict() for host in hosts])
+            result = json.dumps([h.to_dict() for h in hosts])
         self.db.session_close()
         return result
 
@@ -335,27 +337,24 @@ class Rest_API(object):
 
     def route_projects(self, query_string=''):
         """
-        Returns a list of project name strings.
+        Returns a list of all Project objects.
 
         Route: projects/
-        Returns: List of project names (string), JSON-formatted
+        Returns: List of Project objects, JSON-formatted
         Query params: aggregation=[count], order
         """
         query = self._query_params(query_string)
         self.db.session_open()
-        values = self.db.distinct_values(MeterRecord, column='project_id',
-                                         order=query[self.PARAM_ORDER])
-        self.db.session_close()
-
-        # remove null values
-        if None in values:
-            values.remove(None)
-
-        # do count aggregation
-        # note: this is a work-around until Project objects are available
         if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
-            return json.dumps(str(len(values)))
-        return json.dumps(values)
+            count = self._aggregate(Project, query[self.PARAM_AGGREGATION], {})
+            result = json.dumps(count)
+        else:
+            projects = self.db.load(Project,
+                                    order=query[self.PARAM_ORDER],
+                                    order_attr='id')
+            result = json.dumps([p.to_dict() for p in projects])
+        self.db.session_close()
+        return result
 
     def route_projects_pid(self, project_id, query_string=''):
         """

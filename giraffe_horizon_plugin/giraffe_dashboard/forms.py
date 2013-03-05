@@ -28,7 +28,7 @@ class DateMeterForm(forms.Form):
 
         # fill years
         today = date.today()
-        years = [(today.year -1 + i,) * 2 for i in range(2)]
+        years = [(today.year - 1 + i,) * 2 for i in range(2)]
         years.reverse()
         self.fields['year'].choices = years
 

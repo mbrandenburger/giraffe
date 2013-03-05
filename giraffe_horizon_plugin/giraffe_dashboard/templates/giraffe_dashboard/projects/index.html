@@ -1,0 +1,11 @@
+{% extends 'giraffe_dashboard/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Giraffe - Projects" %}{% endblock %}
+
+{% block page_header %}
+  {% include "giraffe_dashboard/_page_header.html" with title=_("Projects") %}
+{% endblock page_header %}
+
+{% block giraffe_dashboard_main %}
+  {{ table.render }}
+{% endblock %}

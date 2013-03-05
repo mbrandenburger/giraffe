@@ -1,0 +1,16 @@
+{% extends 'giraffe_dashboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Project Detail "%}{% endblock %}
+
+{% block page_header %}
+  {% include "giraffe_dashboard/_page_header.html" with title="Project Detail" %}
+{% endblock page_header %}
+
+{% block giraffe_dashboard_main %}
+<div class="row-fluid">
+  <div class="span12">
+  {{ tab_group.render }}
+  </div>
+</div>
+{% endblock %}

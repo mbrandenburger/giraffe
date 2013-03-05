@@ -1,0 +1,19 @@
+{% load i18n sizeformat %}
+
+<h3>{% trans "Project Overview" %}</h3>
+
+<div class="info row-fluid">
+  <hr class="header_rule">
+  <dl>
+    <dt>{% trans "Name" %}</dt>
+    <dd>{{ project.name|default:"None" }}</dd>
+    <dt>{% trans "ID" %}</dt>
+    <dd>{{ project.id|default:"None" }}</dd>
+    <!--dt>{% trans "Latest Activity" %}</dt-->
+    <!--dd>{{ project.activity|default:"Unknown" }}</dd-->
+    <!--dt>{% trans "Meters" %}</dt-->
+    <!--{% for meter in meters %}-->
+    <!--dd>{{ meter.name }}</dd-->
+    <!--{% endfor %}-->
+  </dl>
+</div>

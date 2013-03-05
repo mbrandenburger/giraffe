@@ -49,14 +49,16 @@ def giraffeclient(request):
 def rest_api_endpoint(request):
     try:
         return giraffeclient(request).endpoint
-    except Exception:
+    except Exception as e:
+        LOG.exception(e)
         return None
 
 
 def get_root(request):
     try:
         return giraffeclient(request).get_root()
-    except Exception:
+    except Exception as e:
+        LOG.exception(e)
         return None
 
 
@@ -68,6 +70,14 @@ def get_hosts(request):
         return []
 
 
+def get_host(request, host_id):
+    try:
+        return APIDictWrapper(giraffeclient(request).get_host(host_id)[0])
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
 def get_hosts_count(request):
     try:
         return giraffeclient(request).get_hosts({'aggregation': 'count'})
@@ -76,18 +86,12 @@ def get_hosts_count(request):
         return None
 
 
-def get_host(request, host_id):
-    try:
-        return APIDictWrapper(giraffeclient(request).get_host(host_id)[0])
-    except Exception:
-        return None
-
-
 def get_host_meters(request, host_id):
     try:
         return [APIDictWrapper(m) for m in giraffeclient(request)
                 .get_host_meters(host_id)]
-    except Exception:
+    except Exception as e:
+        LOG.exception(e)
         return []
 
 
@@ -141,6 +145,23 @@ def get_meters_count(request):
 def get_records_count(request):
     try:
         return giraffeclient(request).get_records({'aggregation': 'count'})
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
+def get_projects(request):
+    try:
+        return [APIDictWrapper({'id': p})
+                for p in giraffeclient(request).get_projects()]
+    except Exception as e:
+        LOG.exception(e)
+        return []
+
+
+def get_project(request, project_id):
+    try:
+        return giraffeclient(request).get_project(project_id)[0]
     except Exception as e:
         LOG.exception(e)
         return None

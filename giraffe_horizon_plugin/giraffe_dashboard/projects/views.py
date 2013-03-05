@@ -17,7 +17,11 @@ class IndexView(tables.DataTableView):
     template_name = 'giraffe_dashboard/projects/index.html'
 
     def get_data(self):
-        return client_proxy.get_projects(self.request)
+        projects = client_proxy.get_projects(self.request)
+        for p in projects:
+            instances = client_proxy.get_project_instances(self.request, p.id)
+            setattr(p, 'num_instances', len(instances) if instances else 0)
+        return projects
 
 
 class DetailView(tabs.TabView):

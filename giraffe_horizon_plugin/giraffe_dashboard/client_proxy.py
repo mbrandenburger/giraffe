@@ -62,9 +62,18 @@ def get_root(request):
         return None
 
 
+def get_hosts_count(request):
+    try:
+        return giraffeclient(request).get_hosts({'aggregation': 'count'})
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
 def get_hosts(request):
     try:
-        return [APIDictWrapper(h) for h in giraffeclient(request).get_hosts()]
+        return [APIDictWrapper(h)
+                for h in giraffeclient(request).get_hosts()]
     except Exception as e:
         LOG.exception(e)
         return []
@@ -72,15 +81,7 @@ def get_hosts(request):
 
 def get_host(request, host_id):
     try:
-        return APIDictWrapper(giraffeclient(request).get_host(host_id)[0])
-    except Exception as e:
-        LOG.exception(e)
-        return None
-
-
-def get_hosts_count(request):
-    try:
-        return giraffeclient(request).get_hosts({'aggregation': 'count'})
+        return map(APIDictWrapper, giraffeclient(request).get_host(host_id))[0]
     except Exception as e:
         LOG.exception(e)
         return None
@@ -126,14 +127,6 @@ def get_host_meter_records_avg(request, host_id, meter_id,
         return None
 
 
-def get_meters(request):
-    try:
-        return [APIDictWrapper(m) for m in giraffeclient(request).get_meters()]
-    except Exception as e:
-        LOG.exception(e)
-        return None
-
-
 def get_meters_count(request):
     try:
         return giraffeclient(request).get_meters({'aggregation': 'count'})
@@ -142,9 +135,25 @@ def get_meters_count(request):
         return None
 
 
+def get_meters(request):
+    try:
+        return [APIDictWrapper(m) for m in giraffeclient(request).get_meters()]
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
 def get_records_count(request):
     try:
         return giraffeclient(request).get_records({'aggregation': 'count'})
+    except Exception as e:
+        LOG.exception(e)
+        return None
+
+
+def get_projects_count(request):
+    try:
+        return giraffeclient(request).get_projects({'aggregation': 'count'})
     except Exception as e:
         LOG.exception(e)
         return None
@@ -159,28 +168,32 @@ def get_projects(request):
         return []
 
 
-def get_project(request, project_id):
-    try:
-        return giraffeclient(request).get_project(project_id)[0]
-    except Exception as e:
-        LOG.exception(e)
-        return None
+# def get_project(request, project_id):
+#    try:
+#        return map(APIDictWrapper,
+#                   giraffeclient(request).get_project(project_id))[0]
+#    except Exception as e:
+#        LOG.exception(e)
+#        return None
+
+
+# def get_project_instances_count(request, project_id):
+#    try:
+#        return giraffeclient(request).get_proj_instances(
+#                                          project_id,
+#                                          params={'aggregation': 'count'})
+#    except Exception as e:
+#        LOG.exception(e)
+#        return None
 
 
 def get_project_instances(request, project_id):
     try:
-        return giraffeclient(request).get_proj_instances(project_id)
+        return [APIDictWrapper({'id': i})
+                for i in giraffeclient(request).get_proj_instances(project_id)]
     except Exception as e:
         LOG.exception(e)
         raise e
-        return None
-
-
-def get_projects_count(request):
-    try:
-        return giraffeclient(request).get_projects({'aggregation': 'count'})
-    except Exception as e:
-        LOG.exception(e)
         return None
 
 

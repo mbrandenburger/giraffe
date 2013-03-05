@@ -57,7 +57,7 @@ from sqlalchemy import create_engine, Column, ForeignKey, desc, asc, and_, func
 from sqlalchemy.orm import sessionmaker, relationship, class_mapper
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.mysql import INTEGER, TINYINT, VARCHAR, TIMESTAMP
+from sqlalchemy.dialects.mysql import INTEGER, TINYINT, CHAR, VARCHAR, TIMESTAMP
 
 MIN_TIMESTAMP = '0000-01-01 00:00:00'
 MAX_TIMESTAMP = '2999-12-31 23:59:59'
@@ -343,14 +343,49 @@ class Host(Base):
     __table_args__ = {'mysql_engine': 'InnoDB',
                       'mysql_charset': 'utf8'}
 
-    id = Column(INTEGER(5, unsigned=True), primary_key=True)
-    name = Column('host_name', VARCHAR(40), nullable=False,
+    id = Column(INTEGER(5, unsigned=True),
+                primary_key=True)
+    name = Column('host_name', VARCHAR(40),
+                  nullable=False,
                   doc='distinctive name of the physical machine, e.g. uncinus')
-    activity = Column('activity', TIMESTAMP(), nullable=True, default=None)
-    records = relationship('MeterRecord', backref='host')
+    activity = Column('activity',
+                      TIMESTAMP(),
+                      nullable=True,
+                      default=None)
+    records = relationship('MeterRecord',
+                           backref='host')
 
     def __repr__(self):
-        return "Host(%s,'%s')" % (self.id, self.name)
+        return 'Host(%s,\'%s\')' \
+               % (self.id, self.name)
+
+
+class Project(Base):
+    __tablename__ = 'project'
+    __table_args__ = {'mysql_engine': 'InnoDB',
+                      'mysql_charset': 'utf8'}
+
+    id = Column(INTEGER(5, unsigned=True),
+                primary_key=True)
+    uuid = Column('uuid',
+                  CHAR(32),
+                  nullable=False,
+                  doc='project\'s UUID')
+    created_at = Column('created_at',
+                        TIMESTAMP(),
+                        nullable=True,
+                        default=None)
+    updated_at = Column('updated_at',
+                        TIMESTAMP(),
+                        nullable=True,
+                        default=None)
+
+    def __repr__(self):
+        return 'Project(%s,%s,%s,%s)' \
+               % (self.id,
+                  self.name,
+                  self.created_at if self.created_at else 'None',
+                  self.updated_at if self.updated_at else 'None')
 
 
 class MeterRecord(Base):
@@ -382,10 +417,9 @@ class MeterRecord(Base):
 #                       nullable=True, default=None)
 
     def __repr__(self):
-        return "MeterRecord(%s, %d, %s, %s, %s)" % (self.id,
-                                                    self.meter_id,
-                                                    str(self.host_id)\
-                                                        if self.host_id
-                                                        else 'None',
-                                                    self.value,
-                                                    self.timestamp)
+        return "MeterRecord(%s, %d, %s, %s, %s)" \
+               % (self.id, \
+                  self.meter_id, \
+                  str(self.host_id) if self.host_id else 'None', \
+                  self.value, \
+                  self.timestamp)

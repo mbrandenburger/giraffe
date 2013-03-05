@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 """
+__author__ = 'omihelic'
+
 Creates all Giraffe table in the database. 
 """
 

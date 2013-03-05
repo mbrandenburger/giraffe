@@ -5,7 +5,7 @@ from giraffe.common.crypto import validateSignature
 from giraffe.common.config import Config
 from giraffe.common.rabbit_mq_connector import Connector, BasicConsumer
 from giraffe.service import db
-from giraffe.service.db import Host, Meter, MeterRecord
+from giraffe.service.db import Host, Project, Meter, MeterRecord
 # import MySQLdb
 # from giraffe.common.auth import AuthProxy
 from novaclient.v1_1.client import Client as NovaClient
@@ -102,7 +102,7 @@ class Collector(object):
         for meter in meters:
             meter_dict[meter.name] = meter
 
-        # insert host if it does not exist
+        # insert host if it does not exist yet
         hosts = self.db.load(Host, {'name': message.host_name}, limit=1)
         if not hosts:
             host = Host(name=message.host_name)
@@ -127,10 +127,12 @@ class Collector(object):
                                      timestamp=r.timestamp)
                 self.db.save(record)
                 _logger.debug("New %s" % record)
+
                 # update host activity
                 record_timestamp = self._str_to_datetime(r.timestamp)
                 if not host.activity or record_timestamp > host.activity:
                     host.activity = record_timestamp
+
             except Exception as e:
                 _logger.exception(e)
 
@@ -147,6 +149,18 @@ class Collector(object):
 
                 r.project_id, r.user_id = self.known_instances[r.inst_id]
 
+                # insert project if it does not exist yet
+                projects = self.db.load(Project,
+                                        {'uuid': r.project_id},
+                                        limit=1)
+                if not projects:
+                    project = Project(uuid=r.project_id,
+                                      created_at=self._str_to_datetime(r.timestamp))
+                    self.db.save(project)
+                    self.db.commit()
+                else:
+                    project = projects[0]
+
                 record = MeterRecord(meter_id=meter_dict[r.meter_name].id,
                                      host_id=host.id,
                                      user_id=r.user_id,
@@ -158,10 +172,13 @@ class Collector(object):
                 self.db.save(record)
                 _logger.debug("New %s" % record)
 
-                # update host activity
+                # update host and project activity
                 record_timestamp = self._str_to_datetime(r.timestamp)
                 if not host.activity or record_timestamp > host.activity:
                     host.activity = record_timestamp
+                if not project.updated_at or record_timestamp > project.updated_at:
+                    project.updated_at = record_timestamp
+
             except Exception as e:
                 _logger.exception(e)
 

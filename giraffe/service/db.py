@@ -370,7 +370,8 @@ class Project(Base):
     uuid = Column('uuid',
                   CHAR(32),
                   nullable=False,
-                  doc='project\'s UUID')
+                  doc='project\'s UUID',
+                  index=True)
     created_at = Column('created_at',
                         TIMESTAMP(),
                         nullable=True,
@@ -383,7 +384,7 @@ class Project(Base):
     def __repr__(self):
         return 'Project(%s,%s,%s,%s)' \
                % (self.id,
-                  self.name,
+                  self.uuid,
                   self.created_at if self.created_at else 'None',
                   self.updated_at if self.updated_at else 'None')
 
@@ -393,7 +394,8 @@ class MeterRecord(Base):
     __table_args__ = {'mysql_engine': 'InnoDB',
                       'mysql_charset': 'utf8'}
 
-    id = Column(INTEGER(unsigned=True), primary_key=True)
+    id = Column(INTEGER(unsigned=True),
+                primary_key=True)
     meter_id = Column(TINYINT(2, unsigned=True),
                       ForeignKey('meter.id', name='fk_meter_record_meter_id',
                                  onupdate='CASCADE', ondelete='NO ACTION'),
@@ -402,19 +404,37 @@ class MeterRecord(Base):
                      ForeignKey('host.id', name='fk_meter_record_host_id',
                                 onupdate='CASCADE', ondelete='NO ACTION'),
                      nullable=False)
-    user_id = Column(VARCHAR(40), nullable=True, default=None,
-                     doc='keystone user ID', index=True)
-    resource_id = Column(VARCHAR(40), nullable=True, default=None,
-                     doc='nova instance ID', index=True)
-    project_id = Column(VARCHAR(40), nullable=True, default=None, index=True)
-    value = Column('meter_value', VARCHAR(255), nullable=False)
-    duration = Column('meter_duration', INTEGER(unsigned=True),
-                      nullable=False, default=0,
+    user_id = Column(VARCHAR(40),
+                     nullable=True,
+                     default=None,
+                     doc='keystone user ID',
+                     index=True)
+    resource_id = Column(VARCHAR(40),
+                         nullable=True,
+                         default=None,
+                         doc='nova instance ID',
+                         index=True)
+    project_id = Column(VARCHAR(40),
+                        nullable=True,
+                        default=None,
+                        index=True)
+    value = Column('meter_value',
+                   VARCHAR(255),
+                   nullable=False)
+    duration = Column('meter_duration',
+                      INTEGER(unsigned=True),
+                      nullable=False,
+                      default=0,
                       doc='duration of measurement in seconds')
-    timestamp = Column('meter_timestamp', TIMESTAMP(), nullable=False,
-                        default='CURRENT_TIMESTAMP', index=True)
-#   signature = Column('message_signature', VARCHAR(40),
-#                       nullable=True, default=None)
+    timestamp = Column('meter_timestamp',
+                       TIMESTAMP(),
+                       nullable=False,
+                       default='CURRENT_TIMESTAMP',
+                       index=True)
+#   signature = Column('message_signature',
+#                      VARCHAR(40),
+#                      nullable=True,
+#                      default=None)
 
     def __repr__(self):
         return "MeterRecord(%s, %d, %s, %s, %s)" \

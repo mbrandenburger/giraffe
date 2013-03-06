@@ -1,18 +1,17 @@
 __author__ = 'fbahr'
 
-
 import __builtin__
 import json
 # from prettytable import PrettyTable
 
-from giraffe.service.db import Host, Meter, MeterRecord  # , Base
+from giraffe.service.db import Host, Project, Meter, MeterRecord
 
 # -----------------------------------------------------------------------------
 
-#@[fbahr] - TODO: Come up with a better naming scheme; Formatter and
-#                 FormattableObject - but serialize()?
-#                 Also, pretty pointless design decisions - along the overall
-#                 framework (so far).
+#@[fbahr] - TODO: Come up with a better naming scheme;
+#                 'Formatter' and 'FormattableObject' - but '::serialize()'!?
+#                 Also, pretty pointless design decisions...
+#                 ...along the overall framework (so far).
 
 class Formatter(object):
     """
@@ -46,6 +45,7 @@ class Text(FormattableObject):
     """
     Marker interface
     """
+
 #   def __init__(self, formatter=None):
 #       if not(formatter and issubclass(formatter, Formatter)):
 #           raise TypeError('Excepts Formatter class descriptor')
@@ -93,13 +93,12 @@ class TabFormatter(Formatter):
 
 # Object formatters -----------------------------------------------------------
 
-class __Host(FormattableObject):
-    """
-    Marker interface
-    """
-#   def __init__(self):
-#       self.formatter = HostFormatter
-    pass
+# class __Host(FormattableObject):
+#     """
+#     Marker interface
+#     """
+#     def __init__(self):
+#         self.formatter = HostFormatter
 
 
 class HostFormatter(Formatter):
@@ -109,7 +108,7 @@ class HostFormatter(Formatter):
             host = Host()
             host.__dict__.update(dict((k, v)
                                  for (k, v) in element.iteritems() \
-                                     if k in ['id', 'name']))
+                                     if k in ['id', 'name', 'activity']))
 
         except Exception as e:
             # logger.exception
@@ -119,13 +118,30 @@ class HostFormatter(Formatter):
             return host
 
 
-class __Meter(FormattableObject):
-    """
-    Marker interface
-    """
-#   def __init__(self):
-#       self.formatter = MeterFormatter
-    pass
+class ProjectFormatter(Formatter):
+    @staticmethod
+    def serialize(element, *args):
+        try:
+            project = Project()
+            project.__dict__.update(dict((k, v)
+                                    for (k, v) in element.iteritems() \
+                                        if k in ['id', 'uuid',
+                                                 'created_at', 'updated_at']))
+
+        except Exception as e:
+            # logger.exception
+            raise e
+
+        finally:
+            return project
+
+
+# class __Meter(FormattableObject):
+#    """
+#    Marker interface
+#    """
+#    def __init__(self):
+#        self.formatter = MeterFormatter
 
 
 class MeterFormatter(Formatter):
@@ -146,13 +162,12 @@ class MeterFormatter(Formatter):
             return meter
 
 
-class __MeterRecord(FormattableObject):
-    """
-    Marker interface
-    """
-#   def __init__(self):
-#       self.formatter = MeterRecordFormatter
-    pass
+# class __MeterRecord(FormattableObject):
+#    """
+#    Marker interface
+#    """
+#    def __init__(self):
+#        self.formatter = MeterRecordFormatter
 
 
 class MeterRecordFormatter(Formatter):
@@ -186,6 +201,7 @@ class MeterRecordFormatter(Formatter):
 # -----------------------------------------------------------------------------
 
 DEFAULT_FORMATTERS = dict([(Host, HostFormatter),
+                           (Project, ProjectFormatter),
                            (Meter, MeterFormatter),
                            (MeterRecord, MeterRecordFormatter),
                            (Text, JsonFormatter)])

@@ -7,7 +7,7 @@ from giraffe.common.config import Config
 from giraffe.common.auth import AuthProxy
 from giraffe.client.api import GiraffeClient
 from giraffe.client.formatter import Text, CsvFormatter
-from giraffe.service.db import Host, Meter, MeterRecord
+from giraffe.service.db import Host, Project, Meter, MeterRecord
 import requests
 
 
@@ -53,6 +53,17 @@ class ClientTestCases(unittest.TestCase):
         meters = meters.as_(Meter)  # tuple of Meter objects
         self.assertIsNotNone(meters)
         self.assertTrue(isinstance(meters[0], (Meter)))
+
+    def test_get_projects(self):
+        projects = self.gc.get_projects()  # tuple (ResultSet) of dicts
+        # for p in projects:
+        #     print p
+        self.assertIsNotNone(projects)
+        self.assertTrue(isinstance(projects, (tuple)))
+
+        projects = projects.as_(Project)  # tuple of Host objects
+        self.assertIsNotNone(projects)
+        self.assertTrue(isinstance(projects[0], (Project)))
 
     def test_get_hosts(self):
         hosts = self.gc.get_hosts()  # tuple (ResultSet) of dicts

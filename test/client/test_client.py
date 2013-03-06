@@ -62,6 +62,8 @@ class ClientTestCases(unittest.TestCase):
         self.assertTrue(isinstance(projects, (tuple)))
 
         projects = projects.as_(Project)  # tuple of Host objects
+        # for p in projects:
+        #     print p
         self.assertIsNotNone(projects)
         self.assertTrue(isinstance(projects[0], (Project)))
 
@@ -104,7 +106,7 @@ class ClientTestCases(unittest.TestCase):
     def test_get_host_meter_records(self):
         meter_records = self.gc.get_host_meter_records( \
                                     host='uncinus',
-                                    meter="host.loadavg_15m")
+                                    meter="host.cpu.load.avg_15m")
                                     # ^ tuple (ResultSet) of dicts
         self.assertIsNotNone(meter_records)
         self.assertTrue(isinstance(meter_records, (tuple)))
@@ -119,19 +121,19 @@ class ClientTestCases(unittest.TestCase):
 
         meter_records = self.gc.get_host_meter_records( \
                                     host='uncinus', \
-                                    meter="host.loadavg_15m", \
+                                    meter="host.cpu.load.avg_15m", \
                                     params={'limit': limit})
         self.assertEqual(len(meter_records), limit)
 
     def test_count_host_meter_records(self):
         len_meter_records = len(self.gc.get_host_meter_records( \
                                             host='uncinus', \
-                                            meter="host.loadavg_15m"))
+                                            meter="host.cpu.load.avg_15m"))
                             # ^ int
 
         count = self.gc.get_host_meter_records( \
                             host='uncinus', \
-                            meter="host.loadavg_15m", \
+                            meter="host.cpu.load.avg_15m", \
                             params={'aggregation': 'count'})
                             # ^ int
         self.assertFalse(isinstance(count, (tuple)))
@@ -144,7 +146,7 @@ class ClientTestCases(unittest.TestCase):
 
         count = self.gc.get_host_meter_records( \
                             host='uncinus', \
-                            meter="host.loadavg_15m", \
+                            meter="host.cpu.load.avg_15m", \
                             params={'aggregation': 'count'})
                             # ^ int
         self.assertFalse(isinstance(count, (tuple)))
@@ -154,7 +156,7 @@ class ClientTestCases(unittest.TestCase):
 
         count = self.gc.get_host_meter_records( \
                             host='uncinus', \
-                            meter="host.loadavg_15m", \
+                            meter="host.cpu.load.avg_15m", \
                             params={'start_time': start_time, \
                                     'end_time': end_time, \
                                     'aggregation': 'count'})
@@ -167,7 +169,7 @@ class ClientTestCases(unittest.TestCase):
     def test_get_min_max_host_meter_record(self):
         _min = self.gc.get_host_meter_records( \
                            host='uncinus', \
-                           meter="host.loadavg_15m", \
+                           meter="host.cpu.load.avg_15m", \
                            params={'aggregation': 'min'}) \
                            # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(_min, (tuple)))
@@ -177,7 +179,7 @@ class ClientTestCases(unittest.TestCase):
 
         _max = self.gc.get_host_meter_records( \
                           host='uncinus', \
-                          meter="host.loadavg_15m", \
+                          meter="host.cpu.load.avg_15m", \
                           params={'aggregation': 'max'}) \
                           # ^ tuple (ResultSet) of dicts
         self.assertTrue(isinstance(_max, (tuple)))
@@ -188,8 +190,8 @@ class ClientTestCases(unittest.TestCase):
         self.assertLessEqual(_min.value, _max.value)
 
     def test_get_host_meter_records_with_time_limits(self):
-        start_time = '2013-02-13_12-00-00'
-        end_time   = '2013-02-13_23-59-59'
+        start_time = '2013-03-06_12-00-00'
+        end_time   = '2013-03-06_23-59-59'
 
         regex = re.compile('^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
         matches = regex.match(start_time)
@@ -205,7 +207,7 @@ class ClientTestCases(unittest.TestCase):
 
         meter_records = self.gc.get_host_meter_records( \
                                     host='uncinus', \
-                                    meter="host.loadavg_15m", \
+                                    meter="host.cpu.load.avg_15m", \
                                     params={'start_time': start_time, \
                                             'end_time': end_time, \
                                             'order': 'asc'})
@@ -222,7 +224,7 @@ class ClientTestCases(unittest.TestCase):
 
         meter_records = self.gc.get_host_meter_records( \
                                     host='uncinus', \
-                                    meter="host.loadavg_15m", \
+                                    meter="host.cpu.load.avg_15m", \
                                     params={'start_time': start_time, \
                                             'end_time': end_time, \
                                             'order': 'desc'})
@@ -245,7 +247,7 @@ class ClientTestCases(unittest.TestCase):
 
         abs_min = self.gc.get_host_meter_records( \
                               host='uncinus', \
-                              meter="host.loadavg_15m", \
+                              meter="host.cpu.load.avg_15m", \
                               params={'aggregation': 'min'}) # tuple (ResultSet) of dicts
         self.assertEqual(len(abs_min), 1)
         abs_min = abs_min.as_(MeterRecord)[0]  # MeterRecord object
@@ -254,7 +256,7 @@ class ClientTestCases(unittest.TestCase):
         for _, endtime in end_time.iteritems():
             rel_min = self.gc.get_host_meter_records( \
                                   host='uncinus', \
-                                  meter="host.loadavg_15m", \
+                                  meter="host.cpu.load.avg_15m", \
                                   params={'start_time': start_time, \
                                           'end_time': endtime, \
                                           'aggregation': 'min'})  # tuple (ResultSet) of dicts
@@ -269,7 +271,7 @@ class ClientTestCases(unittest.TestCase):
 
         abs_max = self.gc.get_host_meter_records( \
                               host='uncinus', \
-                              meter="host.loadavg_15m", \
+                              meter="host.cpu.load.avg_15m", \
                               params={'aggregation': 'max'}) # tuple (ResultSet) of dicts
         self.assertEqual(len(abs_max), 1)
         abs_max = abs_max.as_(MeterRecord)[0]  # MeterRecord object
@@ -277,7 +279,7 @@ class ClientTestCases(unittest.TestCase):
         for _, endtime in end_time.iteritems():
             rel_max = self.gc.get_host_meter_records( \
                                   host='uncinus', \
-                                  meter="host.loadavg_15m", \
+                                  meter="host.cpu.load.avg_15m", \
                                   params={'start_time': start_time, \
                                           'end_time': endtime, \
                                           'aggregation': 'max'}) \
@@ -390,7 +392,7 @@ class ClientTestCases(unittest.TestCase):
 
     def test_get_proj_meter_records(self):
         project = 1
-        meter   = 'host.loadavg_15m'
+        meter   = 'host.cpu.load.avg_15m'
 
         proj_meter_records = self.gc.get_proj_meter_records(project, meter)
         self.assertIsNotNone(proj_meter_records)

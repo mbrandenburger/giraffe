@@ -214,7 +214,7 @@ class Host_DISK_IO(PeriodicHostMeterTask):
         """
         Returns current disk I/O in byte
         """
-        raise NotImplementedError()
+        raise psutil.disk_io_counters(perdisk=False)
 
 
 class Host_NETWORK_IO(PeriodicHostMeterTask):
@@ -225,4 +225,4 @@ class Host_NETWORK_IO(PeriodicHostMeterTask):
         """
         Returns current network I/O in byte
         """
-        return psutil.network_io_counters()
+        return psutil.network_io_counters(pernic=False)

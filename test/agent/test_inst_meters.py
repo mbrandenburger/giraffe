@@ -3,8 +3,9 @@ __author__ = 'fbahr'
 import sys
 import unittest
 import logging
-from giraffe.agent.instance_meter import Inst_CPU, Inst_PHYMEM, Inst_VIRMEM, \
-                                         Inst_DISK_IO, Inst_NETWORK_IO
+from giraffe.agent.instance_meter import Inst_CPU_Time, Inst_PHYMEM_Usage, \
+                                         Inst_VIRMEM_Usage, Inst_DISK_IO, \
+                                         Inst_NETWORK_IO
 
 
 class InstMeterTestCases(unittest.TestCase):
@@ -19,17 +20,17 @@ class InstMeterTestCases(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.inst_cpu = Inst_CPU(None, 0)
-        cls.inst_phymem = Inst_PHYMEM(None, 0)
-        cls.inst_virmem = Inst_VIRMEM(None, 0)
+        cls.inst_cpu = Inst_CPU_Time(None, 0)
+        cls.inst_phymem = Inst_PHYMEM_Usage(None, 0)
+        cls.inst_virmem = Inst_VIRMEM_Usage(None, 0)
         cls.inst_disk_io = Inst_DISK_IO(None, 0)
         cls.inst_net_io = Inst_NETWORK_IO(None, 0)
 
     def setUp(self):
         if InstMeterTestCases.python_version < 270:
-            self.inst_cpu = Inst_CPU(None, 0)
-            self.inst_phymem = Inst_PHYMEM(None, 0)
-            self.inst_virmem = Inst_VIRMEM(None, 0)
+            self.inst_cpu = Inst_CPU_Time(None, 0)
+            self.inst_phymem = Inst_PHYMEM_Usage(None, 0)
+            self.inst_virmem = Inst_VIRMEM_Usage(None, 0)
             self.inst_disk_io = Inst_DISK_IO(None, 0)
             self.inst_net_io = Inst_NETWORK_IO(None, 0)
 

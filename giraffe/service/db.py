@@ -391,6 +391,47 @@ class Project(Base):
                   self.updated_at if self.updated_at else 'None')
 
 
+class Instance(Base):
+    __tablename__ = 'instance'
+    __table_args__ = {'mysql_engine': 'InnoDB',
+                      'mysql_charset': 'utf8'}
+
+    id = Column(INTEGER(5, unsigned=True),
+                primary_key=True)
+    uuid = Column('uuid',
+                  CHAR(36),
+                  nullable=False,
+                  doc='instance\'s UUID',
+                  index=True)
+    user_id = Column('user_id',
+                     CHAR(36),
+                     nullable=False)
+#                    index=True)
+    project_id = Column('project_id',
+                        CHAR(36),
+#                       ForeignKey('project.uuid',
+#                                  name='fk_instance_project_id',
+#                                  onupdate='CASCADE',
+#                                  ondelete='NO ACTION')
+                        nullable=False,
+                        index=True)
+    created_at = Column('created_at',
+                        TIMESTAMP(),
+                        nullable=True,
+                        default=None)
+    updated_at = Column('updated_at',
+                        TIMESTAMP(),
+                        nullable=True,
+                        default=None)
+
+    def __repr__(self):
+        return 'Project(%s,%s,%s,%s)' \
+               % (self.id,
+                  self.uuid,
+                  self.created_at if self.created_at else 'None',
+                  self.updated_at if self.updated_at else 'None')
+
+
 class MeterRecord(Base):
     __tablename__ = 'meter_record'
     __table_args__ = {'mysql_engine': 'InnoDB',
@@ -399,24 +440,36 @@ class MeterRecord(Base):
     id = Column(INTEGER(unsigned=True),
                 primary_key=True)
     meter_id = Column(TINYINT(2, unsigned=True),
-                      ForeignKey('meter.id', name='fk_meter_record_meter_id',
-                                 onupdate='CASCADE', ondelete='NO ACTION'),
+                      ForeignKey('meter.id',
+                                 name='fk_meter_record_meter_id',
+                                 onupdate='CASCADE',
+                                 ondelete='NO ACTION'),
                       nullable=False)
     host_id = Column(INTEGER(5, unsigned=True),
-                     ForeignKey('host.id', name='fk_meter_record_host_id',
-                                onupdate='CASCADE', ondelete='NO ACTION'),
+                     ForeignKey('host.id',
+                                name='fk_meter_record_host_id',
+                                onupdate='CASCADE',
+                                ondelete='NO ACTION'),
                      nullable=False)
     user_id = Column(VARCHAR(40),
                      nullable=True,
                      default=None,
                      doc='keystone user ID',
                      index=True)
-    resource_id = Column(VARCHAR(40),
+    resource_id = Column(CHAR(36),
+#                       ForeignKey('instance.uuid',
+#                                  name='fk_meter_record_instance_id',
+#                                  onupdate='CASCADE',
+#                                  ondelete='NO ACTION')
                          nullable=True,
                          default=None,
                          doc='nova instance ID',
                          index=True)
-    project_id = Column(VARCHAR(40),
+    project_id = Column(CHAR(32),
+#                       ForeignKey('project.uuid',
+#                                  name='fk_meter_record_project_id',
+#                                  onupdate='CASCADE',
+#                                  ondelete='NO ACTION')
                         nullable=True,
                         default=None,
                         index=True)

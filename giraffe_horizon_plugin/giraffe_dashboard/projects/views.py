@@ -19,7 +19,7 @@ class IndexView(tables.DataTableView):
     def get_data(self):
         projects = client_proxy.get_projects(self.request)
         for p in projects:
-            instances = client_proxy.get_project_instances(self.request, p.id)
+            instances = client_proxy.get_project_instances(self.request, p.uuid)
             setattr(p, 'num_instances', len(instances) if instances else 0)
         return projects
 

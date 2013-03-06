@@ -6,7 +6,7 @@ from horizon.api.base import APIResourceWrapper
 from horizon.api.base import APIDictWrapper
 
 from giraffe.client.api import GiraffeClient
-from giraffe.service.db import MeterRecord, Meter
+from giraffe.service.db import Project, Meter, MeterRecord
 
 import logging
 LOG = logging.getLogger(__name__)
@@ -161,8 +161,8 @@ def get_projects_count(request):
 
 def get_projects(request):
     try:
-        return [APIDictWrapper({'id': p})
-                for p in giraffeclient(request).get_projects()]
+        projects = giraffeclient(request).get_projects()
+        return projects.as_(Project) if projects else []
     except Exception as e:
         LOG.exception(e)
         return []

@@ -404,11 +404,11 @@ class Instance(Base):
                   doc='instance\'s UUID',
                   index=True)
     user_id = Column('user_id',
-                     CHAR(36),
+                     CHAR(32),
                      nullable=False)
 #                    index=True)
     project_id = Column('project_id',
-                        CHAR(36),
+                        CHAR(32),
 #                       ForeignKey('project.uuid',
 #                                  name='fk_instance_project_id',
 #                                  onupdate='CASCADE',

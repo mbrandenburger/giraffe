@@ -156,30 +156,45 @@ class Agent(object):
 
     def _callback_host_cpu_load(self, params):
         self.publisher.add_meter_record(
-                       meter_name='host.loadavg_1m',
+                       meter_name='host.cpu.load.avg_01m',
                        meter_value=params[0],
                        meter_duration=60)
         self.publisher.add_meter_record(
-                       meter_name='host.loadavg_5m',
+                       meter_name='host.cpu.load.avg_05m',
                        meter_value=params[1],
                        meter_duration=300)
         self.publisher.add_meter_record(
-                       meter_name='host.loadavg_15m',
+                       meter_name='host.cpu.load.avg_15m',
                        meter_value=params[2],
                        meter_duration=1500)
 
     def _callback_host_memory_usage(self, params):
         self.publisher.add_meter_record(
-                       meter_name='host.phymem_usage',
+                       meter_name='host.memory.physical',
                        meter_value=params[3],
                        meter_duration=0)
         self.publisher.add_meter_record(
-                       meter_name='host.virmem_usage',
+                       meter_name='host.memory.virtual',
                        meter_value=float(params[4] - params[6]) / params[4] * 100,
                        meter_duration=0)
 
     def _callback_host_disk_io(self, params):
-        pass
+        self.publisher.add_meter_record(
+                       meter_name='host.disk.io.read.requests',
+                       meter_value=params[0],
+                       meter_duration=0)
+        self.publisher.add_meter_record(
+                       meter_name='host.disk.io.write.requests',
+                       meter_value=params[1],
+                       meter_duration=0)
+        self.publisher.add_meter_record(
+                       meter_name='host.disk.io.read.bytes',
+                       meter_value=params[2],
+                       meter_duration=0)
+        self.publisher.add_meter_record(
+                       meter_name='host.disk.io.write.bytes',
+                       meter_value=params[3],
+                       meter_duration=0)
 
     def _callback_host_network_io(self, params):
         self.publisher.add_meter_record(
@@ -189,6 +204,14 @@ class Agent(object):
         self.publisher.add_meter_record(
                        meter_name='host.network.io.incoming.bytes',
                        meter_value=params[1],
+                       meter_duration=0)
+        self.publisher.add_meter_record(
+                       meter_name='host.network.io.outgoing.packets',
+                       meter_value=params[2],
+                       meter_duration=0)
+        self.publisher.add_meter_record(
+                       meter_name='host.network.io.incoming.packets',
+                       meter_value=params[3],
                        meter_duration=0)
 
     # CALLBACK METHODS FOR INSTANCE METERS ------------------------------------

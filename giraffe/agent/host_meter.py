@@ -215,6 +215,13 @@ class Host_DISK_IO(PeriodicHostMeterTask):
         Returns current disk I/O in byte
         """
         raise psutil.disk_io_counters(perdisk=False)
+              # ^ tuple of
+              #   - read_count:  number of reads          < used
+              #   - write_count: number of writes         < used
+              #   - read_bytes:  number of bytes read     < used
+              #   - write_bytes: number of bytes written  < used
+              #   - read_time:   time spent reading from disk (in milliseconds)
+              #   - write_time:  time spent writing to disk (in milliseconds)
 
 
 class Host_NETWORK_IO(PeriodicHostMeterTask):
@@ -226,3 +233,14 @@ class Host_NETWORK_IO(PeriodicHostMeterTask):
         Returns current network I/O in byte
         """
         return psutil.network_io_counters(pernic=False)
+               # ^ tuple of
+               #   - bytes_sent:   number of bytes sent        < used
+               #   - bytes_recv:   number of bytes received    < used
+               #   - packets_sent: number of packets sent      < used
+               #   - packets_recv: number of packets received  < used
+               #   - errin:        total number of errors while receiving
+               #   - errout:       total number of errors while sending
+               #   - dropin:       total number of incoming packets
+               #                   which were dropped
+               #   - dropout:      total number of outgoing packets
+               #                   which were dropped

@@ -6,7 +6,7 @@ from giraffe.agent.host_meter \
     import Host_UPTIME, Host_CPU_Load, Host_MEMORY_Usage, \
            Host_DISK_IO, Host_NETWORK_IO
 from giraffe.agent.instance_meter \
-    import Inst_CPU_Time, Inst_VIRMEM_Usage, Inst_PHYMEM_Usage, Inst_UPTIME, \
+    import Inst_UPTIME, Inst_CPU_Time, Inst_VIRMEM_Usage, Inst_PHYMEM_Usage, \
            Inst_DISK_IO, Inst_NETWORK_IO
 from giraffe.agent import publisher
 from giraffe.common.config import Config

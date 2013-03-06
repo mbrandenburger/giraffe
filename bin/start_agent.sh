@@ -56,12 +56,12 @@ if __name__ == '__main__':
 
     # -------------------------------------------------------------------------    
 
-    from giraffe.agent import agent
+    from giraffe.agent.agent import Agent
 
     logger.info('Starting Giraffe agent...')
     
     try:
-        agent = agent.Agent(cfg=args.config)
+        agent = Agent(cfg=args.config)
         agent.launch()
     except (Exception, SystemExit):
         logger.exception(('Failed to load %s') % 'agent.')

@@ -132,7 +132,7 @@ def get_meters_count(request):
         return giraffeclient(request).get_meters({'aggregation': 'count'})
     except Exception as e:
         LOG.exception(e)
-        return None
+        return 0
 
 
 def get_meters(request):
@@ -140,7 +140,7 @@ def get_meters(request):
         return [APIDictWrapper(m) for m in giraffeclient(request).get_meters()]
     except Exception as e:
         LOG.exception(e)
-        return None
+        return []
 
 
 def get_records_count(request):

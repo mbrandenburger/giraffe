@@ -356,8 +356,10 @@ class Host(Base):
                            backref='host')
 
     def __repr__(self):
-        return 'Host(%s,\'%s\')' \
-               % (self.id, self.name)
+        return 'Host(%s,\'%s\', %s)' \
+               % (self.id, \
+                  self.name if self.name else 'None', \
+                  self.activity if self.activity else 'None')
 
 
 class Project(Base):

@@ -214,14 +214,14 @@ class Host_DISK_IO(PeriodicHostMeterTask):
         """
         Returns current disk I/O in byte
         """
-        raise psutil.disk_io_counters(perdisk=False)
-              # ^ tuple of
-              #   - read_count:  number of reads          < used
-              #   - write_count: number of writes         < used
-              #   - read_bytes:  number of bytes read     < used
-              #   - write_bytes: number of bytes written  < used
-              #   - read_time:   time spent reading from disk (in milliseconds)
-              #   - write_time:  time spent writing to disk (in milliseconds)
+        return psutil.disk_io_counters(perdisk=False)
+               # ^ tuple of
+               #   - read_count:  number of reads          < used
+               #   - write_count: number of writes         < used
+               #   - read_bytes:  number of bytes read     < used
+               #   - write_bytes: number of bytes written  < used
+               #   - read_time:   time spent reading from disk (in milliseconds)
+               #   - write_time:  time spent writing to disk (in milliseconds)
 
 
 class Host_NETWORK_IO(PeriodicHostMeterTask):

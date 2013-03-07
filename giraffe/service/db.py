@@ -303,9 +303,14 @@ class GiraffeBase(object):
         columnNames = self.list_column_names(realname=False)
         columnDict = {}
         for name in columnNames:
-            columnDict[name] = getattr(self, name)
-            if isinstance(columnDict[name], object):
-                columnDict[name] = str(columnDict[name])
+            attr = getattr(self, name)
+            columnDict[name] = str(attr) \
+                                   if   isinstance(attr, object) \
+                                   else attr
+
+        if hasattr(self, 'details') and isinstance(self.details, (dict)):
+            columnDict['details'] = self.details
+
         return columnDict
 
 

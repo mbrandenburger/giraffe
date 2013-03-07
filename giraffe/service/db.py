@@ -389,11 +389,16 @@ class Project(Base):
                         default=None)
 
     def __repr__(self):
-        return 'Project(%s,%s,%s,%s)' \
-               % (self.id,
-                  self.uuid,
-                  self.created_at if self.created_at else 'None',
-                  self.updated_at if self.updated_at else 'None')
+        _repr = 'Project(%s,%s,%s,%s' \
+                % (self.id,
+                   self.uuid,
+                   self.created_at if self.created_at else 'None',
+                   self.updated_at if self.updated_at else 'None')
+
+        if hasattr(self, 'details'):
+            _repr += ',' + str(self.details)
+
+        return _repr + ')'
 
 
 class Instance(Base):

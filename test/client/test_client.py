@@ -1,6 +1,7 @@
 __author__ = 'fbahr, omihelic'
 
 import sys
+sys.path.insert(0, '/home/fbahr')
 import unittest
 import re
 from giraffe.common.config import Config
@@ -64,6 +65,19 @@ class ClientTestCases(unittest.TestCase):
         projects = projects.as_(Project)  # tuple of Host objects
         # for p in projects:
         #     print p
+        self.assertIsNotNone(projects)
+        self.assertTrue(isinstance(projects[0], (Project)))
+
+    def test_get_projects_detailled(self):
+        projects = self.gc.get_projects(params={'details': True})  # tuple (ResultSet) of dicts
+        for p in projects:
+            print p
+        self.assertIsNotNone(projects)
+        self.assertTrue(isinstance(projects, (tuple)))
+
+        projects = projects.as_(Project)  # tuple of Host objects
+        for p in projects:
+            print p
         self.assertIsNotNone(projects)
         self.assertTrue(isinstance(projects[0], (Project)))
 

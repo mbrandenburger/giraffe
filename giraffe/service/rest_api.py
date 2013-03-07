@@ -6,18 +6,18 @@ import calendar
 import datetime
 from datetime import datetime, timedelta
 import json
-import logging
 import re
 from giraffe.service.rest_server import Rest_Server
-from giraffe.common.config import Config
 import giraffe.service.db as db
 from giraffe.service.db import Host, Project, Meter, MeterRecord
 from giraffe.service.db import MIN_TIMESTAMP, MAX_TIMESTAMP,\
                                ORDER_ASC, ORDER_DESC
 
-_logger = logging.getLogger('service.rest_api')
+from giraffe.common.config import Config
 _config = Config('giraffe.cfg')
 
+import logging
+_logger = logging.getLogger('service.rest_api')
 
 class Rest_API(object):
     def __init__(self):
@@ -228,20 +228,20 @@ class Rest_API(object):
                 hosts = self.db.load(cls=Host,
                                      order=query[self.PARAM_ORDER],
                                      order_attr='id')
-                result = json.dumps([h.to_dict() for h in hosts])
+                result = [h.to_dict() for h in hosts]
 
         except Exception:
-            result = json.dumps(0 if    query[self.PARAM_AGGREGATION] \
-                                        == self.AGGREGATION_COUNT \
-                                   else [])
+            result = 0 if    query[self.PARAM_AGGREGATION] \
+                             == self.AGGREGATION_COUNT \
+                       else []
 
         self.db.session_close()
-        return result
+        return json.dumps(result)
 
     def route_hosts_hid(self, host_id, query_string):
         """
-        Returns the Host object where the host_id matches. The host_id can be
-        the ID (int) or the NAME (string).
+        Returns the Host object where the host_id matches.
+        The host_id can be the ID (int) or the NAME (string).
 
         Route: hosts/<host_id>/
         Returns: Host object, JSON-formatted
@@ -255,14 +255,13 @@ class Rest_API(object):
         self.db.session_open()
 
         try:
-            host = self.db.load(Host, args=args, limit=1)[0]
-            result = json.dumps(host.to_dict())
+            host = self.db.load(Host, args=args, limit=1)[0].to_dict()
 
         except Exception:
-            result = None  #< ...or: json.dumps(None) ?!
+            host = None
 
         self.db.session_close()
-        return result
+        return json.dumps(host) if host else None
 
     def route_hosts_hid_meters(self, host_id, query_string):
         """
@@ -284,7 +283,7 @@ class Rest_API(object):
             host = self.db.load(cls=Host, args=args, limit=1)[0]
 
         except Exception:
-            return None  #< ... ?!
+            return None
 
         try:
             meter_ids = self.db.distinct_values(cls=MeterRecord,
@@ -293,14 +292,13 @@ class Rest_API(object):
                                                 order=ORDER_ASC)
             meters = self.db.load(cls=Meter,
                                   args={'id': meter_ids})
-
-            result = json.dumps([m.to_dict() for m in meters])
+            result = [m.to_dict() for m in meters]
 
         except Exception:
-            result = json.dumps([])
+            result = []
 
         self.db.session_close()
-        return result
+        return json.dumps(result)
 
     def route_hosts_hid_meters_mid_records(self, host_id, meter_id,
                                            query_string):
@@ -317,51 +315,59 @@ class Rest_API(object):
             host_args = {'id': int(host_id)}
         except ValueError:
             host_args = {'name': host_id}
-        self.db.session_open()
         try:
             meter_args = {'id': int(meter_id)}
         except ValueError:
             meter_args = {'name': meter_id}
+        self.db.session_open()
+
         try:
             host = self.db.load(Host, args=host_args, limit=1)[0]
             meter = self.db.load(Meter, args=meter_args, limit=1)[0]
+
         except Exception:
-            host = None
-            meter = None
-        result = None
-        if host and meter:
-            record_args = {'host_id': host.id, 'meter_id': meter.id}
-            if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
-                record_args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
-                if query[self.PARAM_START_TIME]:
-                    record_args['timestamp'][0] = query[self.PARAM_START_TIME]
-                if query[self.PARAM_END_TIME]:
-                    record_args['timestamp'][1] = query[self.PARAM_END_TIME]
-                record_args['timestamp'] = (record_args['timestamp'][0],
-                                            record_args['timestamp'][1])
+            return None
+
+        record_args = {'host_id': host.id,
+                       'meter_id': meter.id}
+        if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
+            record_args['timestamp'] = (query[self.PARAM_START_TIME]
+                                            if   query[self.PARAM_START_TIME]
+                                            else MIN_TIMESTAMP,
+                                        query[self.PARAM_END_TIME]
+                                            if   query[self.PARAM_END_TIME]
+                                            else MAX_TIMESTAMP)
+        # aggregation
+        if query[self.PARAM_AGGREGATION]:
+            column = 'timestamp' if   query[self.PARAM_AGGREGATION] \
+                                      == self.AGGREGATION_FIRST_LAST \
+                                 else 'value'
             try:
-                # aggregation
-                if query[self.PARAM_AGGREGATION]:
-                    column = 'timestamp' if   query[self.PARAM_AGGREGATION] \
-                                              == self.AGGREGATION_FIRST_LAST \
-                                         else 'value'
-                    result = self._aggregate(cls=MeterRecord,
-                                             aggregation=query[self.PARAM_AGGREGATION],
-                                             args=record_args,
-                                             column=column)
-                    result = json.dumps(result)
-                # no aggregation
-                else:
-                    records = self.db.load(cls=MeterRecord,
-                                           args=record_args,
-                                           limit=query[self.PARAM_LIMIT],
-                                           order=query[self.PARAM_ORDER],
-                                           order_attr='timestamp')
-                    result = json.dumps([r.to_dict() for r in records])
+                result = self._aggregate(cls=MeterRecord,
+                                         aggregation=query[self.PARAM_AGGREGATION],
+                                         args=record_args,
+                                         column=column)
+
             except Exception:
-                pass
+                result = [] if   query[self.PARAM_AGGREGATION] \
+                                 == self.AGGREGATION_FIRST_LAST \
+                            else 0
+
+        # no aggregation
+        else:
+            try:
+                records = self.db.load(cls=MeterRecord,
+                                       args=record_args,
+                                       limit=query[self.PARAM_LIMIT],
+                                       order=query[self.PARAM_ORDER],
+                                       order_attr='timestamp')
+                result = [r.to_dict() for r in records]
+
+            except Exception:
+                result = []
+
         self.db.session_close()
-        return result
+        return json.dumps(result)
 
     def route_projects(self, query_string=''):
         """
@@ -373,18 +379,40 @@ class Rest_API(object):
         """
         query = self._query_params(query_string)
         self.db.session_open()
+
         if query[self.PARAM_AGGREGATION] == self.AGGREGATION_COUNT:
-            count = self._aggregate(cls=Project,
-                                    aggregation=self.AGGREGATION_COUNT,
-                                    args={})
-            result = json.dumps(count)
+            try:
+                result = self._aggregate(cls=Project,
+                                         aggregation=self.AGGREGATION_COUNT,
+                                         args={})
+            except Exception:
+                result = 0
+
         else:
-            projects = self.db.load(cls=Project,
-                                    order=query[self.PARAM_ORDER],
-                                    order_attr='id')
-            result = json.dumps([p.to_dict() for p in projects])
+            try:
+                projects = self.db.load(cls=Project,
+                                        order=query[self.PARAM_ORDER],
+                                        order_attr='id')
+
+                if query[self.PARAM_DETAILS].lower() == 'true':
+                    for p in projects:
+                        try:
+                            instances = self.db.distinct_values( \
+                                                    cls=MeterRecord,
+                                                    column='resource_id',
+                                                    args={'project_id': p.uuid})
+                        except Exception:
+                            instances = []
+                        finally:
+                            setattr(p, 'details',
+                                       {'num_instances': len(instances)})
+
+                result = [p.to_dict() for p in projects]
+            except Exception:
+                result = []
+
         self.db.session_close()
-        return result
+        return json.dumps(result)
 
     def route_projects_pid(self, project_id, query_string=''):
         """
@@ -397,12 +425,15 @@ class Rest_API(object):
         # query = self._query_params(query_string)
         args = {'uuid': project_id}
         self.db.session_open()
+
         try:
-            project = self.db.load(Project, args=args, limit=1)[0]
+            project = self.db.load(Project, args=args, limit=1)[0].to_dict()
+
         except Exception:
             project = None
+
         self.db.session_close()
-        return json.dumps(project.to_dict()) if project else None
+        return json.dumps(project) if project else None
 
     def route_projects_pid_meters(self, project_id, query_string=''):
         """
@@ -413,17 +444,21 @@ class Rest_API(object):
         Returns: List of Meter objects, JSON-formatted
         Query params: -
         """
-#       query = self._query_params(query_string)
+        # query = self._query_params(query_string)
         self.db.session_open()
+
         try:
             meter_ids = self.db.distinct_values(MeterRecord, 'meter_id',
                                                 args={'project_id': project_id},
                                                 order=ORDER_ASC)
             meters = self.db.load(Meter, args={'id': meter_ids})
+            result = [m.to_dict() for m in meters]
+
         except Exception:
-            meters = []
+            result = []
+
         self.db.session_close()
-        return json.dumps([m.to_dict() for m in meters])
+        return json.dumps(result)
 
     def route_projects_pid_meters_mid_records(self, project_id, meter_id,
                                               query_string=''):
@@ -542,12 +577,15 @@ class Rest_API(object):
         except Exception:
             args = {'name': meter_id}
         self.db.session_open()
+
         try:
-            meter = self.db.load(Meter, args=args, limit=1)[0]
+            meter = self.db.load(Meter, args=args, limit=1)[0].to_dict()
+
         except Exception:
             meter = None
+
         self.db.session_close()
-        return json.dumps(meter.to_dict()) if meter else None
+        return json.dumps(meter) if meter else None
 
     def route_users(self, query_string=''):
         """
@@ -744,11 +782,11 @@ class Rest_API(object):
         try:
             record = self.db.load(cls=MeterRecord,
                                   args={'id': record_id},
-                                  limit=1)[0]
-            result = json.dumps(record.to_dict())
+                                  limit=1)[0] \
+                            .to_dict()
 
         except:
-            result = None
+            record = None
 
         self.db.session_close()
-        return result
+        return json.dumps(record) if record else None

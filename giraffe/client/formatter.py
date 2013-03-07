@@ -128,8 +128,11 @@ class ProjectFormatter(Formatter):
                                         if k in ['id', 'uuid',
                                                  'created_at', 'updated_at']))
 
+            if element.get('details'):
+                project.__dict__['details'] = element['details']
+
         except Exception as e:
-            # logger.exception
+            # logger.exception(e)
             raise e
 
         finally:

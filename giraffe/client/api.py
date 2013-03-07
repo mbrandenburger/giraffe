@@ -113,27 +113,10 @@ class GiraffeClient(object):
             def __new__(cls, first=(), *next, **kwargs):
                 cls._giraffe_client = kwargs.get('giraffe_client')
 
-                if isinstance(first, (list)) and not next:
+                if isinstance(first, (tuple, list)) and not next:
                     return tuple.__new__(cls, tuple(first))
                 else:
                     return tuple.__new__(cls, (first, ) + next)
-
-#            @staticmethod
-#            def client(auth_token=None, **kwargs):
-#                _config = Config('giraffe.cfg')
-#                _username = _config.get('client', 'user')
-#                _password = _config.get('client', 'pass')
-#                _tenant_name = _config.get('client', 'tenant_name')
-#                _tenant_id = _config.get('client', 'tenant_id')
-#                _auth_url = _config.get('auth', 'public_url')
-# 
-#                auth_token = AuthProxy.get_token(username=_username,
-#                                                 password=_password,
-#                                                 tenant_name=_tenant_name,
-#                                                 tenant_id=_tenant_id,
-#                                                 auth_url=_auth_url)
-#
-#                return GiraffeClient(auth_token, **kwargs)
 
             def as_(self, cls, **kwargs):
                 """

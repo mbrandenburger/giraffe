@@ -17,10 +17,16 @@ class IndexView(tables.DataTableView):
     template_name = 'giraffe_dashboard/projects/index.html'
 
     def get_data(self):
-        projects = client_proxy.get_projects(self.request)
+        projects = client_proxy.get_projects(request=self.request,
+                                             params={'details': True})
         for p in projects:
-            instances = client_proxy.get_project_instances(self.request, p.uuid)
-            setattr(p, 'num_instances', len(instances) if instances else 0)
+#           count = client_proxy.get_project_instances( \
+#                                    request=self.request, \
+#                                    project_id=p.uuid, \
+#                                    params={'aggregation': 'count'})
+#           setattr(p, 'num_instances', count)
+            setattr(p, 'num_instances', p.details['num_instances'])
+
         return projects
 
 

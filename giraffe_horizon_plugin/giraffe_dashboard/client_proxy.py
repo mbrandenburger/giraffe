@@ -151,21 +151,14 @@ def get_records_count(request):
         return None
 
 
-def get_projects_count(request):
+def get_projects(request, params=None):
+    count = params and params.get('aggregation') == 'count'
     try:
-        return giraffeclient(request).get_projects({'aggregation': 'count'})
+        result = giraffeclient(request).get_projects(params)
+        return result if count else result.as_(Project)
     except Exception as e:
         LOG.exception(e)
-        return None
-
-
-def get_projects(request):
-    try:
-        projects = giraffeclient(request).get_projects()
-        return projects.as_(Project) if projects else []
-    except Exception as e:
-        LOG.exception(e)
-        return []
+        return 0 if count else []
 
 
 # def get_project(request, project_id):
@@ -177,24 +170,15 @@ def get_projects(request):
 #        return None
 
 
-# def get_project_instances_count(request, project_id):
-#    try:
-#        return giraffeclient(request).get_proj_instances(
-#                                          project_id,
-#                                          params={'aggregation': 'count'})
-#    except Exception as e:
-#        LOG.exception(e)
-#        return None
-
-
-def get_project_instances(request, project_id):
+def get_project_instances(request, project_id, params=None):
+    count = params and params.get('aggregation') == 'count'
     try:
-        return [APIDictWrapper({'id': i})
-                for i in giraffeclient(request).get_proj_instances(project_id)]
+        result = giraffeclient(request).get_proj_instances(project_id, params)
+        return result if   count \
+                      else [APIDictWrapper({'id': r}) for r in result]
     except Exception as e:
         LOG.exception(e)
-        raise e
-        return None
+        return 0 if count else []
 
 
 def get_instances_count(request):

@@ -409,7 +409,7 @@ class ProjCMDController(AbstractBaseController):
         #        overwrite the shared arguments."
         # - https://cement.readthedocs.org/en/latest/examples/abstract_base_controllers/
         arguments = sum([
-            [(['--name', '--id'], \
+            [(['--uuid'], \
                 dict(action='store', dest='uuid', help='project name or ID', \
                      default=None))],
         #   AbstractBaseController.Meta._modifiers,
@@ -424,18 +424,17 @@ class ProjCMDController(AbstractBaseController):
     @controller.expose(hide=True)
     def default(self):
         """
-        cmd: projects                  ~ route: /projects
-        cmd: projects --[id|name] ...  ~ route: /projects/[id|name]
+        cmd: projects             ~ route: /projects
+        cmd: projects --uuid ...  ~ route: /projects/[id|name]
         """
         try:
-            if self.pargs.uuid:
-                # self._client().get_project(self.pargs.uuid, self._params())
-                raise NotImplementedError('Route /projects/[id|name] '
-                                          'not (yet) implemented.')
-            result = self._client().get_projects(self._params())
+            result = self._client().get_project(self.pargs.uuid, self._params()) \
+                        if   self.pargs.uuid \
+                        else self._client().get_projects(self._params())
             self._display(result)
         except Exception as e:
             self._except('PROJECTS', e)
+
 
 # end of class ProjCMDController ----------------------------------------------
 

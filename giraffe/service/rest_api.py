@@ -26,6 +26,7 @@ class Rest_API(object):
         self.PARAM_CHART = 'chart'
         self.PARAM_LIMIT = 'limit'
         self.PARAM_ORDER = 'order'
+        self.PARAM_DETAILS = 'details'
         self.RESULT_LIMIT = 2500
         self.AGGREGATION_COUNT = 'count'
         self.AGGREGATION_MAX = 'max'
@@ -47,12 +48,14 @@ class Rest_API(object):
                                 self.PARAM_LIMIT: re.compile('^\d+$'),
                                 self.PARAM_ORDER: re.compile('^(%s|%s)$' %\
                                                              (ORDER_ASC,
-                                                              ORDER_DESC))}
+                                                              ORDER_DESC)),
+                                self.PARAM_DETAILS: re.compile('^\w+$'),}
         self._param_defaults = {self.PARAM_START_TIME: None,
                                 self.PARAM_END_TIME: None,
                                 self.PARAM_AGGREGATION: None,
                                 self.PARAM_LIMIT: self.RESULT_LIMIT,
-                                self.PARAM_ORDER: ORDER_ASC}
+                                self.PARAM_ORDER: ORDER_ASC,
+                                self.PARAM_DETAILS: 'False'}
         self._pattern_timestamp = re.compile(
             '^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$')
 
@@ -358,12 +361,21 @@ class Rest_API(object):
 
     def route_projects_pid(self, project_id, query_string=''):
         """
+        Returns the Project object where the project_id matches.
+
         Route: projects/<project_id>/
-        Returns: -
+        Returns: Project object, JSON-formatted
         Query params: -
         """
-        raise NotImplementedError('Route projects/<project_id> not yet '\
-                                  'implemented')
+        # query = self._query_params(query_string)
+        args = {'uuid': project_id}
+        self.db.session_open()
+        try:
+            project = self.db.load(Project, args=args, limit=1)[0]
+        except Exception:
+            project = None
+        self.db.session_close()
+        return json.dumps(project.to_dict()) if project else None
 
     def route_projects_pid_meters(self, project_id, query_string=''):
         """
@@ -408,14 +420,12 @@ class Rest_API(object):
         if meter:
             args = {'project_id': project_id, 'meter_id': meter.id}
             if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
-                args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
-                if query[self.PARAM_START_TIME]:
-                    args['timestamp'][0] = query[self.PARAM_START_TIME]
-                if query[self.PARAM_END_TIME]:
-                    args['timestamp'][1] = query[self.PARAM_END_TIME]
-                args['timestamp'] = (args['timestamp'][0],
-                                     args['timestamp'][1])
-
+                args['timestamp'] = (query[self.PARAM_START_TIME]
+                                         if   query[self.PARAM_START_TIME]
+                                         else MIN_TIMESTAMP,
+                                     query[self.PARAM_END_TIME]
+                                         if   query[self.PARAM_END_TIME]
+                                         else MAX_TIMESTAMP)
             if query[self.PARAM_AGGREGATION]:
                 column = 'value'
                 if query[self.PARAM_AGGREGATION] == \
@@ -423,7 +433,8 @@ class Rest_API(object):
                     column = 'timestamp'
                 result = self._aggregate(MeterRecord,
                                          query[self.PARAM_AGGREGATION],
-                                         args=args, column=column)
+                                         args=args,
+                                         column=column)
                 result = json.dumps(result)
             else:
                 records = self.db.load(MeterRecord, args,
@@ -446,18 +457,20 @@ class Rest_API(object):
         self.db.session_open()
         args = {'project_id': project_id}
         if query[self.PARAM_START_TIME] or query[self.PARAM_END_TIME]:
-            args['timestamp'] = [MIN_TIMESTAMP, MAX_TIMESTAMP]
-            if query[self.PARAM_START_TIME]:
-                args['timestamp'][0] = query[self.PARAM_START_TIME]
-            if query[self.PARAM_END_TIME]:
-                args['timestamp'][1] = query[self.PARAM_END_TIME]
-            args['timestamp'] = (args['timestamp'][0],
-                                 args['timestamp'][1])
+            args['timestamp'] = (query[self.PARAM_START_TIME]
+                                     if   query[self.PARAM_START_TIME]
+                                     else MIN_TIMESTAMP,
+                                 query[self.PARAM_END_TIME]
+                                     if   query[self.PARAM_END_TIME]
+                                     else MAX_TIMESTAMP)
         try:
-            instances = self.db.distinct_values(MeterRecord, 'resource_id',
-                                                args=args, order=ORDER_ASC)
+            instances = self.db.distinct_values(MeterRecord,
+                                                'resource_id',
+                                                args=args,
+                                                order=ORDER_ASC)
         except Exception:
             instances = []
+
         self.db.session_close()
         return json.dumps(instances)
 

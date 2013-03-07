@@ -29,12 +29,12 @@ class IndexView(tables.MultiTableView):
     client = None
 
     def get_database_status_data(self):
-        request = self.request
-        project_count = client_proxy.get_projects_count(request)
-        host_count = client_proxy.get_hosts_count(request)
-        instance_count = client_proxy.get_instances_count(request)
-        meter_count = client_proxy.get_meters_count(request)
-        record_count = client_proxy.get_records_count(request)
+        project_count = client_proxy.get_projects(request=self.request,
+                                                  params={'aggregation': 'count'})
+        host_count = client_proxy.get_hosts_count(self.request)
+        instance_count = client_proxy.get_instances_count(self.request)
+        meter_count = client_proxy.get_meters_count(self.request)
+        record_count = client_proxy.get_records_count(self.request)
         if record_count:
             record_count = '{0:,}'.format(record_count)
         data = {'id': 1,

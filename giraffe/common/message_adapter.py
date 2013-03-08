@@ -1,20 +1,23 @@
+__author__ = 'omihelic'
+
 from giraffe.common.message import BulkMessage
 from google.protobuf.text_format import MessageToString
 
+
 class MessageAdapter(object):
     """
-    MessageAdapter exposes all attributes of the underlying adaptee object
-    so all attributes of that object can be accessed by calling
+    MessageAdapter exposes all attributes of the underlying adaptee
+    object so all attributes of that object can be accessed by calling
     adapter.adaptee_attribute.
     """
 
-    def __init__(self, adaptee=None):  # @[fbahr]: r/dataStr/adaptee/
+    def __init__(self, adaptee=None):
         # need to use self.__dict__ to avoid infinite recursion in __getattr__
         if isinstance(adaptee, BulkMessage):
             self.__dict__['_adaptee'] = adaptee
         elif isinstance(adaptee, str):
             self.__dict__['_adaptee'] = BulkMessage()
-            self.deserialize_from_str(adaptee)  # @[fbahr]: r/dataStr/adaptee/
+            self.deserialize_from_str(adaptee)
         else:
             self.__dict__['_adaptee'] = BulkMessage()
 
@@ -56,7 +59,7 @@ class MessageAdapter(object):
         """
         Adds an instance record to the underlying adaptee object.
         """
-        if self._adaptee.inst_records is None:
+        if not self._adaptee.inst_records:
             self._adaptee.inst_records = []
 
         inst_record = self._adaptee.inst_records.add()
@@ -82,4 +85,3 @@ class MessageAdapter(object):
 
     def __str__(self):
         return MessageToString(self._adaptee)
-

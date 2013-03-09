@@ -1,4 +1,4 @@
-__author__ = 'omihelic'
+__author__ = 'omihelic, fbahr'
 
 '''
 Sets up database interaction with SQLAlchemy.
@@ -57,6 +57,7 @@ from sqlalchemy import create_engine, Column, ForeignKey, desc, asc, and_, func
 from sqlalchemy.orm import sessionmaker, relationship, class_mapper
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql.expression import text
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT, CHAR, VARCHAR, TIMESTAMP
 
 MIN_TIMESTAMP = '0000-01-01 00:00:00'
@@ -123,10 +124,10 @@ class Db(object):
         """
         Loads all persistent objects of the given class that meet the given
         arguments.
-        args is a dict of column-value-pairs that are matched for equality,
-        except:
-        - value is a list: converted into an IN clause
-        - value is a tuple of length 2: converted into col <= V and col >= V
+        - args is a dict of column/value-pairs that are matched for equality,
+          except:
+          - value is a list: converted into an IN clause
+          - value is a tuple of length 2: converted into col <= V and col >= V
         """
         query = self._query(cls, args, limit, order, order_attr)
         return query.all()
@@ -237,9 +238,7 @@ class Db(object):
         # apply order
         query = self._order(cls, query, order, order_attr)
         # apply limit
-        if limit is not None:
-            return query.limit(limit)
-        return query
+        return query.limit(limit) if limit is not None else query
 
     def _filter(self, cls, query, args):
         """
@@ -494,7 +493,7 @@ class MeterRecord(Base):
     timestamp = Column('meter_timestamp',
                        TIMESTAMP(),
                        nullable=False,
-                       default='CURRENT_TIMESTAMP',
+                       server_default=text('CURRENT_TIMESTAMP'),
                        index=True)
 #   signature = Column('message_signature',
 #                      VARCHAR(40),

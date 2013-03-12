@@ -99,6 +99,7 @@ class Db(object):
         Closes a database session.
         '''
         self._session.close()
+        # ^note: doesn't _actually_ close a session
 
     def commit(self):
         '''
@@ -114,11 +115,18 @@ class Db(object):
 
     def save(self, obj):
         '''
-        Inserts or updates a single persistent object without committing.
-        The object is only updated if it previously was retrieved from the
-        database.
+        Inserts or updates a single object to/within current session,
+        w/o committing. Objects are only updated if previously retrieved
+        from the database.
         '''
         self._session.add(obj)
+
+#   def merge(self, obj):
+#       '''
+#       Inserts or updates a single object to/within current session,
+#       w/o committing. ...
+#       '''
+#       return self._session.merge(obj)
 
     def load(self, cls, args={}, limit=None, order=None, order_attr=None):
         """
